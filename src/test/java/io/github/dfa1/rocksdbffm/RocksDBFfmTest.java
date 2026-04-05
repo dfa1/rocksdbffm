@@ -6,6 +6,7 @@ import org.junit.jupiter.api.io.TempDir;
 import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class RocksDBFfmTest {
 
@@ -97,6 +98,90 @@ class RocksDBFfmTest {
             for (int i = 0; i < 50; i++) {
                 assertArrayEquals(("val-" + i).getBytes(), db.get(("key-" + i).getBytes()));
             }
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // createIfMissing
+    // -----------------------------------------------------------------------
+
+    @Test
+    void createIfMissingFalseFailsOnNewDb(@TempDir Path tempDir) {
+        Path dbPath = tempDir.resolve("nonexistent");
+        try (Options opts = new Options().setCreateIfMissing(false)) {
+            assertThrows(RocksDBException.class, () -> RocksDB.open(opts, dbPath.toString()));
+        }
+    }
+
+    @Test
+    void createIfMissingTrueCreatesDb(@TempDir Path tempDir) {
+        Path dbPath = tempDir.resolve("newdb");
+        try (Options opts = new Options().setCreateIfMissing(true);
+             RocksDB db = RocksDB.open(opts, dbPath.toString())) {
+            db.put("k".getBytes(), "v".getBytes());
+            assertArrayEquals("v".getBytes(), db.get("k".getBytes()));
+        }
+    }
+
+    @Test
+    void optionsGetCreateIfMissingRoundTrips() {
+        try (Options opts = new Options()) {
+            assertFalse(opts.getCreateIfMissing());
+            opts.setCreateIfMissing(true);
+            assertTrue(opts.getCreateIfMissing());
+            opts.setCreateIfMissing(false);
+            assertFalse(opts.getCreateIfMissing());
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // readOnly
+    // -----------------------------------------------------------------------
+
+    @Test
+    void readOnlyAllowsReads(@TempDir Path tempDir) {
+        String path = tempDir.toString();
+        try (RocksDB rw = RocksDB.open(path)) {
+            rw.put("k".getBytes(), "v".getBytes());
+        }
+        try (RocksDB ro = RocksDB.openReadOnly(path)) {
+            assertArrayEquals("v".getBytes(), ro.get("k".getBytes()));
+        }
+    }
+
+    @Test
+    void readOnlyRejectsPut(@TempDir Path tempDir) {
+        String path = tempDir.toString();
+        try (RocksDB rw = RocksDB.open(path)) {
+            rw.put("seed".getBytes(), "val".getBytes());
+        }
+        try (RocksDB ro = RocksDB.openReadOnly(path)) {
+            assertThrows(RocksDBException.class,
+                () -> ro.put("k".getBytes(), "v".getBytes()));
+        }
+    }
+
+    @Test
+    void readOnlyRejectsDelete(@TempDir Path tempDir) {
+        String path = tempDir.toString();
+        try (RocksDB rw = RocksDB.open(path)) {
+            rw.put("k".getBytes(), "v".getBytes());
+        }
+        try (RocksDB ro = RocksDB.openReadOnly(path)) {
+            assertThrows(RocksDBException.class,
+                () -> ro.delete("k".getBytes()));
+        }
+    }
+
+    @Test
+    void readOnlyWithOptions(@TempDir Path tempDir) {
+        String path = tempDir.toString();
+        try (RocksDB rw = RocksDB.open(path)) {
+            rw.put("hello".getBytes(), "world".getBytes());
+        }
+        try (Options opts = new Options();
+             RocksDB ro = RocksDB.openReadOnly(opts, path)) {
+            assertArrayEquals("world".getBytes(), ro.get("hello".getBytes()));
         }
     }
 }

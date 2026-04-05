@@ -33,10 +33,8 @@ public final class RocksDB implements AutoCloseable {
     private static final Linker LINKER = Linker.nativeLinker();
     private static final SymbolLookup LIB;
 
-    private static final MethodHandle MH_OPTIONS_CREATE;
-    private static final MethodHandle MH_OPTIONS_SET_CREATE_IF_MISSING;
-    private static final MethodHandle MH_OPTIONS_DESTROY;
     private static final MethodHandle MH_OPEN;
+    private static final MethodHandle MH_OPEN_FOR_READ_ONLY;
     private static final MethodHandle MH_CLOSE;
     private static final MethodHandle MH_WRITEOPTIONS_CREATE;
     private static final MethodHandle MH_WRITEOPTIONS_DESTROY;
@@ -58,19 +56,16 @@ public final class RocksDB implements AutoCloseable {
         );
         LIB = SymbolLookup.libraryLookup(libPath, Arena.global());
 
-        MH_OPTIONS_CREATE = lookup("rocksdb_options_create",
-            FunctionDescriptor.of(ValueLayout.ADDRESS));
-
-        MH_OPTIONS_SET_CREATE_IF_MISSING = lookup("rocksdb_options_set_create_if_missing",
-            FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_BYTE));
-
-        MH_OPTIONS_DESTROY = lookup("rocksdb_options_destroy",
-            FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
-
         // rocksdb_t* rocksdb_open(const rocksdb_options_t*, const char* name, char** errptr)
         MH_OPEN = lookup("rocksdb_open",
             FunctionDescriptor.of(ValueLayout.ADDRESS,
                 ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+        // rocksdb_t* rocksdb_open_for_read_only(opts*, name, error_if_wal_file_exists, errptr**)
+        MH_OPEN_FOR_READ_ONLY = lookup("rocksdb_open_for_read_only",
+            FunctionDescriptor.of(ValueLayout.ADDRESS,
+                ValueLayout.ADDRESS, ValueLayout.ADDRESS,
+                ValueLayout.JAVA_BYTE, ValueLayout.ADDRESS));
 
         MH_CLOSE = lookup("rocksdb_close",
             FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
@@ -166,17 +161,27 @@ public final class RocksDB implements AutoCloseable {
     // Factory
     // -----------------------------------------------------------------------
 
+    /**
+     * Opens the database at {@code path} with {@code createIfMissing=true}.
+     * Convenience overload; equivalent to {@code open(new Options().setCreateIfMissing(true), path)}.
+     */
     public static RocksDB open(String path) {
-        try (Arena arena = Arena.ofConfined()) {
-            MemorySegment opts = (MemorySegment) MH_OPTIONS_CREATE.invokeExact();
-            MH_OPTIONS_SET_CREATE_IF_MISSING.invokeExact(opts, (byte) 1);
+        try (Options opts = new Options().setCreateIfMissing(true)) {
+            return open(opts, path);
+        }
+    }
 
+    /**
+     * Opens the database at {@code path} using the supplied {@link Options}.
+     * The caller retains ownership of {@code options} and may close it after this call returns.
+     */
+    public static RocksDB open(Options options, String path) {
+        try (Arena arena = Arena.ofConfined()) {
             MemorySegment pathSeg = arena.allocateFrom(path);
             MemorySegment errHolder = ERR_HOLDER.get();
             errHolder.set(ValueLayout.ADDRESS, 0, MemorySegment.NULL);
 
-            MemorySegment dbPtr = (MemorySegment) MH_OPEN.invokeExact(opts, pathSeg, errHolder);
-            MH_OPTIONS_DESTROY.invokeExact(opts);
+            MemorySegment dbPtr = (MemorySegment) MH_OPEN.invokeExact(options.ptr, pathSeg, errHolder);
             checkError(errHolder);
 
             MemorySegment writeOptions = (MemorySegment) MH_WRITEOPTIONS_CREATE.invokeExact();
@@ -186,6 +191,49 @@ public final class RocksDB implements AutoCloseable {
             throw e;
         } catch (Throwable t) {
             throw new RocksDBException("Failed to open database: " + path, t);
+        }
+    }
+
+    /**
+     * Opens the database at {@code path} in read-only mode.
+     * Write operations on the returned instance will throw {@link RocksDBException}.
+     *
+     * @param errorIfWalFileExists if true, fails when unrecovered WAL files are present
+     */
+    public static RocksDB openReadOnly(Options options, String path, boolean errorIfWalFileExists) {
+        try (Arena arena = Arena.ofConfined()) {
+            MemorySegment pathSeg = arena.allocateFrom(path);
+            MemorySegment errHolder = ERR_HOLDER.get();
+            errHolder.set(ValueLayout.ADDRESS, 0, MemorySegment.NULL);
+
+            MemorySegment dbPtr = (MemorySegment) MH_OPEN_FOR_READ_ONLY.invokeExact(
+                options.ptr, pathSeg, errorIfWalFileExists ? (byte) 1 : (byte) 0, errHolder);
+            checkError(errHolder);
+
+            MemorySegment writeOptions = (MemorySegment) MH_WRITEOPTIONS_CREATE.invokeExact();
+            MemorySegment readOptions = (MemorySegment) MH_READOPTIONS_CREATE.invokeExact();
+            return new RocksDB(dbPtr, writeOptions, readOptions);
+        } catch (RocksDBException e) {
+            throw e;
+        } catch (Throwable t) {
+            throw new RocksDBException("Failed to open read-only database: " + path, t);
+        }
+    }
+
+    /**
+     * Opens the database at {@code path} in read-only mode.
+     * Equivalent to {@code openReadOnly(options, path, false)}.
+     */
+    public static RocksDB openReadOnly(Options options, String path) {
+        return openReadOnly(options, path, false);
+    }
+
+    /**
+     * Opens the database at {@code path} in read-only mode with default options.
+     */
+    public static RocksDB openReadOnly(String path) {
+        try (Options opts = new Options()) {
+            return openReadOnly(opts, path, false);
         }
     }
 

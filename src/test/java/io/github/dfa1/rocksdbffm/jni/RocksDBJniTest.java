@@ -108,4 +108,58 @@ class RocksDBJniTest {
             }
         }
     }
+
+    // -----------------------------------------------------------------------
+    // createIfMissing
+    // -----------------------------------------------------------------------
+
+    @Test
+    void createIfMissingFalseFailsOnNewDb(@TempDir Path tempDir) {
+        Path dbPath = tempDir.resolve("nonexistent");
+        try (Options opts = new Options().setCreateIfMissing(false)) {
+            assertThrows(RocksDBException.class,
+                () -> RocksDB.open(opts, dbPath.toString()));
+        }
+    }
+
+    @Test
+    void createIfMissingTrueCreatesDb(@TempDir Path tempDir) throws RocksDBException {
+        Path dbPath = tempDir.resolve("newdb");
+        try (Options opts = new Options().setCreateIfMissing(true);
+             RocksDB db = RocksDB.open(opts, dbPath.toString())) {
+            db.put("k".getBytes(), "v".getBytes());
+            assertArrayEquals("v".getBytes(), db.get("k".getBytes()));
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // readOnly
+    // -----------------------------------------------------------------------
+
+    @Test
+    void readOnlyAllowsReads(@TempDir Path tempDir) throws RocksDBException {
+        String path = tempDir.toString();
+        try (Options opts = new Options().setCreateIfMissing(true);
+             RocksDB rw = RocksDB.open(opts, path)) {
+            rw.put("k".getBytes(), "v".getBytes());
+        }
+        try (Options opts = new Options();
+             RocksDB ro = RocksDB.openReadOnly(opts, path)) {
+            assertArrayEquals("v".getBytes(), ro.get("k".getBytes()));
+        }
+    }
+
+    @Test
+    void readOnlyRejectsPut(@TempDir Path tempDir) throws RocksDBException {
+        String path = tempDir.toString();
+        try (Options opts = new Options().setCreateIfMissing(true);
+             RocksDB rw = RocksDB.open(opts, path)) {
+            rw.put("seed".getBytes(), "val".getBytes());
+        }
+        try (Options opts = new Options();
+             RocksDB ro = RocksDB.openReadOnly(opts, path)) {
+            assertThrows(RocksDBException.class,
+                () -> ro.put("k".getBytes(), "v".getBytes()));
+        }
+    }
 }

@@ -1,0 +1,258 @@
+package io.github.dfa1.rocksdbffm;
+
+import java.lang.foreign.*;
+import java.lang.invoke.MethodHandle;
+import java.nio.file.Path;
+
+/**
+ * FFM wrapper for rocksdb_transactiondb_t — a RocksDB database with pessimistic
+ * (locking) transaction support.
+ *
+ * <pre>{@code
+ * try (TransactionDBOptions txnDbOpts = new TransactionDBOptions();
+ *      Options opts = new Options().setCreateIfMissing(true);
+ *      TransactionDB db = TransactionDB.open(opts, txnDbOpts, path)) {
+ *
+ *     try (WriteOptions wo = new WriteOptions();
+ *          Transaction txn = db.beginTransaction(wo)) {
+ *         txn.put("key".getBytes(), "value".getBytes());
+ *         txn.commit();
+ *     }
+ * }
+ * }</pre>
+ */
+public final class TransactionDB implements AutoCloseable {
+
+    // -----------------------------------------------------------------------
+    // Method handles
+    // -----------------------------------------------------------------------
+
+    private static final MethodHandle MH_OPEN;
+    private static final MethodHandle MH_CLOSE;
+    private static final MethodHandle MH_BEGIN;
+
+    // Direct (non-transactional) operations on the TransactionDB
+    private static final MethodHandle MH_PUT;
+    private static final MethodHandle MH_DELETE;
+    private static final MethodHandle MH_GET;   // returns malloc'd char*, caller frees
+
+    private static final MethodHandle MH_FREE;
+
+    static {
+        // rocksdb_transactiondb_t* rocksdb_transactiondb_open(opts*, txnDbOpts*, name, errptr**)
+        MH_OPEN = RocksDB.lookup("rocksdb_transactiondb_open",
+            FunctionDescriptor.of(ValueLayout.ADDRESS,
+                ValueLayout.ADDRESS, ValueLayout.ADDRESS,
+                ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+        MH_CLOSE = RocksDB.lookup("rocksdb_transactiondb_close",
+            FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+
+        // rocksdb_transaction_t* rocksdb_transaction_begin(txndb*, wo*, txn_opts*, old_txn)
+        MH_BEGIN = RocksDB.lookup("rocksdb_transaction_begin",
+            FunctionDescriptor.of(ValueLayout.ADDRESS,
+                ValueLayout.ADDRESS, ValueLayout.ADDRESS,
+                ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+        // void rocksdb_transactiondb_put(txndb*, wo*, key*, klen, val*, vlen, errptr**)
+        MH_PUT = RocksDB.lookup("rocksdb_transactiondb_put",
+            FunctionDescriptor.ofVoid(
+                ValueLayout.ADDRESS, ValueLayout.ADDRESS,
+                ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
+                ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
+                ValueLayout.ADDRESS));
+
+        // void rocksdb_transactiondb_delete(txndb*, wo*, key*, klen, errptr**)
+        MH_DELETE = RocksDB.lookup("rocksdb_transactiondb_delete",
+            FunctionDescriptor.ofVoid(
+                ValueLayout.ADDRESS, ValueLayout.ADDRESS,
+                ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
+                ValueLayout.ADDRESS));
+
+        // char* rocksdb_transactiondb_get(txndb*, ro*, key*, klen, size_t* vallen, errptr**)
+        MH_GET = RocksDB.lookup("rocksdb_transactiondb_get",
+            FunctionDescriptor.of(ValueLayout.ADDRESS,
+                ValueLayout.ADDRESS, ValueLayout.ADDRESS,
+                ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
+                ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+        MH_FREE = RocksDB.lookup("rocksdb_free",
+            FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+    }
+
+    // -----------------------------------------------------------------------
+    // Thread-local auxiliaries
+    // -----------------------------------------------------------------------
+
+    private static final ThreadLocal<MemorySegment> ERR_HOLDER = ThreadLocal.withInitial(
+        () -> Arena.ofAuto().allocate(ValueLayout.ADDRESS));
+
+    private static final ThreadLocal<MemorySegment> VAL_LEN_HOLDER = ThreadLocal.withInitial(
+        () -> Arena.ofAuto().allocate(ValueLayout.JAVA_LONG));
+
+    // -----------------------------------------------------------------------
+    // Instance state
+    // -----------------------------------------------------------------------
+
+    private final MemorySegment ptr;       // rocksdb_transactiondb_t*
+    private final MemorySegment writeOpts; // default write options for direct ops
+    private final MemorySegment readOpts;  // default read options for direct ops
+
+    private TransactionDB(MemorySegment ptr, MemorySegment writeOpts, MemorySegment readOpts) {
+        this.ptr = ptr;
+        this.writeOpts = writeOpts;
+        this.readOpts = readOpts;
+    }
+
+    // -----------------------------------------------------------------------
+    // Factory
+    // -----------------------------------------------------------------------
+
+    /**
+     * Opens a TransactionDB at {@code path}.
+     * The caller retains ownership of {@code dbOptions} and {@code txnDbOptions}.
+     */
+    public static TransactionDB open(Options dbOptions, TransactionDBOptions txnDbOptions, Path path) {
+        try (Arena arena = Arena.ofConfined()) {
+            MemorySegment pathSeg = arena.allocateFrom(path.toString());
+            MemorySegment errHolder = ERR_HOLDER.get();
+            errHolder.set(ValueLayout.ADDRESS, 0, MemorySegment.NULL);
+
+            MemorySegment ptr = (MemorySegment) MH_OPEN.invokeExact(
+                dbOptions.ptr, txnDbOptions.ptr, pathSeg, errHolder);
+            checkError(errHolder);
+
+            MemorySegment writeOpts = (MemorySegment) WriteOptions.MH_CREATE.invokeExact();
+            MemorySegment readOpts  = (MemorySegment) ReadOptions.MH_CREATE.invokeExact();
+            return new TransactionDB(ptr, writeOpts, readOpts);
+        } catch (RocksDBException e) {
+            throw e;
+        } catch (Throwable t) {
+            throw new RocksDBException("Failed to open TransactionDB: " + path, t);
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // Transaction API
+    // -----------------------------------------------------------------------
+
+    /**
+     * Begins a new transaction using the supplied write options and default
+     * transaction options.
+     */
+    public Transaction beginTransaction(WriteOptions writeOptions) {
+        try (TransactionOptions txnOpts = new TransactionOptions()) {
+            return beginTransaction(writeOptions, txnOpts);
+        }
+    }
+
+    /**
+     * Begins a new transaction using the supplied write options and transaction options.
+     */
+    public Transaction beginTransaction(WriteOptions writeOptions, TransactionOptions txnOptions) {
+        try {
+            MemorySegment txnPtr = (MemorySegment) MH_BEGIN.invokeExact(
+                ptr, writeOptions.ptr, txnOptions.ptr, MemorySegment.NULL);
+            return new Transaction(txnPtr);
+        } catch (Throwable t) {
+            throw new RocksDBException("beginTransaction failed", t);
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // Direct (non-transactional) operations
+    // -----------------------------------------------------------------------
+
+    /** Direct put, bypassing any active transaction. Slow path: allocates native memory. */
+    public void put(byte[] key, byte[] value) {
+        try (Arena arena = Arena.ofConfined()) {
+            MemorySegment k = toNative(arena, key);
+            MemorySegment v = toNative(arena, value);
+            MemorySegment errHolder = ERR_HOLDER.get();
+            errHolder.set(ValueLayout.ADDRESS, 0, MemorySegment.NULL);
+            MH_PUT.invokeExact(ptr, writeOpts, k, (long) key.length, v, (long) value.length, errHolder);
+            checkError(errHolder);
+        } catch (RocksDBException e) {
+            throw e;
+        } catch (Throwable t) {
+            throw new RocksDBException("put failed", t);
+        }
+    }
+
+    /** Direct get, reading committed data only. Returns {@code null} if not found. Slow path. */
+    public byte[] get(byte[] key) {
+        try (Arena arena = Arena.ofConfined()) {
+            MemorySegment k = toNative(arena, key);
+            MemorySegment valLenSeg = VAL_LEN_HOLDER.get();
+            MemorySegment errHolder = ERR_HOLDER.get();
+            errHolder.set(ValueLayout.ADDRESS, 0, MemorySegment.NULL);
+
+            MemorySegment valPtr = (MemorySegment) MH_GET.invokeExact(
+                ptr, readOpts, k, (long) key.length, valLenSeg, errHolder);
+            checkError(errHolder);
+
+            if (MemorySegment.NULL.equals(valPtr)) return null;
+
+            long valLen = valLenSeg.get(ValueLayout.JAVA_LONG, 0);
+            byte[] result = valPtr.reinterpret(valLen).toArray(ValueLayout.JAVA_BYTE);
+            MH_FREE.invokeExact(valPtr);
+            return result;
+        } catch (RocksDBException e) {
+            throw e;
+        } catch (Throwable t) {
+            throw new RocksDBException("get failed", t);
+        }
+    }
+
+    /** Direct delete, bypassing any active transaction. Slow path. */
+    public void delete(byte[] key) {
+        try (Arena arena = Arena.ofConfined()) {
+            MemorySegment k = toNative(arena, key);
+            MemorySegment errHolder = ERR_HOLDER.get();
+            errHolder.set(ValueLayout.ADDRESS, 0, MemorySegment.NULL);
+            MH_DELETE.invokeExact(ptr, writeOpts, k, (long) key.length, errHolder);
+            checkError(errHolder);
+        } catch (RocksDBException e) {
+            throw e;
+        } catch (Throwable t) {
+            throw new RocksDBException("delete failed", t);
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // AutoCloseable
+    // -----------------------------------------------------------------------
+
+    @Override
+    public void close() {
+        try {
+            WriteOptions.MH_DESTROY.invokeExact(writeOpts);
+            ReadOptions.MH_DESTROY.invokeExact(readOpts);
+            MH_CLOSE.invokeExact(ptr);
+        } catch (Throwable t) {
+            throw new RocksDBException("TransactionDB close failed", t);
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // Helpers
+    // -----------------------------------------------------------------------
+
+    private static MemorySegment toNative(Arena arena, byte[] bytes) {
+        MemorySegment seg = arena.allocate(bytes.length);
+        MemorySegment.copy(bytes, 0, seg, ValueLayout.JAVA_BYTE, 0, bytes.length);
+        return seg;
+    }
+
+    private static void checkError(MemorySegment errHolder) {
+        MemorySegment errPtr = errHolder.get(ValueLayout.ADDRESS, 0);
+        if (!MemorySegment.NULL.equals(errPtr)) {
+            String msg = errPtr.reinterpret(Long.MAX_VALUE).getString(0);
+            try {
+                MH_FREE.invokeExact(errPtr);
+            } catch (Throwable ignored) {
+            }
+            throw new RocksDBException(msg);
+        }
+    }
+}

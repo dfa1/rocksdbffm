@@ -36,7 +36,7 @@ What features to cover
 - [x] create/open a rocksdb database
 - [x] put/get/delete
 - [x] batch
-- [ ] transaction
+- [x] transaction
 - [x] createIfMissing/readOnly
 - [ ] iterator
 - [ ] options

@@ -37,6 +37,8 @@ public final class RocksDB implements AutoCloseable {
     private static final MethodHandle MH_PINNABLESLICE_VALUE;
     private static final MethodHandle MH_PINNABLESLICE_DESTROY;
     private static final MethodHandle MH_DELETE;
+    private static final MethodHandle MH_DELETE_RANGE_CF;
+    private static final MethodHandle MH_GET_DEFAULT_CF;
     private static final MethodHandle MH_WRITE;
     private static final MethodHandle MH_WRITEOPTIONS_CREATE;
     private static final MethodHandle MH_WRITEOPTIONS_DESTROY;
@@ -88,6 +90,18 @@ public final class RocksDB implements AutoCloseable {
         MH_DELETE = lookup("rocksdb_delete",
             FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS,
                 ValueLayout.ADDRESS, ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
+
+        // void rocksdb_delete_range_cf(db*, wo*, cf*, start*, slen, end*, elen, errptr**)
+        MH_DELETE_RANGE_CF = lookup("rocksdb_delete_range_cf",
+            FunctionDescriptor.ofVoid(
+                ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS,
+                ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
+                ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
+                ValueLayout.ADDRESS));
+
+        // rocksdb_column_family_handle_t* rocksdb_get_default_column_family_handle(db*)
+        MH_GET_DEFAULT_CF = lookup("rocksdb_get_default_column_family_handle",
+            FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
         MH_WRITE = lookup("rocksdb_write",
             FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS,
@@ -284,6 +298,65 @@ public final class RocksDB implements AutoCloseable {
             Native.checkError(err);
         } catch (Throwable t) {
             throw RocksDBException.wrap("delete failed", t);
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // Public API — deleteRange (range tombstone)
+    // -----------------------------------------------------------------------
+
+    /**
+     * Deletes all keys in the half-open range [{@code startKey}, {@code endKey}).
+     * Uses the default column family via {@code rocksdb_delete_range_cf}.
+     * Slow path: copies keys into native memory.
+     */
+    public void deleteRange(byte[] startKey, byte[] endKey) {
+        try (Arena arena = Arena.ofConfined()) {
+            MemorySegment err = Native.errHolder(arena);
+            MemorySegment cf = (MemorySegment) MH_GET_DEFAULT_CF.invokeExact(dbPtr);
+            MH_DELETE_RANGE_CF.invokeExact(dbPtr, writeOptions, cf,
+                Native.toNative(arena, startKey), (long) startKey.length,
+                Native.toNative(arena, endKey),   (long) endKey.length,
+                err);
+            Native.checkError(err);
+        } catch (Throwable t) {
+            throw RocksDBException.wrap("deleteRange failed", t);
+        }
+    }
+
+    /**
+     * Deletes all keys in the half-open range [{@code startKey}, {@code endKey}).
+     * Zero-copy for direct {@link java.nio.ByteBuffer}s.
+     */
+    public void deleteRange(ByteBuffer startKey, ByteBuffer endKey) {
+        try (Arena arena = Arena.ofConfined()) {
+            MemorySegment err = Native.errHolder(arena);
+            MemorySegment cf = (MemorySegment) MH_GET_DEFAULT_CF.invokeExact(dbPtr);
+            MH_DELETE_RANGE_CF.invokeExact(dbPtr, writeOptions, cf,
+                MemorySegment.ofBuffer(startKey), (long) startKey.remaining(),
+                MemorySegment.ofBuffer(endKey),   (long) endKey.remaining(),
+                err);
+            Native.checkError(err);
+        } catch (Throwable t) {
+            throw RocksDBException.wrap("deleteRange failed", t);
+        }
+    }
+
+    /**
+     * Deletes all keys in the half-open range [{@code startKey}, {@code endKey}).
+     * Zero-copy native-first path.
+     */
+    public void deleteRange(MemorySegment startKey, MemorySegment endKey) {
+        try (Arena arena = Arena.ofConfined()) {
+            MemorySegment err = Native.errHolder(arena);
+            MemorySegment cf = (MemorySegment) MH_GET_DEFAULT_CF.invokeExact(dbPtr);
+            MH_DELETE_RANGE_CF.invokeExact(dbPtr, writeOptions, cf,
+                startKey, startKey.byteSize(),
+                endKey,   endKey.byteSize(),
+                err);
+            Native.checkError(err);
+        } catch (Throwable t) {
+            throw RocksDBException.wrap("deleteRange failed", t);
         }
     }
 

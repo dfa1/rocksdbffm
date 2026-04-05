@@ -64,7 +64,7 @@ This project is currently experimental. The table below tracks parity with `rock
 | Column Families | ❌ | Key namespace isolation |
 | Merge / MergeOperator | ❌ | Aggregation semantics |
 | MultiGet | ❌ | Bulk reads |
-| DeleteRange | ❌ | Range tombstones |
+| DeleteRange | ✅ | Range tombstones; `deleteRange` on `RocksDB` and `WriteBatch`; all three access tiers |
 | Compaction control | ❌ | Manual compaction, space reclaim |
 | SST File Ingest | ❌ | High-speed bulk loading |
 | Backup Engine | ❌ | Incremental backups |

@@ -2,6 +2,7 @@ package io.github.dfa1.rocksdbffm;
 
 import java.lang.foreign.*;
 import java.lang.invoke.MethodHandle;
+import java.nio.ByteBuffer;
 
 /**
  * FFM wrapper for rocksdb_writebatch_t.
@@ -16,6 +17,7 @@ public final class WriteBatch implements AutoCloseable {
     private static final MethodHandle MH_DESTROY;
     private static final MethodHandle MH_PUT;
     private static final MethodHandle MH_DELETE;
+    private static final MethodHandle MH_DELETE_RANGE;
     private static final MethodHandle MH_CLEAR;
     private static final MethodHandle MH_COUNT;
 
@@ -37,6 +39,13 @@ public final class WriteBatch implements AutoCloseable {
         MH_DELETE = RocksDB.lookup("rocksdb_writebatch_delete",
             FunctionDescriptor.ofVoid(
                 ValueLayout.ADDRESS,
+                ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
+
+        // void rocksdb_writebatch_delete_range(batch*, start*, slen, end*, elen)
+        MH_DELETE_RANGE = RocksDB.lookup("rocksdb_writebatch_delete_range",
+            FunctionDescriptor.ofVoid(
+                ValueLayout.ADDRESS,
+                ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
                 ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
 
         MH_CLEAR = RocksDB.lookup("rocksdb_writebatch_clear",
@@ -77,6 +86,39 @@ public final class WriteBatch implements AutoCloseable {
             MH_DELETE.invokeExact(ptr, k, (long) key.length);
         } catch (Throwable t) {
             throw new RocksDBException("writebatch delete failed", t);
+        }
+    }
+
+    /** Queues a range tombstone for [{@code startKey}, {@code endKey}). Slow path: copies keys. */
+    public void deleteRange(byte[] startKey, byte[] endKey) {
+        try (Arena arena = Arena.ofConfined()) {
+            MH_DELETE_RANGE.invokeExact(ptr,
+                Native.toNative(arena, startKey), (long) startKey.length,
+                Native.toNative(arena, endKey),   (long) endKey.length);
+        } catch (Throwable t) {
+            throw new RocksDBException("writebatch deleteRange failed", t);
+        }
+    }
+
+    /** Queues a range tombstone for [{@code startKey}, {@code endKey}). Zero-copy for direct buffers. */
+    public void deleteRange(ByteBuffer startKey, ByteBuffer endKey) {
+        try {
+            MH_DELETE_RANGE.invokeExact(ptr,
+                MemorySegment.ofBuffer(startKey), (long) startKey.remaining(),
+                MemorySegment.ofBuffer(endKey),   (long) endKey.remaining());
+        } catch (Throwable t) {
+            throw new RocksDBException("writebatch deleteRange failed", t);
+        }
+    }
+
+    /** Queues a range tombstone for [{@code startKey}, {@code endKey}). Zero-copy. */
+    public void deleteRange(MemorySegment startKey, MemorySegment endKey) {
+        try {
+            MH_DELETE_RANGE.invokeExact(ptr,
+                startKey, startKey.byteSize(),
+                endKey,   endKey.byteSize());
+        } catch (Throwable t) {
+            throw new RocksDBException("writebatch deleteRange failed", t);
         }
     }
 

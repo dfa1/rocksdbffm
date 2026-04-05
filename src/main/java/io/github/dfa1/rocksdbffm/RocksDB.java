@@ -504,21 +504,13 @@ public final class RocksDB implements AutoCloseable {
     // -----------------------------------------------------------------------
 
     /**
-     * Returns the value of a well-known DB property as a string, or
-     * {@link Optional#empty()} if the property is not supported.
+     * Returns the value of a DB property as a string, or {@link Optional#empty()}
+     * if the property is not supported by this DB instance.
+     * The returned string is copied from native memory; no manual freeing is needed.
      */
-    public Optional<String> getProperty(DBProperty property) {
-        return getProperty(property.propertyName());
-    }
-
-    /**
-     * Returns the value of a DB property by raw name, or {@link Optional#empty()}
-     * if the property is not supported. Refer to {@link DBProperty} for common names.
-     * The returned string is decoded from the native heap and does not require manual freeing.
-     */
-    public Optional<String> getProperty(String property) {
+    public Optional<String> getProperty(Property property) {
         try (Arena arena = Arena.ofConfined()) {
-            MemorySegment propSeg = arena.allocateFrom(property);
+            MemorySegment propSeg = arena.allocateFrom(property.propertyName());
             MemorySegment result = (MemorySegment) MH_PROPERTY_VALUE.invokeExact(dbPtr, propSeg);
             if (MemorySegment.NULL.equals(result)) return Optional.empty();
             String value = result.reinterpret(Long.MAX_VALUE).getString(0);
@@ -530,21 +522,12 @@ public final class RocksDB implements AutoCloseable {
     }
 
     /**
-     * Returns the value of a well-known numeric DB property, or
-     * {@link OptionalLong#empty()} if the property is not supported or is not numeric.
+     * Returns the value of a numeric DB property, or {@link OptionalLong#empty()}
+     * if the property is not supported or is not numeric.
      */
-    public OptionalLong getLongProperty(DBProperty property) {
-        return getLongProperty(property.propertyName());
-    }
-
-    /**
-     * Returns the value of a numeric DB property by raw name, or
-     * {@link OptionalLong#empty()} if the property is not supported or is not numeric.
-     * Refer to {@link DBProperty} for common names.
-     */
-    public OptionalLong getLongProperty(String property) {
+    public OptionalLong getLongProperty(Property property) {
         try (Arena arena = Arena.ofConfined()) {
-            MemorySegment propSeg = arena.allocateFrom(property);
+            MemorySegment propSeg = arena.allocateFrom(property.propertyName());
             MemorySegment out = arena.allocate(ValueLayout.JAVA_LONG);
             int rc = (int) MH_PROPERTY_INT.invokeExact(dbPtr, propSeg, out);
             if (rc != 0) return OptionalLong.empty();

@@ -292,15 +292,10 @@ public final class TransactionDB implements AutoCloseable {
     // DB Properties
     // -----------------------------------------------------------------------
 
-    /** @see RocksDB#getProperty(DBProperty) */
-    public Optional<String> getProperty(DBProperty property) {
-        return getProperty(property.propertyName());
-    }
-
-    /** @see RocksDB#getProperty(String) */
-    public Optional<String> getProperty(String property) {
+    /** @see RocksDB#getProperty(Property) */
+    public Optional<String> getProperty(Property property) {
         try (Arena arena = Arena.ofConfined()) {
-            MemorySegment propSeg = arena.allocateFrom(property);
+            MemorySegment propSeg = arena.allocateFrom(property.propertyName());
             MemorySegment result = (MemorySegment) MH_PROPERTY_VALUE.invokeExact(ptr, propSeg);
             if (MemorySegment.NULL.equals(result)) return Optional.empty();
             String value = result.reinterpret(Long.MAX_VALUE).getString(0);
@@ -311,15 +306,10 @@ public final class TransactionDB implements AutoCloseable {
         }
     }
 
-    /** @see RocksDB#getLongProperty(DBProperty) */
-    public OptionalLong getLongProperty(DBProperty property) {
-        return getLongProperty(property.propertyName());
-    }
-
-    /** @see RocksDB#getLongProperty(String) */
-    public OptionalLong getLongProperty(String property) {
+    /** @see RocksDB#getLongProperty(Property) */
+    public OptionalLong getLongProperty(Property property) {
         try (Arena arena = Arena.ofConfined()) {
-            MemorySegment propSeg = arena.allocateFrom(property);
+            MemorySegment propSeg = arena.allocateFrom(property.propertyName());
             MemorySegment out = arena.allocate(ValueLayout.JAVA_LONG);
             int rc = (int) MH_PROPERTY_INT.invokeExact(ptr, propSeg, out);
             if (rc != 0) return OptionalLong.empty();

@@ -19,7 +19,7 @@ class DBPropertiesTest {
     void getProperty_stats_isPresent(@TempDir Path dir) {
         // Given / When
         try (var db = RocksDB.open(dir)) {
-            Optional<String> stats = db.getProperty(DBProperty.STATS);
+            Optional<String> stats = db.getProperty(Property.STATS);
 
             // Then
             assertThat(stats).isPresent();
@@ -30,29 +30,22 @@ class DBPropertiesTest {
     @Test
     void getProperty_levelStats_isPresent(@TempDir Path dir) {
         try (var db = RocksDB.open(dir)) {
-            assertThat(db.getProperty(DBProperty.LEVEL_STATS)).isPresent();
+            assertThat(db.getProperty(Property.LEVEL_STATS)).isPresent();
         }
     }
 
     @Test
-    void getProperty_numFilesAtLevel0_isPresent(@TempDir Path dir) {
+    void getProperty_numFilesAtLevelL0_isPresent(@TempDir Path dir) {
         try (var db = RocksDB.open(dir)) {
             // Given
             db.put("k".getBytes(), "v".getBytes());
 
             // When
-            Optional<String> result = db.getProperty(DBProperty.numFilesAtLevel(0));
+            Optional<String> result = db.getProperty(Property.NUM_FILES_AT_LEVEL_L0);
 
             // Then — value is a digit string like "0" or "1"
             assertThat(result).isPresent();
             assertThat(result.get()).matches("\\d+");
-        }
-    }
-
-    @Test
-    void getProperty_unknownProperty_isEmpty(@TempDir Path dir) {
-        try (var db = RocksDB.open(dir)) {
-            assertThat(db.getProperty("rocksdb.this-property-does-not-exist")).isEmpty();
         }
     }
 
@@ -68,7 +61,7 @@ class DBPropertiesTest {
             db.put("k2".getBytes(), "v2".getBytes());
 
             // When
-            OptionalLong keys = db.getLongProperty(DBProperty.ESTIMATE_NUM_KEYS);
+            OptionalLong keys = db.getLongProperty(Property.ESTIMATE_NUM_KEYS);
 
             // Then — estimate may be 0 before flush, but must be non-negative
             assertThat(keys).isPresent();
@@ -77,9 +70,9 @@ class DBPropertiesTest {
     }
 
     @Test
-    void getLongProperty_numRunningFlushes_isZeroOnIdle(@TempDir Path dir) {
+    void getLongProperty_numRunningFlushes_isPresent(@TempDir Path dir) {
         try (var db = RocksDB.open(dir)) {
-            OptionalLong flushes = db.getLongProperty(DBProperty.NUM_RUNNING_FLUSHES);
+            OptionalLong flushes = db.getLongProperty(Property.NUM_RUNNING_FLUSHES);
 
             assertThat(flushes).isPresent();
             assertThat(flushes.getAsLong()).isGreaterThanOrEqualTo(0);
@@ -89,7 +82,7 @@ class DBPropertiesTest {
     @Test
     void getLongProperty_numRunningCompactions_isPresent(@TempDir Path dir) {
         try (var db = RocksDB.open(dir)) {
-            assertThat(db.getLongProperty(DBProperty.NUM_RUNNING_COMPACTIONS)).isPresent();
+            assertThat(db.getLongProperty(Property.NUM_RUNNING_COMPACTIONS)).isPresent();
         }
     }
 
@@ -97,26 +90,19 @@ class DBPropertiesTest {
     void getLongProperty_numSnapshots_incrementsWithSnapshot(@TempDir Path dir) {
         // Given
         try (var db = RocksDB.open(dir)) {
-            long before = db.getLongProperty(DBProperty.NUM_SNAPSHOTS).orElseThrow();
+            long before = db.getLongProperty(Property.NUM_SNAPSHOTS).orElseThrow();
 
             // When
             try (Snapshot snap = db.getSnapshot()) {
-                long during = db.getLongProperty(DBProperty.NUM_SNAPSHOTS).orElseThrow();
+                long during = db.getLongProperty(Property.NUM_SNAPSHOTS).orElseThrow();
 
                 // Then
                 assertThat(during).isEqualTo(before + 1);
             }
 
             // After close
-            long after = db.getLongProperty(DBProperty.NUM_SNAPSHOTS).orElseThrow();
+            long after = db.getLongProperty(Property.NUM_SNAPSHOTS).orElseThrow();
             assertThat(after).isEqualTo(before);
-        }
-    }
-
-    @Test
-    void getLongProperty_unknownProperty_isEmpty(@TempDir Path dir) {
-        try (var db = RocksDB.open(dir)) {
-            assertThat(db.getLongProperty("rocksdb.this-property-does-not-exist")).isEmpty();
         }
     }
 
@@ -132,7 +118,7 @@ class DBPropertiesTest {
              var db = TransactionDB.open(opts, txnDbOpts, dir)) {
 
             // When
-            Optional<String> stats = db.getProperty(DBProperty.STATS);
+            Optional<String> stats = db.getProperty(Property.STATS);
 
             // Then
             assertThat(stats).isPresent();
@@ -150,7 +136,7 @@ class DBPropertiesTest {
             db.put("k".getBytes(), "v".getBytes());
 
             // When / Then
-            OptionalLong keys = db.getLongProperty(DBProperty.ESTIMATE_NUM_KEYS);
+            OptionalLong keys = db.getLongProperty(Property.ESTIMATE_NUM_KEYS);
             assertThat(keys).isPresent();
             assertThat(keys.getAsLong()).isGreaterThanOrEqualTo(0);
         }

@@ -16,13 +16,14 @@ There is often a significant delay between new features appearing in the RocksDB
 the Java JNI wrappers. This is largely due to the complexity of maintaining C++ glue code. By using FFM, we can map
 C headers directly in Java, simplifying the process of supporting new C++ features.
 
-The code is mechanically generated and it can be inspected easily (as it is Java code)
+The code is mechanically generated, and it can be inspected easily (as it is normal Java code).
 
 ### 3. Safety
 
 FFM is much more safe than JNI: memory errors are not crashing the whole JVM.
 
 ### 4. Performance through Zero-Copy
+
 Exposing `MemorySegment` methods:
 - **Pinnable Slices:** Utilizes `rocksdb_get_pinned`
 - **MemorySegment & ByteBuffer:** Support for `java.lang.foreign.MemorySegment` and direct `ByteBuffer` for data transfer between Java and native code.
@@ -134,9 +135,10 @@ The project is open to contributions, particularly in the following areas:
 
 ## TODO
 
-- Create a community around this project => move away from "dfa1" user.
-- Cover all features of RocksDB in idiomatic/modern Java.
-- Use zig to cross-compile rocksdb for all major platforms (to simplify the build for windows/macos/linux).
-- Deploy to maven central.
+- Create a community around this project with the intent to merge it back into rocksdb. 
+- Cover all features of RocksDB in idiomatic Java.
 - Provide a pool for MemorySegment/ByteBuffer to make the library more
   "battery included".
+- If community is aligned: run it as separated incubating project
+  - Use zig to cross-compile rocksdb for all major platforms (to simplify the build for windows/macos/linux).
+  - Deploy to maven central.

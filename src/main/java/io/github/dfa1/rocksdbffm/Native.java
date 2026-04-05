@@ -28,6 +28,16 @@ public final class Native {
     }
 
     /**
+     * Copies {@code bytes} into a new native memory segment allocated from {@code arena}.
+     * No null-terminator is appended; use the byte length when passing to C functions.
+     */
+    public static MemorySegment toNative(Arena arena, byte[] bytes) {
+        MemorySegment seg = arena.allocate(bytes.length);
+        MemorySegment.copy(bytes, 0, seg, ValueLayout.JAVA_BYTE, 0, bytes.length);
+        return seg;
+    }
+
+    /**
      * Checks if the error holder contains a non-NULL pointer.
      * If so, throws a {@link RocksDBException} and frees the C string.
      */

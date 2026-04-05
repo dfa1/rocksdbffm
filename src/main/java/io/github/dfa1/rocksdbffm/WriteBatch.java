@@ -63,8 +63,8 @@ public final class WriteBatch implements AutoCloseable {
 
     public void put(byte[] key, byte[] value) {
         try (Arena arena = Arena.ofConfined()) {
-            MemorySegment k = toNative(arena, key);
-            MemorySegment v = toNative(arena, value);
+            MemorySegment k = Native.toNative(arena,key);
+            MemorySegment v = Native.toNative(arena,value);
             MH_PUT.invokeExact(ptr, k, (long) key.length, v, (long) value.length);
         } catch (Throwable t) {
             throw new RocksDBException("writebatch put failed", t);
@@ -73,7 +73,7 @@ public final class WriteBatch implements AutoCloseable {
 
     public void delete(byte[] key) {
         try (Arena arena = Arena.ofConfined()) {
-            MemorySegment k = toNative(arena, key);
+            MemorySegment k = Native.toNative(arena,key);
             MH_DELETE.invokeExact(ptr, k, (long) key.length);
         } catch (Throwable t) {
             throw new RocksDBException("writebatch delete failed", t);
@@ -105,9 +105,4 @@ public final class WriteBatch implements AutoCloseable {
         }
     }
 
-    private static MemorySegment toNative(Arena arena, byte[] bytes) {
-        MemorySegment seg = arena.allocate(bytes.length);
-        MemorySegment.copy(bytes, 0, seg, ValueLayout.JAVA_BYTE, 0, bytes.length);
-        return seg;
-    }
 }

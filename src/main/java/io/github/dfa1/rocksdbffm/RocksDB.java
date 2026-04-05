@@ -188,8 +188,8 @@ public final class RocksDB implements AutoCloseable {
     public void put(byte[] key, byte[] value) {
         try (Arena arena = Arena.ofConfined()) {
             MemorySegment err = Native.errHolder(arena);
-            MemorySegment keyNative = toNative(arena, key);
-            MemorySegment valNative = toNative(arena, value);
+            MemorySegment keyNative = Native.toNative(arena,key);
+            MemorySegment valNative = Native.toNative(arena,value);
 
             MH_PUT.invokeExact(dbPtr, writeOptions,
                 keyNative, (long) key.length,
@@ -209,7 +209,7 @@ public final class RocksDB implements AutoCloseable {
     public byte[] get(byte[] key) {
         try (Arena arena = Arena.ofConfined()) {
             MemorySegment err = Native.errHolder(arena);
-            MemorySegment keyNative = toNative(arena, key);
+            MemorySegment keyNative = Native.toNative(arena,key);
 
             MemorySegment pin = (MemorySegment) MH_GET_PINNED.invokeExact(
                 dbPtr, readOptions, keyNative, (long) key.length, err);
@@ -232,7 +232,7 @@ public final class RocksDB implements AutoCloseable {
     public void delete(byte[] key) {
         try (Arena arena = Arena.ofConfined()) {
             MemorySegment err = Native.errHolder(arena);
-            MemorySegment keyNative = toNative(arena, key);
+            MemorySegment keyNative = Native.toNative(arena,key);
 
             MH_DELETE.invokeExact(dbPtr, writeOptions,
                 keyNative, (long) key.length,
@@ -303,22 +303,12 @@ public final class RocksDB implements AutoCloseable {
 
     /** Returns a new iterator using the database's default read options. */
     public RocksIterator newIterator() {
-        try {
-            MemorySegment iterPtr = (MemorySegment) RocksIterator.MH_CREATE.invokeExact(dbPtr, readOptions);
-            return new RocksIterator(iterPtr);
-        } catch (Throwable t) {
-            throw new RocksDBException("newIterator failed", t);
-        }
+        return RocksIterator.create(dbPtr, readOptions);
     }
 
     /** Returns a new iterator using the supplied {@code readOptions}. */
     public RocksIterator newIterator(ReadOptions readOptions) {
-        try {
-            MemorySegment iterPtr = (MemorySegment) RocksIterator.MH_CREATE.invokeExact(dbPtr, readOptions.ptr);
-            return new RocksIterator(iterPtr);
-        } catch (Throwable t) {
-            throw new RocksDBException("newIterator failed", t);
-        }
+        return RocksIterator.create(dbPtr, readOptions.ptr);
     }
 
     // -----------------------------------------------------------------------
@@ -361,10 +351,4 @@ public final class RocksDB implements AutoCloseable {
             fd);
     }
 
-    /** Copy byte[] into native memory without null-termination. */
-    private static MemorySegment toNative(Arena arena, byte[] bytes) {
-        MemorySegment seg = arena.allocate(bytes.length);
-        MemorySegment.copy(bytes, 0, seg, ValueLayout.JAVA_BYTE, 0, bytes.length);
-        return seg;
-    }
 }

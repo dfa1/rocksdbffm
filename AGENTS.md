@@ -76,21 +76,46 @@ Performance gains are a primary goal. Use `JMH` to validate changes.
 
 ---
 
-## 🗺 Feature Map
+## 🗺 Source Map
 
-| Feature | Status | Notes |
-| :--- | :--- | :--- |
-| DB Open/Create | ✅ Done | Options, CreateIfMissing, ReadOnly |
-| Put/Get/Delete | ✅ Done | byte[], ByteBuffer, MemorySegment |
-| WriteBatch | ✅ Done | |
-| Transactions | ✅ Done | |
-| Checkpoints | ✅ Done | |
-| Table Options | ✅ Done | BlockBasedTableConfig, LRUCache, FilterPolicy |
-| Iterators | ⏳ In Progress | |
-| Statistics | ❌ Pending | |
-| Tracing | ❌ Pending | |
-| Secondary Keys | ❌ Pending | |
-| Module Support | ⏳ In Progress | |
+For the full feature status and roadmap see `README.md`. This section maps each implemented feature to its Java source files so agents can quickly find the right file to extend.
+
+### Implemented features → source files
+
+| Feature | Java source files |
+| :--- | :--- |
+| DB Open/Close | `RocksDB.java` |
+| Put/Get/Delete | `RocksDB.java` |
+| Options | `Options.java`, `ReadOptions.java`, `WriteOptions.java` |
+| WriteBatch | `WriteBatch.java` |
+| Transactions | `Transaction.java`, `TransactionDB.java`, `TransactionDBOptions.java`, `TransactionOptions.java` |
+| Checkpoints | `Checkpoint.java` |
+| Table Options | `BlockBasedTableConfig.java`, `LRUCache.java`, `FilterPolicy.java` |
+| Iterators | `RocksIterator.java` |
+| Statistics | `HistogramType.java`, `TickerType.java`, `StatsLevel.java`, `StatisticsHistogramData.java` |
+| Shared utilities | `Native.java` (`errHolder`, `checkError`, `toNative`), `MemorySize.java`, `RocksDBException.java` |
+
+### Missing features — key C API entry points
+
+| Feature | Key C API symbols |
+| :--- | :--- |
+| **Snapshots** | `rocksdb_create_snapshot`, `rocksdb_release_snapshot`, `rocksdb_readoptions_set_snapshot` |
+| **Column Families** | `rocksdb_open_column_families`, `rocksdb_create_column_family`, `rocksdb_drop_column_family` |
+| **Merge / MergeOperator** | `rocksdb_merge`, `rocksdb_writebatch_merge`, `rocksdb_mergeoperator_create` |
+| **Flush** | `rocksdb_flush`, `rocksdb_flushoptions_create`, `rocksdb_flushoptions_set_wait` |
+| **Compaction control** | `rocksdb_compact_range`, `rocksdb_suggest_compact_range`, `rocksdb_disable_file_deletions` |
+| **MultiGet** | `rocksdb_multi_get`, batched `rocksdb_slice_t` variant |
+| **DB Properties** | `rocksdb_property_value`, `rocksdb_property_int`, `rocksdb_approximate_sizes` |
+| **KeyMayExist** | `rocksdb_key_may_exist` |
+| **DeleteRange** | `rocksdb_delete_range`, `rocksdb_writebatch_delete_range` |
+| **SST File Ingest** | `rocksdb_ingestexternalfile`, `rocksdb_sstfilewriter_*` |
+| **Backup Engine** | `rocksdb_backup_engine_open`, `rocksdb_backup_engine_create_new_backup` |
+| **TTL DB** | `rocksdb_open_with_ttl` |
+| **Optimistic Transactions** | `rocksdb_optimistictransactiondb_*` |
+| **CompactionFilter** | `rocksdb_compactionfilter_create` |
+| **WAL Iterator** | `rocksdb_get_updates_since`, `rocksdb_wal_iterator_*` |
+| **Rate Limiter** | `rocksdb_ratelimiter_create`, `rocksdb_options_set_ratelimiter` |
+| **Secondary DB** | `rocksdb_open_as_secondary`, `rocksdb_try_catch_up_with_primary` |
 
 ---
 

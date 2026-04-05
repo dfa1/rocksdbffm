@@ -30,20 +30,42 @@ Benchmarks performed on JDK 25 (Apple M-series) compared to JNI:
 
 ## Project Status
 
-This project is currently experimental. Core features are implemented, but several advanced RocksDB features are still in development.
+This project is currently experimental. Core features are implemented, but several advanced RocksDB features are still in progress.
 
-**Implemented:**
-- Database Open/Create (Options, CreateIfMissing, ReadOnly)
-- Put / Get / Delete
-- WriteBatch & Transactions
-- Checkpoints
-- Table Configuration (BlockBasedTableConfig, LRUCache, FilterPolicy)
+### Implemented
 
-**In Progress:**
-- Iterators
-- Statistics & Tracing
-- Secondary Keys
-- Full `MemorySegment` native API
+| Feature | Notes |
+| :--- | :--- |
+| DB Open/Create | Options, CreateIfMissing, ReadOnly |
+| Put/Get/Delete | byte[], ByteBuffer, MemorySegment; zero-copy via PinnableSlice |
+| WriteBatch | Atomic multi-op writes |
+| Transactions (pessimistic) | TransactionDB, savepoints, get-for-update |
+| Checkpoints | Point-in-time on-disk snapshot |
+| Table Options | BlockBasedTableConfig, LRUCache, FilterPolicy (Bloom) |
+| Iterators | seekToFirst/Last, seek, seekForPrev, next/prev; all three access tiers |
+| Statistics | TickerType, HistogramType, StatsLevel |
+
+### Roadmap — rocksdbjni parity gaps
+
+| Feature | Priority | Notes |
+| :--- | :--- | :--- |
+| **Snapshots** | 🔴 High | Point-in-time consistent reads |
+| **Column Families** | 🔴 High | Key namespace isolation |
+| **Merge / MergeOperator** | 🔴 High | Aggregation semantics |
+| **Flush** | 🔴 High | Explicit durability control |
+| **Compaction control** | 🟠 Medium | Manual compaction, space reclaim |
+| **MultiGet** | 🟠 Medium | Bulk reads |
+| **DB Properties** | 🟠 Medium | Introspection and monitoring |
+| **KeyMayExist** | 🟠 Medium | Bloom filter fast-path |
+| **DeleteRange** | 🟠 Medium | Range tombstones |
+| **SST File Ingest** | 🟠 Medium | High-speed bulk loading |
+| **Backup Engine** | 🟡 Low | Incremental backups |
+| **TTL DB** | 🟡 Low | Auto-expiring keys |
+| **Optimistic Transactions** | 🟡 Low | Lock-free transactions |
+| **CompactionFilter** | 🟡 Low | Custom compaction logic |
+| **WAL Iterator** | 🟡 Low | Change log streaming |
+| **Rate Limiter** | 🟡 Low | Write rate limiting |
+| **Secondary DB** | 🟡 Low | Read-only replicas |
 
 ## Development Approach
 

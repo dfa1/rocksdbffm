@@ -115,7 +115,7 @@ This is a heavily AI-driven project. We intend to continue using AI as a corners
 - JDK 25+.
 - RocksDB installed locally (e.g., `brew install rocksdb` on macOS).
 > [!WARNING]
->  this works only in MacOS when rocksdb is installed
+>  this works only in macOS when rocksdb is installed
 
 ### Build and Test
 ```bash
@@ -140,5 +140,5 @@ The project is open to contributions, particularly in the following areas:
 - Provide a pool for MemorySegment/ByteBuffer to make the library more
   "battery included".
 - If community is aligned: run it as separated incubating project
-  - Use zig to cross-compile rocksdb for all major platforms (to simplify the build for windows/macos/linux).
+  - Use zig to cross-compile rocksdb for all major platforms (to simplify the build for windows/macOS/linux).
   - Deploy to maven central.

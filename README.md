@@ -44,43 +44,36 @@ Benchmarks performed on JDK 25 (Apple M-series) compared to JNI:
 
 *Note: Reads benefit from `PinnableSlice` which eliminates intermediate copies. Writes are bound by WAL/memtable performance.*
 
-## Project Status
+## Roadmap
 
-This project is currently experimental. Core features are implemented, but several advanced RocksDB features are still in progress.
+This project is currently experimental. The table below tracks parity with `rocksdbjni`.
 
-### Implemented
-
-| Feature | Notes |
-| :--- | :--- |
-| DB Open/Create | Options, CreateIfMissing, ReadOnly |
-| Put/Get/Delete | byte[], ByteBuffer, MemorySegment; zero-copy via PinnableSlice |
-| WriteBatch | Atomic multi-op writes |
-| Transactions (pessimistic) | TransactionDB, savepoints, get-for-update |
-| Checkpoints | Point-in-time on-disk snapshot |
-| Table Options | BlockBasedTableConfig, LRUCache, FilterPolicy (Bloom) |
-| Iterators | seekToFirst/Last, seek, seekForPrev, next/prev; all three access tiers |
-| Snapshots | Point-in-time consistent reads; `ReadOptions.setSnapshot`, sequence numbers |
-| Flush | `flush(FlushOptions)`, `flushWal(boolean sync)`; sync/async modes |
-| DB Properties | `getProperty(DBProperty)` → `Optional<String>`, `getLongProperty(DBProperty)` → `OptionalLong`; well-known names in `DBProperty` enum |
-| Statistics | TickerType, HistogramType, StatsLevel |
-
-### Roadmap — rocksdbjni parity gaps
-
-| Feature | Priority | Notes |
-| :--- | :--- | :--- |
-| **Column Families** | 🔴 High | Key namespace isolation |
-| **Merge / MergeOperator** | 🔴 High | Aggregation semantics |
-| **Compaction control** | 🟠 Medium | Manual compaction, space reclaim |
-| **MultiGet** | 🟠 Medium | Bulk reads |
-| **DeleteRange** | 🟠 Medium | Range tombstones |
-| **SST File Ingest** | 🟠 Medium | High-speed bulk loading |
-| **Backup Engine** | 🟡 Low | Incremental backups |
-| **TTL DB** | 🟡 Low | Auto-expiring keys |
-| **Optimistic Transactions** | 🟡 Low | Lock-free transactions |
-| **CompactionFilter** | 🟡 Low | Custom compaction logic |
-| **WAL Iterator** | 🟡 Low | Change log streaming |
-| **Rate Limiter** | 🟡 Low | Write rate limiting |
-| **Secondary DB** | 🟡 Low | Read-only replicas |
+| Feature | Status | Notes |
+| :--- | :---: | :--- |
+| DB Open/Create | ✅ | Options, CreateIfMissing, ReadOnly |
+| Put/Get/Delete | ✅ | byte[], ByteBuffer, MemorySegment; zero-copy via PinnableSlice |
+| WriteBatch | ✅ | Atomic multi-op writes |
+| Transactions (pessimistic) | ✅ | TransactionDB, savepoints, get-for-update |
+| Checkpoints | ✅ | Point-in-time on-disk snapshot |
+| Table Options | ✅ | BlockBasedTableConfig, LRUCache, FilterPolicy (Bloom) |
+| Iterators | ✅ | seekToFirst/Last, seek, seekForPrev, next/prev; all three access tiers |
+| Snapshots | ✅ | Point-in-time consistent reads; `ReadOptions.setSnapshot`, sequence numbers |
+| Flush | ✅ | `flush(FlushOptions)`, `flushWal(boolean sync)`; sync/async modes |
+| DB Properties | ✅ | `getProperty(DBProperty)` → `Optional<String>`, `getLongProperty(DBProperty)` → `OptionalLong` |
+| Statistics | ✅ | TickerType, HistogramType, StatsLevel |
+| Column Families | ❌ | Key namespace isolation |
+| Merge / MergeOperator | ❌ | Aggregation semantics |
+| MultiGet | ❌ | Bulk reads |
+| DeleteRange | ❌ | Range tombstones |
+| Compaction control | ❌ | Manual compaction, space reclaim |
+| SST File Ingest | ❌ | High-speed bulk loading |
+| Backup Engine | ❌ | Incremental backups |
+| TTL DB | ❌ | Auto-expiring keys |
+| Optimistic Transactions | ❌ | Lock-free transactions |
+| CompactionFilter | ❌ | Custom compaction logic |
+| WAL Iterator | ❌ | Change log streaming |
+| Rate Limiter | ❌ | Write rate limiting |
+| Secondary DB | ❌ | Read-only replicas |
 
 ## Design Choices
 

@@ -69,6 +69,29 @@ This project is currently experimental. Core features are implemented, but sever
 | **Rate Limiter** | 🟡 Low | Write rate limiting |
 | **Secondary DB** | 🟡 Low | Read-only replicas |
 
+## Design Choices
+
+Several deliberate decisions set this library apart from `rocksdbjni`.
+
+### Modern Java
+Requires JDK 21+. The API uses `java.lang.foreign` (FFM), records, sealed types, and pattern matching where they reduce boilerplate or improve safety. There is no legacy compatibility shim.
+
+### Exceptions for all errors
+Every operation that can fail throws `RocksDBException` (an unchecked exception). `rocksdbjni` historically returned `null`, `-1`, or relied on status objects that callers could silently ignore. Here a failure is always loud.
+
+### Domain primitives instead of raw scalars
+Raw numeric types carry no unit information and cannot be validated at construction time.
+
+| Concept | rocksdbjni | rocksdbffm |
+| :--- | :--- | :--- |
+| Cache / buffer sizes | `long` (bytes, silently) | `MemorySize.ofMB(64)` |
+| Snapshot position | `long` | `SequenceNumber` |
+
+Both types are immutable, `Comparable`, and reject invalid values at construction — an illegal value cannot be created and therefore cannot be passed anywhere.
+
+### `Path` for filesystem operations
+All methods that accept a filesystem location (open, checkpoint, backup, …) take `java.nio.file.Path` instead of `String`. This prevents confusion between absolute and relative paths, integrates naturally with the NIO file API, and rules out accidentally passing non-path strings.
+
 ## Development Approach
 
 This is a heavily AI-driven project. We intend to continue using AI as a cornerstone of our development process, from mapping C headers to optimizing the FFM implementation.

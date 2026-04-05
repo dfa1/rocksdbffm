@@ -298,6 +298,30 @@ public final class RocksDB implements AutoCloseable {
     }
 
     // -----------------------------------------------------------------------
+    // Iterator
+    // -----------------------------------------------------------------------
+
+    /** Returns a new iterator using the database's default read options. */
+    public RocksIterator newIterator() {
+        try {
+            MemorySegment iterPtr = (MemorySegment) RocksIterator.MH_CREATE.invokeExact(dbPtr, readOptions);
+            return new RocksIterator(iterPtr);
+        } catch (Throwable t) {
+            throw new RocksDBException("newIterator failed", t);
+        }
+    }
+
+    /** Returns a new iterator using the supplied {@code readOptions}. */
+    public RocksIterator newIterator(ReadOptions readOptions) {
+        try {
+            MemorySegment iterPtr = (MemorySegment) RocksIterator.MH_CREATE.invokeExact(dbPtr, readOptions.ptr);
+            return new RocksIterator(iterPtr);
+        } catch (Throwable t) {
+            throw new RocksDBException("newIterator failed", t);
+        }
+    }
+
+    // -----------------------------------------------------------------------
     // Batch write
     // -----------------------------------------------------------------------
 

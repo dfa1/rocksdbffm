@@ -148,7 +148,8 @@ public final class RocksDB implements AutoCloseable {
     // Instance state
     // -----------------------------------------------------------------------
 
-    private final MemorySegment dbPtr;
+    /** Package-private: accessed by Checkpoint. */
+    final MemorySegment dbPtr;
     private final MemorySegment writeOptions;
     private final MemorySegment readOptions;
 
@@ -415,8 +416,8 @@ public final class RocksDB implements AutoCloseable {
         return seg;
     }
 
-    /** Check errHolder after a C call; throws RocksDBException if an error was set. */
-    private static void checkError(MemorySegment errHolder) {
+    /** Package-private: check errHolder after a C call; throws RocksDBException if an error was set. */
+    static void checkError(MemorySegment errHolder) {
         MemorySegment errPtr = errHolder.get(ValueLayout.ADDRESS, 0);
         if (!MemorySegment.NULL.equals(errPtr)) {
             String msg = errPtr.reinterpret(Long.MAX_VALUE).getString(0);

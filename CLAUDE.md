@@ -55,7 +55,7 @@ What features to cover
 – [ ] secondary keys
 - [ ] `ByteBuffer` pool and some examples
 - [ ] `MemorySegment` version
-- [ ] checkpoint
+- [x] checkpoint
 - [ ] module-info.java and full module support
 - any other feature users will request
 

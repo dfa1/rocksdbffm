@@ -2,6 +2,7 @@ package com.example.ffm;
 
 import java.lang.foreign.*;
 import java.lang.invoke.MethodHandle;
+import java.nio.ByteBuffer;
 
 /**
  * FFM-based wrapper around the native RocksDB C library.
@@ -177,6 +178,57 @@ public final class RocksDB implements AutoCloseable {
             byte[] value = result.reinterpret(valLen).toArray(ValueLayout.JAVA_BYTE);
             MH_FREE.invokeExact(result);
             return value;
+        } catch (RocksDBException e) {
+            throw e;
+        } catch (Throwable t) {
+            throw new RocksDBException("get failed", t);
+        }
+    }
+
+    /** Put using direct ByteBuffers — zero-copy path from position to limit. */
+    public void put(ByteBuffer key, ByteBuffer value) {
+        MemorySegment keyNative = MemorySegment.ofBuffer(key);
+        MemorySegment valNative = MemorySegment.ofBuffer(value);
+        try (Arena arena = Arena.ofConfined()) {
+            MemorySegment errHolder = arena.allocate(ValueLayout.ADDRESS);
+            errHolder.set(ValueLayout.ADDRESS, 0, MemorySegment.NULL);
+            MH_PUT.invokeExact(dbPtr, writeOptions,
+                keyNative, (long) key.remaining(),
+                valNative, (long) value.remaining(),
+                errHolder);
+            checkError(errHolder);
+        } catch (RocksDBException e) {
+            throw e;
+        } catch (Throwable t) {
+            throw new RocksDBException("put failed", t);
+        }
+    }
+
+    /**
+     * Get using direct ByteBuffers — copies result into value buffer.
+     * Returns the actual value length, or -1 if not found.
+     */
+    public int get(ByteBuffer key, ByteBuffer value) {
+        try (Arena arena = Arena.ofConfined()) {
+            MemorySegment keyNative = MemorySegment.ofBuffer(key);
+            MemorySegment valLenHolder = arena.allocate(ValueLayout.JAVA_LONG);
+            MemorySegment errHolder = arena.allocate(ValueLayout.ADDRESS);
+            errHolder.set(ValueLayout.ADDRESS, 0, MemorySegment.NULL);
+
+            MemorySegment result = (MemorySegment) MH_GET.invokeExact(
+                dbPtr, readOptions,
+                keyNative, (long) key.remaining(),
+                valLenHolder, errHolder);
+            checkError(errHolder);
+
+            if (MemorySegment.NULL.equals(result)) return -1;
+
+            long valLen = valLenHolder.get(ValueLayout.JAVA_LONG, 0);
+            int toCopy = (int) Math.min(valLen, value.remaining());
+            MemorySegment.ofBuffer(value).copyFrom(result.reinterpret(toCopy));
+            value.position(value.position() + toCopy);
+            MH_FREE.invokeExact(result);
+            return (int) valLen;
         } catch (RocksDBException e) {
             throw e;
         } catch (Throwable t) {

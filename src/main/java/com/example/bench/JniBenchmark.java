@@ -2,9 +2,12 @@ package com.example.bench;
 
 import org.openjdk.jmh.annotations.*;
 import org.rocksdb.Options;
+import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksDB;
+import org.rocksdb.WriteOptions;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
@@ -28,8 +31,14 @@ public class JniBenchmark {
 
     private RocksDB db;
     private Options options;
+    private WriteOptions writeOptions;
+    private ReadOptions readOptions;
     private Path dbPath;
-    private byte[][] readKeys;
+
+    private ByteBuffer writeKeyBuf;
+    private ByteBuffer writeValBuf;
+    private ByteBuffer[] readKeyBufs;
+    private ByteBuffer readValBuf;
 
     @State(Scope.Thread)
     public static class Counter {
@@ -41,12 +50,22 @@ public class JniBenchmark {
         dbPath = Files.createTempDirectory("bench-jni-");
         options = new Options().setCreateIfMissing(true);
         db = RocksDB.open(options, dbPath.toString());
+        writeOptions = new WriteOptions();
+        readOptions = new ReadOptions();
 
-        readKeys = new byte[NUM_KEYS][];
+        writeKeyBuf = ByteBuffer.allocateDirect(WRITE_KEY.length);
+        writeKeyBuf.put(WRITE_KEY).flip();
+        writeValBuf = ByteBuffer.allocateDirect(WRITE_VALUE.length);
+        writeValBuf.put(WRITE_VALUE).flip();
+
+        readKeyBufs = new ByteBuffer[NUM_KEYS];
+        readValBuf = ByteBuffer.allocateDirect(64);
         byte[] value = "read-value-data-0123456789".getBytes();
         for (int i = 0; i < NUM_KEYS; i++) {
-            readKeys[i] = ("key-" + i).getBytes();
-            db.put(readKeys[i], value);
+            byte[] k = ("key-" + i).getBytes();
+            readKeyBufs[i] = ByteBuffer.allocateDirect(k.length);
+            readKeyBufs[i].put(k).flip();
+            db.put(k, value);
         }
     }
 
@@ -54,17 +73,24 @@ public class JniBenchmark {
     public void teardown() throws Exception {
         db.close();
         options.close();
+        writeOptions.close();
+        readOptions.close();
         deleteDir(dbPath);
     }
 
     @Benchmark
     public void writes() throws Exception {
-        db.put(WRITE_KEY, WRITE_VALUE);
+        writeKeyBuf.rewind();
+        writeValBuf.rewind();
+        db.put(writeOptions, writeKeyBuf, writeValBuf);
     }
 
     @Benchmark
-    public byte[] reads(Counter counter) throws Exception {
-        return db.get(readKeys[counter.index++ % NUM_KEYS]);
+    public int reads(Counter counter) throws Exception {
+        ByteBuffer key = readKeyBufs[counter.index++ % NUM_KEYS];
+        key.rewind();
+        readValBuf.clear();
+        return db.get(readOptions, key, readValBuf);
     }
 
     private static void deleteDir(Path dir) throws IOException {

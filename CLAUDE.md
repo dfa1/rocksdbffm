@@ -39,7 +39,7 @@ What features to cover
 - [x] transaction
 - [x] createIfMissing/readOnly
 - [ ] iterator
-- [ ] options
+- [x] options (table options: BlockBasedTableConfig, LRUCache, FilterPolicy)
 - [ ] statistics
 - [ ] tracing
 – [ ] secondary keys

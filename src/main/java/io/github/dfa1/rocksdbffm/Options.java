@@ -23,6 +23,13 @@ public final class Options implements AutoCloseable {
     static final MethodHandle MH_SET_CREATE_IF_MISSING;
     static final MethodHandle MH_GET_CREATE_IF_MISSING;
     private static final MethodHandle MH_SET_BLOCK_BASED_TABLE_FACTORY;
+    private static final MethodHandle MH_ENABLE_STATISTICS;
+    private static final MethodHandle MH_SET_STATISTICS_LEVEL;
+    private static final MethodHandle MH_GET_STATISTICS_LEVEL;
+    private static final MethodHandle MH_STATISTICS_GET_STRING;
+    private static final MethodHandle MH_STATISTICS_GET_TICKER_COUNT;
+    private static final MethodHandle MH_STATISTICS_GET_HISTOGRAM_DATA;
+    private static final MethodHandle MH_FREE;
 
     static {
         MH_CREATE = RocksDB.lookup("rocksdb_options_create",
@@ -41,6 +48,27 @@ public final class Options implements AutoCloseable {
         MH_SET_BLOCK_BASED_TABLE_FACTORY = RocksDB.lookup(
             "rocksdb_options_set_block_based_table_factory",
             FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+        MH_ENABLE_STATISTICS = RocksDB.lookup("rocksdb_options_enable_statistics",
+            FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+
+        MH_SET_STATISTICS_LEVEL = RocksDB.lookup("rocksdb_options_set_statistics_level",
+            FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
+
+        MH_GET_STATISTICS_LEVEL = RocksDB.lookup("rocksdb_options_get_statistics_level",
+            FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
+
+        MH_STATISTICS_GET_STRING = RocksDB.lookup("rocksdb_options_statistics_get_string",
+            FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+        MH_STATISTICS_GET_TICKER_COUNT = RocksDB.lookup("rocksdb_options_statistics_get_ticker_count",
+            FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
+
+        MH_STATISTICS_GET_HISTOGRAM_DATA = RocksDB.lookup("rocksdb_options_statistics_get_histogram_data",
+            FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
+
+        MH_FREE = RocksDB.lookup("rocksdb_free",
+            FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
     }
 
     /** Package-private: accessed by RocksDB.open(). */
@@ -72,6 +100,67 @@ public final class Options implements AutoCloseable {
             return ((byte) MH_GET_CREATE_IF_MISSING.invokeExact(ptr)) != 0;
         } catch (Throwable t) {
             throw new RocksDBException("getCreateIfMissing failed", t);
+        }
+    }
+
+    /**
+     * Enables statistics gathering for this DB.
+     */
+    public Options enableStatistics() {
+        try {
+            MH_ENABLE_STATISTICS.invokeExact(ptr);
+        } catch (Throwable t) {
+            throw new RocksDBException("enableStatistics failed", t);
+        }
+        return this;
+    }
+
+    public Options setStatisticsLevel(StatsLevel level) {
+        try {
+            MH_SET_STATISTICS_LEVEL.invokeExact(ptr, level.getValue());
+        } catch (Throwable t) {
+            throw new RocksDBException("setStatisticsLevel failed", t);
+        }
+        return this;
+    }
+
+    public StatsLevel getStatisticsLevel() {
+        try {
+            int level = (int) MH_GET_STATISTICS_LEVEL.invokeExact(ptr);
+            for (StatsLevel l : StatsLevel.values()) {
+                if (l.getValue() == level) return l;
+            }
+            return StatsLevel.DISABLE_ALL;
+        } catch (Throwable t) {
+            throw new RocksDBException("getStatisticsLevel failed", t);
+        }
+    }
+
+    public String getStatisticsString() {
+        try {
+            MemorySegment strPtr = (MemorySegment) MH_STATISTICS_GET_STRING.invokeExact(ptr);
+            if (MemorySegment.NULL.equals(strPtr)) return null;
+            String result = strPtr.reinterpret(Long.MAX_VALUE).getString(0);
+            MH_FREE.invokeExact(strPtr);
+            return result;
+        } catch (Throwable t) {
+            throw new RocksDBException("getStatisticsString failed", t);
+        }
+    }
+
+    public long getTickerCount(TickerType ticker) {
+        try {
+            return (long) MH_STATISTICS_GET_TICKER_COUNT.invokeExact(ptr, ticker.getValue());
+        } catch (Throwable t) {
+            throw new RocksDBException("getTickerCount failed", t);
+        }
+    }
+
+    public void getHistogramData(HistogramType histogram, StatisticsHistogramData data) {
+        try {
+            MH_STATISTICS_GET_HISTOGRAM_DATA.invokeExact(ptr, histogram.getValue(), data.ptr);
+        } catch (Throwable t) {
+            throw new RocksDBException("getHistogramData failed", t);
         }
     }
 

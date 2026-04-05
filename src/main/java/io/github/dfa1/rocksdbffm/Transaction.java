@@ -90,12 +90,6 @@ public final class Transaction implements AutoCloseable {
             FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
     }
 
-    private static final ThreadLocal<MemorySegment> ERR_HOLDER = ThreadLocal.withInitial(
-        () -> Arena.ofAuto().allocate(ValueLayout.ADDRESS));
-
-    private static final ThreadLocal<MemorySegment> VAL_LEN_HOLDER = ThreadLocal.withInitial(
-        () -> Arena.ofAuto().allocate(ValueLayout.JAVA_LONG));
-
     private final MemorySegment ptr;
 
     /** Package-private: created by TransactionDB. */
@@ -109,33 +103,23 @@ public final class Transaction implements AutoCloseable {
 
     /** Stages a put inside this transaction. Slow path: allocates native memory for key/value. */
     public void put(byte[] key, byte[] value) {
-        try (Arena arena = Arena.ofConfined()) {
-            MemorySegment k = toNative(arena, key);
-            MemorySegment v = toNative(arena, value);
-            MemorySegment errHolder = ERR_HOLDER.get();
-            errHolder.set(ValueLayout.ADDRESS, 0, MemorySegment.NULL);
-            MH_PUT.invokeExact(ptr, k, (long) key.length, v, (long) value.length, errHolder);
-            checkError(errHolder);
-        } catch (RocksDBException e) {
-            throw e;
-        } catch (Throwable t) {
-            throw new RocksDBException("transaction put failed", t);
-        }
+        Native.check(err -> {
+            try (Arena arena = Arena.ofConfined()) {
+                MemorySegment k = toNative(arena, key);
+                MemorySegment v = toNative(arena, value);
+                MH_PUT.invokeExact(ptr, k, (long) key.length, v, (long) value.length, err);
+            }
+        });
     }
 
     /** Stages a delete inside this transaction. Slow path: allocates native memory for key. */
     public void delete(byte[] key) {
-        try (Arena arena = Arena.ofConfined()) {
-            MemorySegment k = toNative(arena, key);
-            MemorySegment errHolder = ERR_HOLDER.get();
-            errHolder.set(ValueLayout.ADDRESS, 0, MemorySegment.NULL);
-            MH_DELETE.invokeExact(ptr, k, (long) key.length, errHolder);
-            checkError(errHolder);
-        } catch (RocksDBException e) {
-            throw e;
-        } catch (Throwable t) {
-            throw new RocksDBException("transaction delete failed", t);
-        }
+        Native.check(err -> {
+            try (Arena arena = Arena.ofConfined()) {
+                MemorySegment k = toNative(arena, key);
+                MH_DELETE.invokeExact(ptr, k, (long) key.length, err);
+            }
+        });
     }
 
     // -----------------------------------------------------------------------
@@ -149,28 +133,23 @@ public final class Transaction implements AutoCloseable {
      * <p>Slow path: allocates native memory for the key.
      */
     public byte[] get(ReadOptions readOptions, byte[] key) {
-        try (Arena arena = Arena.ofConfined()) {
-            MemorySegment k = toNative(arena, key);
-            MemorySegment errHolder = ERR_HOLDER.get();
-            errHolder.set(ValueLayout.ADDRESS, 0, MemorySegment.NULL);
+        return Native.check(err -> {
+            try (Arena arena = Arena.ofConfined()) {
+                MemorySegment k = toNative(arena, key);
 
-            MemorySegment pin = (MemorySegment) MH_GET_PINNED.invokeExact(
-                ptr, readOptions.ptr, k, (long) key.length, errHolder);
-            checkError(errHolder);
+                MemorySegment pin = (MemorySegment) MH_GET_PINNED.invokeExact(
+                    ptr, readOptions.ptr, k, (long) key.length, err);
 
-            if (MemorySegment.NULL.equals(pin)) return null;
+                if (MemorySegment.NULL.equals(pin)) return null;
 
-            MemorySegment valLenSeg = VAL_LEN_HOLDER.get();
-            MemorySegment valPtr = (MemorySegment) MH_PINNABLESLICE_VALUE.invokeExact(pin, valLenSeg);
-            long valLen = valLenSeg.get(ValueLayout.JAVA_LONG, 0);
-            byte[] result = valPtr.reinterpret(valLen).toArray(ValueLayout.JAVA_BYTE);
-            MH_PINNABLESLICE_DESTROY.invokeExact(pin);
-            return result;
-        } catch (RocksDBException e) {
-            throw e;
-        } catch (Throwable t) {
-            throw new RocksDBException("transaction get failed", t);
-        }
+                MemorySegment valLenSeg = arena.allocate(ValueLayout.JAVA_LONG);
+                MemorySegment valPtr = (MemorySegment) MH_PINNABLESLICE_VALUE.invokeExact(pin, valLenSeg);
+                long valLen = valLenSeg.get(ValueLayout.JAVA_LONG, 0);
+                byte[] result = valPtr.reinterpret(valLen).toArray(ValueLayout.JAVA_BYTE);
+                MH_PINNABLESLICE_DESTROY.invokeExact(pin);
+                return result;
+            }
+        });
     }
 
     /**
@@ -180,28 +159,23 @@ public final class Transaction implements AutoCloseable {
      * @param exclusive if true, acquires an exclusive (write) lock; otherwise a shared (read) lock
      */
     public byte[] getForUpdate(ReadOptions readOptions, byte[] key, boolean exclusive) {
-        try (Arena arena = Arena.ofConfined()) {
-            MemorySegment k = toNative(arena, key);
-            MemorySegment valLenSeg = VAL_LEN_HOLDER.get();
-            MemorySegment errHolder = ERR_HOLDER.get();
-            errHolder.set(ValueLayout.ADDRESS, 0, MemorySegment.NULL);
+        return Native.check(err -> {
+            try (Arena arena = Arena.ofConfined()) {
+                MemorySegment k = toNative(arena, key);
+                MemorySegment valLenSeg = arena.allocate(ValueLayout.JAVA_LONG);
 
-            MemorySegment valPtr = (MemorySegment) MH_GET_FOR_UPDATE.invokeExact(
-                ptr, readOptions.ptr, k, (long) key.length,
-                valLenSeg, exclusive ? (byte) 1 : (byte) 0, errHolder);
-            checkError(errHolder);
+                MemorySegment valPtr = (MemorySegment) MH_GET_FOR_UPDATE.invokeExact(
+                    ptr, readOptions.ptr, k, (long) key.length,
+                    valLenSeg, exclusive ? (byte) 1 : (byte) 0, err);
 
-            if (MemorySegment.NULL.equals(valPtr)) return null;
+                if (MemorySegment.NULL.equals(valPtr)) return null;
 
-            long valLen = valLenSeg.get(ValueLayout.JAVA_LONG, 0);
-            byte[] result = valPtr.reinterpret(valLen).toArray(ValueLayout.JAVA_BYTE);
-            MH_FREE.invokeExact(valPtr);
-            return result;
-        } catch (RocksDBException e) {
-            throw e;
-        } catch (Throwable t) {
-            throw new RocksDBException("transaction getForUpdate failed", t);
-        }
+                long valLen = valLenSeg.get(ValueLayout.JAVA_LONG, 0);
+                byte[] result = valPtr.reinterpret(valLen).toArray(ValueLayout.JAVA_BYTE);
+                MH_FREE.invokeExact(valPtr);
+                return result;
+            }
+        });
     }
 
     // -----------------------------------------------------------------------
@@ -210,30 +184,16 @@ public final class Transaction implements AutoCloseable {
 
     /** Commits all staged operations in this transaction. */
     public void commit() {
-        MemorySegment errHolder = ERR_HOLDER.get();
-        errHolder.set(ValueLayout.ADDRESS, 0, MemorySegment.NULL);
-        try {
-            MH_COMMIT.invokeExact(ptr, errHolder);
-            checkError(errHolder);
-        } catch (RocksDBException e) {
-            throw e;
-        } catch (Throwable t) {
-            throw new RocksDBException("transaction commit failed", t);
-        }
+        Native.check(err -> {
+            MH_COMMIT.invokeExact(ptr, err);
+        });
     }
 
     /** Rolls back all staged operations in this transaction. */
     public void rollback() {
-        MemorySegment errHolder = ERR_HOLDER.get();
-        errHolder.set(ValueLayout.ADDRESS, 0, MemorySegment.NULL);
-        try {
-            MH_ROLLBACK.invokeExact(ptr, errHolder);
-            checkError(errHolder);
-        } catch (RocksDBException e) {
-            throw e;
-        } catch (Throwable t) {
-            throw new RocksDBException("transaction rollback failed", t);
-        }
+        Native.check(err -> {
+            MH_ROLLBACK.invokeExact(ptr, err);
+        });
     }
 
     /** Records a savepoint. Rollback can return to this point via {@link #rollbackToSavePoint()}. */
@@ -247,16 +207,9 @@ public final class Transaction implements AutoCloseable {
 
     /** Rolls back to the most recent savepoint set by {@link #setSavePoint()}. */
     public void rollbackToSavePoint() {
-        MemorySegment errHolder = ERR_HOLDER.get();
-        errHolder.set(ValueLayout.ADDRESS, 0, MemorySegment.NULL);
-        try {
-            MH_ROLLBACK_TO_SAVEPOINT.invokeExact(ptr, errHolder);
-            checkError(errHolder);
-        } catch (RocksDBException e) {
-            throw e;
-        } catch (Throwable t) {
-            throw new RocksDBException("transaction rollbackToSavePoint failed", t);
-        }
+        Native.check(err -> {
+            MH_ROLLBACK_TO_SAVEPOINT.invokeExact(ptr, err);
+        });
     }
 
     /**
@@ -280,17 +233,5 @@ public final class Transaction implements AutoCloseable {
         MemorySegment seg = arena.allocate(bytes.length);
         MemorySegment.copy(bytes, 0, seg, ValueLayout.JAVA_BYTE, 0, bytes.length);
         return seg;
-    }
-
-    private static void checkError(MemorySegment errHolder) {
-        MemorySegment errPtr = errHolder.get(ValueLayout.ADDRESS, 0);
-        if (!MemorySegment.NULL.equals(errPtr)) {
-            String msg = errPtr.reinterpret(Long.MAX_VALUE).getString(0);
-            try {
-                MH_FREE.invokeExact(errPtr);
-            } catch (Throwable ignored) {
-            }
-            throw new RocksDBException(msg);
-        }
     }
 }

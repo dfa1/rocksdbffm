@@ -81,16 +81,6 @@ public final class TransactionDB implements AutoCloseable {
     }
 
     // -----------------------------------------------------------------------
-    // Thread-local auxiliaries
-    // -----------------------------------------------------------------------
-
-    private static final ThreadLocal<MemorySegment> ERR_HOLDER = ThreadLocal.withInitial(
-        () -> Arena.ofAuto().allocate(ValueLayout.ADDRESS));
-
-    private static final ThreadLocal<MemorySegment> VAL_LEN_HOLDER = ThreadLocal.withInitial(
-        () -> Arena.ofAuto().allocate(ValueLayout.JAVA_LONG));
-
-    // -----------------------------------------------------------------------
     // Instance state
     // -----------------------------------------------------------------------
 
@@ -113,23 +103,18 @@ public final class TransactionDB implements AutoCloseable {
      * The caller retains ownership of {@code dbOptions} and {@code txnDbOptions}.
      */
     public static TransactionDB open(Options dbOptions, TransactionDBOptions txnDbOptions, Path path) {
-        try (Arena arena = Arena.ofConfined()) {
-            MemorySegment pathSeg = arena.allocateFrom(path.toString());
-            MemorySegment errHolder = ERR_HOLDER.get();
-            errHolder.set(ValueLayout.ADDRESS, 0, MemorySegment.NULL);
+        return Native.check(err -> {
+            try (Arena arena = Arena.ofConfined()) {
+                MemorySegment pathSeg = arena.allocateFrom(path.toString());
 
-            MemorySegment ptr = (MemorySegment) MH_OPEN.invokeExact(
-                dbOptions.ptr, txnDbOptions.ptr, pathSeg, errHolder);
-            checkError(errHolder);
+                MemorySegment ptr = (MemorySegment) MH_OPEN.invokeExact(
+                    dbOptions.ptr, txnDbOptions.ptr, pathSeg, err);
 
-            MemorySegment writeOpts = (MemorySegment) WriteOptions.MH_CREATE.invokeExact();
-            MemorySegment readOpts  = (MemorySegment) ReadOptions.MH_CREATE.invokeExact();
-            return new TransactionDB(ptr, writeOpts, readOpts);
-        } catch (RocksDBException e) {
-            throw e;
-        } catch (Throwable t) {
-            throw new RocksDBException("Failed to open TransactionDB: " + path, t);
-        }
+                MemorySegment writeOpts = (MemorySegment) WriteOptions.MH_CREATE.invokeExact();
+                MemorySegment readOpts  = (MemorySegment) ReadOptions.MH_CREATE.invokeExact();
+                return new TransactionDB(ptr, writeOpts, readOpts);
+            }
+        });
     }
 
     // -----------------------------------------------------------------------
@@ -165,58 +150,43 @@ public final class TransactionDB implements AutoCloseable {
 
     /** Direct put, bypassing any active transaction. Slow path: allocates native memory. */
     public void put(byte[] key, byte[] value) {
-        try (Arena arena = Arena.ofConfined()) {
-            MemorySegment k = toNative(arena, key);
-            MemorySegment v = toNative(arena, value);
-            MemorySegment errHolder = ERR_HOLDER.get();
-            errHolder.set(ValueLayout.ADDRESS, 0, MemorySegment.NULL);
-            MH_PUT.invokeExact(ptr, writeOpts, k, (long) key.length, v, (long) value.length, errHolder);
-            checkError(errHolder);
-        } catch (RocksDBException e) {
-            throw e;
-        } catch (Throwable t) {
-            throw new RocksDBException("put failed", t);
-        }
+        Native.check(err -> {
+            try (Arena arena = Arena.ofConfined()) {
+                MemorySegment k = toNative(arena, key);
+                MemorySegment v = toNative(arena, value);
+                MH_PUT.invokeExact(ptr, writeOpts, k, (long) key.length, v, (long) value.length, err);
+            }
+        });
     }
 
     /** Direct get, reading committed data only. Returns {@code null} if not found. Slow path. */
     public byte[] get(byte[] key) {
-        try (Arena arena = Arena.ofConfined()) {
-            MemorySegment k = toNative(arena, key);
-            MemorySegment valLenSeg = VAL_LEN_HOLDER.get();
-            MemorySegment errHolder = ERR_HOLDER.get();
-            errHolder.set(ValueLayout.ADDRESS, 0, MemorySegment.NULL);
+        return Native.check(err -> {
+            try (Arena arena = Arena.ofConfined()) {
+                MemorySegment k = toNative(arena, key);
+                MemorySegment valLenSeg = arena.allocate(ValueLayout.JAVA_LONG);
 
-            MemorySegment valPtr = (MemorySegment) MH_GET.invokeExact(
-                ptr, readOpts, k, (long) key.length, valLenSeg, errHolder);
-            checkError(errHolder);
+                MemorySegment valPtr = (MemorySegment) MH_GET.invokeExact(
+                    ptr, readOpts, k, (long) key.length, valLenSeg, err);
 
-            if (MemorySegment.NULL.equals(valPtr)) return null;
+                if (MemorySegment.NULL.equals(valPtr)) return null;
 
-            long valLen = valLenSeg.get(ValueLayout.JAVA_LONG, 0);
-            byte[] result = valPtr.reinterpret(valLen).toArray(ValueLayout.JAVA_BYTE);
-            MH_FREE.invokeExact(valPtr);
-            return result;
-        } catch (RocksDBException e) {
-            throw e;
-        } catch (Throwable t) {
-            throw new RocksDBException("get failed", t);
-        }
+                long valLen = valLenSeg.get(ValueLayout.JAVA_LONG, 0);
+                byte[] result = valPtr.reinterpret(valLen).toArray(ValueLayout.JAVA_BYTE);
+                MH_FREE.invokeExact(valPtr);
+                return result;
+            }
+        });
     }
 
     /** Direct delete, bypassing any active transaction. Slow path. */
     public void delete(byte[] key) {
-        try (Arena arena = Arena.ofConfined()) {
-            MemorySegment k = toNative(arena, key);
-            MemorySegment errHolder = ERR_HOLDER.get();
-            errHolder.set(ValueLayout.ADDRESS, 0, MemorySegment.NULL);
-            MH_DELETE.invokeExact(ptr, writeOpts, k, (long) key.length, errHolder);
-            checkError(errHolder);
-        } catch (RocksDBException e) {
-            throw e;
-        } catch (Throwable t) {
-            throw new RocksDBException("delete failed", t);
-        }
+        Native.check(err -> {
+            try (Arena arena = Arena.ofConfined()) {
+                MemorySegment k = toNative(arena, key);
+                MH_DELETE.invokeExact(ptr, writeOpts, k, (long) key.length, err);
+            }
+        });
     }
 
     // -----------------------------------------------------------------------
@@ -242,17 +212,5 @@ public final class TransactionDB implements AutoCloseable {
         MemorySegment seg = arena.allocate(bytes.length);
         MemorySegment.copy(bytes, 0, seg, ValueLayout.JAVA_BYTE, 0, bytes.length);
         return seg;
-    }
-
-    private static void checkError(MemorySegment errHolder) {
-        MemorySegment errPtr = errHolder.get(ValueLayout.ADDRESS, 0);
-        if (!MemorySegment.NULL.equals(errPtr)) {
-            String msg = errPtr.reinterpret(Long.MAX_VALUE).getString(0);
-            try {
-                MH_FREE.invokeExact(errPtr);
-            } catch (Throwable ignored) {
-            }
-            throw new RocksDBException(msg);
-        }
     }
 }

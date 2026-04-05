@@ -11,9 +11,9 @@ import java.nio.file.Path;
  *
  * <h2>Performance design</h2>
  * <ul>
- *   <li><b>Thread-local auxiliary segments</b> — {@code errHolder} and {@code valLenHolder}
- *       are pre-allocated once per thread via {@code Arena.ofAuto()}, eliminating the
- *       per-call Arena create/destroy overhead.</li>
+ *   <li><b>Surgical error handling</b> — error holders are allocated on-demand
+ *       via {@link Native#check(Native.CheckedConsumer)}, using confined arenas
+ *       that are quickly reclaimed.</li>
  *   <li><b>PinnableSlice reads</b> — {@code rocksdb_get_pinned} pins data directly from
  *       the block cache, avoiding the intermediate {@code std::string} copy that
  *       {@code rocksdb_get} performs. The pinned pointer is read and the pin released
@@ -132,19 +132,6 @@ public final class RocksDB implements AutoCloseable {
     }
 
     // -----------------------------------------------------------------------
-    // Thread-local pre-allocated auxiliary segments
-    // Avoids per-call Arena create/destroy for the errHolder and valLenHolder.
-    // Arena.ofAuto() is GC-managed; each thread gets its own segment that
-    // lives as long as the thread-local reference is reachable.
-    // -----------------------------------------------------------------------
-
-    private static final ThreadLocal<MemorySegment> ERR_HOLDER = ThreadLocal.withInitial(
-        () -> Arena.ofAuto().allocate(ValueLayout.ADDRESS));
-
-    private static final ThreadLocal<MemorySegment> VAL_LEN_HOLDER = ThreadLocal.withInitial(
-        () -> Arena.ofAuto().allocate(ValueLayout.JAVA_LONG));
-
-    // -----------------------------------------------------------------------
     // Instance state
     // -----------------------------------------------------------------------
 
@@ -178,22 +165,16 @@ public final class RocksDB implements AutoCloseable {
      * The caller retains ownership of {@code options} and may close it after this call returns.
      */
     public static RocksDB open(Options options, Path path) {
-        try (Arena arena = Arena.ofConfined()) {
-            MemorySegment pathSeg = arena.allocateFrom(path.toString());
-            MemorySegment errHolder = ERR_HOLDER.get();
-            errHolder.set(ValueLayout.ADDRESS, 0, MemorySegment.NULL);
+        return Native.check(err -> {
+            try (Arena arena = Arena.ofConfined()) {
+                MemorySegment pathSeg = arena.allocateFrom(path.toString());
+                MemorySegment dbPtr = (MemorySegment) MH_OPEN.invokeExact(options.ptr, pathSeg, err);
 
-            MemorySegment dbPtr = (MemorySegment) MH_OPEN.invokeExact(options.ptr, pathSeg, errHolder);
-            checkError(errHolder);
-
-            MemorySegment writeOptions = (MemorySegment) MH_WRITEOPTIONS_CREATE.invokeExact();
-            MemorySegment readOptions = (MemorySegment) MH_READOPTIONS_CREATE.invokeExact();
-            return new RocksDB(dbPtr, writeOptions, readOptions);
-        } catch (RocksDBException e) {
-            throw e;
-        } catch (Throwable t) {
-            throw new RocksDBException("Failed to open database: " + path, t);
-        }
+                MemorySegment writeOptions = (MemorySegment) MH_WRITEOPTIONS_CREATE.invokeExact();
+                MemorySegment readOptions = (MemorySegment) MH_READOPTIONS_CREATE.invokeExact();
+                return new RocksDB(dbPtr, writeOptions, readOptions);
+            }
+        });
     }
 
     /**
@@ -203,23 +184,17 @@ public final class RocksDB implements AutoCloseable {
      * @param errorIfWalFileExists if true, fails when unrecovered WAL files are present
      */
     public static RocksDB openReadOnly(Options options, Path path, boolean errorIfWalFileExists) {
-        try (Arena arena = Arena.ofConfined()) {
-            MemorySegment pathSeg = arena.allocateFrom(path.toString());
-            MemorySegment errHolder = ERR_HOLDER.get();
-            errHolder.set(ValueLayout.ADDRESS, 0, MemorySegment.NULL);
+        return Native.check(err -> {
+            try (Arena arena = Arena.ofConfined()) {
+                MemorySegment pathSeg = arena.allocateFrom(path.toString());
+                MemorySegment dbPtr = (MemorySegment) MH_OPEN_FOR_READ_ONLY.invokeExact(
+                    options.ptr, pathSeg, errorIfWalFileExists ? (byte) 1 : (byte) 0, err);
 
-            MemorySegment dbPtr = (MemorySegment) MH_OPEN_FOR_READ_ONLY.invokeExact(
-                options.ptr, pathSeg, errorIfWalFileExists ? (byte) 1 : (byte) 0, errHolder);
-            checkError(errHolder);
-
-            MemorySegment writeOptions = (MemorySegment) MH_WRITEOPTIONS_CREATE.invokeExact();
-            MemorySegment readOptions = (MemorySegment) MH_READOPTIONS_CREATE.invokeExact();
-            return new RocksDB(dbPtr, writeOptions, readOptions);
-        } catch (RocksDBException e) {
-            throw e;
-        } catch (Throwable t) {
-            throw new RocksDBException("Failed to open read-only database: " + path, t);
-        }
+                MemorySegment writeOptions = (MemorySegment) MH_WRITEOPTIONS_CREATE.invokeExact();
+                MemorySegment readOptions = (MemorySegment) MH_READOPTIONS_CREATE.invokeExact();
+                return new RocksDB(dbPtr, writeOptions, readOptions);
+            }
+        });
     }
 
     /**
@@ -244,22 +219,17 @@ public final class RocksDB implements AutoCloseable {
     // -----------------------------------------------------------------------
 
     public void put(byte[] key, byte[] value) {
-        try (Arena arena = Arena.ofConfined()) {
-            MemorySegment keyNative = toNative(arena, key);
-            MemorySegment valNative = toNative(arena, value);
-            MemorySegment errHolder = ERR_HOLDER.get();
-            errHolder.set(ValueLayout.ADDRESS, 0, MemorySegment.NULL);
+        Native.check(err -> {
+            try (Arena arena = Arena.ofConfined()) {
+                MemorySegment keyNative = toNative(arena, key);
+                MemorySegment valNative = toNative(arena, value);
 
-            MH_PUT.invokeExact(dbPtr, writeOptions,
-                keyNative, (long) key.length,
-                valNative, (long) value.length,
-                errHolder);
-            checkError(errHolder);
-        } catch (RocksDBException e) {
-            throw e;
-        } catch (Throwable t) {
-            throw new RocksDBException("put failed", t);
-        }
+                MH_PUT.invokeExact(dbPtr, writeOptions,
+                    keyNative, (long) key.length,
+                    valNative, (long) value.length,
+                    err);
+            }
+        });
     }
 
     /**
@@ -267,45 +237,35 @@ public final class RocksDB implements AutoCloseable {
      * avoiding the intermediate std::string copy that rocksdb_get performs.
      */
     public byte[] get(byte[] key) {
-        try (Arena arena = Arena.ofConfined()) {
-            MemorySegment keyNative = toNative(arena, key);
-            MemorySegment errHolder = ERR_HOLDER.get();
-            errHolder.set(ValueLayout.ADDRESS, 0, MemorySegment.NULL);
+        return Native.check(err -> {
+            try (Arena arena = Arena.ofConfined()) {
+                MemorySegment keyNative = toNative(arena, key);
 
-            MemorySegment pin = (MemorySegment) MH_GET_PINNED.invokeExact(
-                dbPtr, readOptions, keyNative, (long) key.length, errHolder);
-            checkError(errHolder);
+                MemorySegment pin = (MemorySegment) MH_GET_PINNED.invokeExact(
+                    dbPtr, readOptions, keyNative, (long) key.length, err);
 
-            if (MemorySegment.NULL.equals(pin)) return null;
+                if (MemorySegment.NULL.equals(pin)) return null;
 
-            MemorySegment valLenSeg = VAL_LEN_HOLDER.get();
-            MemorySegment valPtr = (MemorySegment) MH_PINNABLESLICE_VALUE.invokeExact(pin, valLenSeg);
-            long valLen = valLenSeg.get(ValueLayout.JAVA_LONG, 0);
-            byte[] result = valPtr.reinterpret(valLen).toArray(ValueLayout.JAVA_BYTE);
-            MH_PINNABLESLICE_DESTROY.invokeExact(pin);
-            return result;
-        } catch (RocksDBException e) {
-            throw e;
-        } catch (Throwable t) {
-            throw new RocksDBException("get failed", t);
-        }
+                MemorySegment valLenSeg = arena.allocate(ValueLayout.JAVA_LONG);
+                MemorySegment valPtr = (MemorySegment) MH_PINNABLESLICE_VALUE.invokeExact(pin, valLenSeg);
+                long valLen = valLenSeg.get(ValueLayout.JAVA_LONG, 0);
+                byte[] result = valPtr.reinterpret(valLen).toArray(ValueLayout.JAVA_BYTE);
+                MH_PINNABLESLICE_DESTROY.invokeExact(pin);
+                return result;
+            }
+        });
     }
 
     public void delete(byte[] key) {
-        try (Arena arena = Arena.ofConfined()) {
-            MemorySegment keyNative = toNative(arena, key);
-            MemorySegment errHolder = ERR_HOLDER.get();
-            errHolder.set(ValueLayout.ADDRESS, 0, MemorySegment.NULL);
+        Native.check(err -> {
+            try (Arena arena = Arena.ofConfined()) {
+                MemorySegment keyNative = toNative(arena, key);
 
-            MH_DELETE.invokeExact(dbPtr, writeOptions,
-                keyNative, (long) key.length,
-                errHolder);
-            checkError(errHolder);
-        } catch (RocksDBException e) {
-            throw e;
-        } catch (Throwable t) {
-            throw new RocksDBException("delete failed", t);
-        }
+                MH_DELETE.invokeExact(dbPtr, writeOptions,
+                    keyNative, (long) key.length,
+                    err);
+            }
+        });
     }
 
     // -----------------------------------------------------------------------
@@ -317,21 +277,14 @@ public final class RocksDB implements AutoCloseable {
      * memory without any heap→native copy.
      */
     public void put(ByteBuffer key, ByteBuffer value) {
-        MemorySegment keyNative = MemorySegment.ofBuffer(key);
-        MemorySegment valNative = MemorySegment.ofBuffer(value);
-        MemorySegment errHolder = ERR_HOLDER.get();
-        errHolder.set(ValueLayout.ADDRESS, 0, MemorySegment.NULL);
-        try {
+        Native.check(err -> {
+            MemorySegment keyNative = MemorySegment.ofBuffer(key);
+            MemorySegment valNative = MemorySegment.ofBuffer(value);
             MH_PUT.invokeExact(dbPtr, writeOptions,
                 keyNative, (long) key.remaining(),
                 valNative, (long) value.remaining(),
-                errHolder);
-            checkError(errHolder);
-        } catch (RocksDBException e) {
-            throw e;
-        } catch (Throwable t) {
-            throw new RocksDBException("put failed", t);
-        }
+                err);
+        });
     }
 
     /**
@@ -341,29 +294,24 @@ public final class RocksDB implements AutoCloseable {
      * Returns the actual value length, or -1 if not found.
      */
     public int get(ByteBuffer key, ByteBuffer value) {
-        MemorySegment keyNative = MemorySegment.ofBuffer(key);
-        MemorySegment errHolder = ERR_HOLDER.get();
-        errHolder.set(ValueLayout.ADDRESS, 0, MemorySegment.NULL);
-        try {
+        return Native.check(err -> {
+            MemorySegment keyNative = MemorySegment.ofBuffer(key);
             MemorySegment pin = (MemorySegment) MH_GET_PINNED.invokeExact(
-                dbPtr, readOptions, keyNative, (long) key.remaining(), errHolder);
-            checkError(errHolder);
+                dbPtr, readOptions, keyNative, (long) key.remaining(), err);
 
             if (MemorySegment.NULL.equals(pin)) return -1;
 
-            MemorySegment valLenSeg = VAL_LEN_HOLDER.get();
-            MemorySegment valPtr = (MemorySegment) MH_PINNABLESLICE_VALUE.invokeExact(pin, valLenSeg);
-            long valLen = valLenSeg.get(ValueLayout.JAVA_LONG, 0);
-            int toCopy = (int) Math.min(valLen, value.remaining());
-            MemorySegment.ofBuffer(value).copyFrom(valPtr.reinterpret(toCopy));
-            value.position(value.position() + toCopy);
-            MH_PINNABLESLICE_DESTROY.invokeExact(pin);
-            return (int) valLen;
-        } catch (RocksDBException e) {
-            throw e;
-        } catch (Throwable t) {
-            throw new RocksDBException("get failed", t);
-        }
+            try (Arena arena = Arena.ofConfined()) {
+                MemorySegment valLenSeg = arena.allocate(ValueLayout.JAVA_LONG);
+                MemorySegment valPtr = (MemorySegment) MH_PINNABLESLICE_VALUE.invokeExact(pin, valLenSeg);
+                long valLen = valLenSeg.get(ValueLayout.JAVA_LONG, 0);
+                int toCopy = (int) Math.min(valLen, value.remaining());
+                MemorySegment.ofBuffer(value).copyFrom(valPtr.reinterpret(toCopy));
+                value.position(value.position() + toCopy);
+                MH_PINNABLESLICE_DESTROY.invokeExact(pin);
+                return (int) valLen;
+            }
+        });
     }
 
     // -----------------------------------------------------------------------
@@ -371,16 +319,9 @@ public final class RocksDB implements AutoCloseable {
     // -----------------------------------------------------------------------
 
     public void write(WriteBatch batch) {
-        MemorySegment errHolder = ERR_HOLDER.get();
-        errHolder.set(ValueLayout.ADDRESS, 0, MemorySegment.NULL);
-        try {
-            MH_WRITE.invokeExact(dbPtr, writeOptions, batch.ptr, errHolder);
-            checkError(errHolder);
-        } catch (RocksDBException e) {
-            throw e;
-        } catch (Throwable t) {
-            throw new RocksDBException("write batch failed", t);
-        }
+        Native.check(err -> {
+            MH_WRITE.invokeExact(dbPtr, writeOptions, batch.ptr, err);
+        });
     }
 
     // -----------------------------------------------------------------------
@@ -414,18 +355,5 @@ public final class RocksDB implements AutoCloseable {
         MemorySegment seg = arena.allocate(bytes.length);
         MemorySegment.copy(bytes, 0, seg, ValueLayout.JAVA_BYTE, 0, bytes.length);
         return seg;
-    }
-
-    /** Package-private: check errHolder after a C call; throws RocksDBException if an error was set. */
-    static void checkError(MemorySegment errHolder) {
-        MemorySegment errPtr = errHolder.get(ValueLayout.ADDRESS, 0);
-        if (!MemorySegment.NULL.equals(errPtr)) {
-            String msg = errPtr.reinterpret(Long.MAX_VALUE).getString(0);
-            try {
-                MH_FREE.invokeExact(errPtr);
-            } catch (Throwable ignored) {
-            }
-            throw new RocksDBException(msg);
-        }
     }
 }

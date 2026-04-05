@@ -53,9 +53,6 @@ public final class Checkpoint implements AutoCloseable {
             FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
     }
 
-    private static final ThreadLocal<MemorySegment> ERR_HOLDER = ThreadLocal.withInitial(
-        () -> Arena.ofAuto().allocate(ValueLayout.ADDRESS));
-
     private final MemorySegment ptr;
 
     private Checkpoint(MemorySegment ptr) {
@@ -68,17 +65,10 @@ public final class Checkpoint implements AutoCloseable {
      * Close it when done — this does not affect the database or any exported checkpoints.
      */
     public static Checkpoint create(RocksDB db) {
-        var errHolder = ERR_HOLDER.get();
-        errHolder.set(ValueLayout.ADDRESS, 0, MemorySegment.NULL);
-        try {
-            var ptr = (MemorySegment) MH_CREATE.invokeExact(db.dbPtr, errHolder);
-            RocksDB.checkError(errHolder);
+        return Native.check(err -> {
+            var ptr = (MemorySegment) MH_CREATE.invokeExact(db.dbPtr, err);
             return new Checkpoint(ptr);
-        } catch (RocksDBException e) {
-            throw e;
-        } catch (Throwable t) {
-            throw new RocksDBException("Checkpoint.create failed", t);
-        }
+        });
     }
 
     /**
@@ -95,17 +85,12 @@ public final class Checkpoint implements AutoCloseable {
      *                        to never flush (use WAL as-is).
      */
     public void exportTo(Path checkpointDir, long logSizeForFlush) {
-        var errHolder = ERR_HOLDER.get();
-        errHolder.set(ValueLayout.ADDRESS, 0, MemorySegment.NULL);
-        try (var arena = Arena.ofConfined()) {
-            var dirSeg = arena.allocateFrom(checkpointDir.toString());
-            MH_EXPORT.invokeExact(ptr, dirSeg, logSizeForFlush, errHolder);
-            RocksDB.checkError(errHolder);
-        } catch (RocksDBException e) {
-            throw e;
-        } catch (Throwable t) {
-            throw new RocksDBException("Checkpoint.exportTo failed", t);
-        }
+        Native.check(err -> {
+            try (var arena = Arena.ofConfined()) {
+                var dirSeg = arena.allocateFrom(checkpointDir.toString());
+                MH_EXPORT.invokeExact(ptr, dirSeg, logSizeForFlush, err);
+            }
+        });
     }
 
     /**

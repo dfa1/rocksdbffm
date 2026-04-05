@@ -4,8 +4,8 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.example</groupId>
-    <artifactId>ffm-rocksdb</artifactId>
+    <groupId>io.github.dfa1</groupId>
+    <artifactId>rocksdbffm</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
@@ -52,7 +52,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>com.example.Main</mainClass>
+                            <mainClass>io.github.dfa1.rocksdbffm.Main</mainClass>
                         </manifest>
                     </archive>
                 </configuration>

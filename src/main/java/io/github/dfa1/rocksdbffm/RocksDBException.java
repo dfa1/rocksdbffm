@@ -1,4 +1,4 @@
-package com.example.ffm;
+package io.github.dfa1.rocksdbffm;
 
 public class RocksDBException extends RuntimeException {
 

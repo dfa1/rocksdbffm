@@ -1,4 +1,4 @@
-package com.example.ffm;
+package io.github.dfa1.rocksdbffm;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;

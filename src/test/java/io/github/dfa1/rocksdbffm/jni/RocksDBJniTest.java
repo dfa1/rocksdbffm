@@ -1,4 +1,4 @@
-package com.example.jni;
+package io.github.dfa1.rocksdbffm.jni;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;

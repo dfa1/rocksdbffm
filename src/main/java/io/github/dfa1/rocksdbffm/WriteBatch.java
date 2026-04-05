@@ -1,4 +1,4 @@
-package com.example.ffm;
+package io.github.dfa1.rocksdbffm;
 
 import java.lang.foreign.*;
 import java.lang.invoke.MethodHandle;

@@ -65,6 +65,15 @@ in case of doubt, use same design of RocksdbJNI (same names).
 Use `java.nio.file.Path` wherever RocksDB accepts a file-system path (open, backup, checkpoint, etc.).
 Never use raw `String` for paths in the FFM API surface.
 
+Every class that wraps a native pointer must implement `AutoCloseable` and destroy the
+native object in `close()`. No exceptions — zero native memory leaks.
+
+When ownership of a native object transfers to another (e.g. `FilterPolicy` →
+`BlockBasedTableConfig`), track transfer with a boolean flag and make `close()` a
+no-op after transfer. The transferring object must still be safe to use in
+try-with-resources. Call the transfer marker (e.g. `transferOwnership()`) inside the
+setter that takes ownership.
+
 Design is:
 - have byte[] version of every method for quick access: explicitly mention that is slow in the javadoc
 - have always the ByteBuffer version to support existing clients using it

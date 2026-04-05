@@ -138,12 +138,14 @@ public final class BlockBasedTableConfig implements AutoCloseable {
     }
 
     /**
-     * Sets the filter policy. Ownership of {@code policy} transfers to this config —
-     * the caller must not use or close it after this call.
+     * Sets the filter policy. Native ownership transfers to RocksDB's internal
+     * reference counting. The {@code policy} may still be closed via
+     * try-with-resources — {@link FilterPolicy#close()} becomes a no-op after transfer.
      */
     public BlockBasedTableConfig setFilterPolicy(FilterPolicy policy) {
         try {
             MH_SET_FILTER_POLICY.invokeExact(ptr, policy.ptr);
+            policy.transferOwnership();
         } catch (Throwable t) {
             throw new RocksDBException("setFilterPolicy failed", t);
         }

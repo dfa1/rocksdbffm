@@ -6,22 +6,25 @@ import java.lang.invoke.MethodHandle;
 /**
  * FFM wrapper for rocksdb_filterpolicy_t.
  *
- * <p>Pass to {@link BlockBasedTableConfig#setFilterPolicy(FilterPolicy)}.
- * Ownership transfers to the {@code BlockBasedTableConfig} on that call —
- * the filter policy is then managed by RocksDB's internal reference counting
- * and must not be closed by the caller.
+ * <p>Use inside a try-with-resources block. If the policy is passed to
+ * {@link BlockBasedTableConfig#setFilterPolicy(FilterPolicy)}, ownership
+ * transfers to RocksDB's internal reference counting and {@link #close()}
+ * becomes a no-op — it is safe (and recommended) to still call it via
+ * try-with-resources.
  *
  * <pre>{@code
- * BlockBasedTableConfig tbl = new BlockBasedTableConfig()
- *     .setFilterPolicy(FilterPolicy.newBloom(10));
- * // do NOT close the FilterPolicy — BlockBasedTableConfig owns it now
+ * try (var filter = FilterPolicy.newBloom(10);
+ *      var tbl = new BlockBasedTableConfig().setFilterPolicy(filter);
+ *      var opts = new Options().setCreateIfMissing(true).setTableFormatConfig(tbl)) {
+ *     // filter.close() called automatically — no-op because ownership transferred
+ * }
  * }</pre>
  */
-public final class FilterPolicy {
+public final class FilterPolicy implements AutoCloseable {
 
     private static final MethodHandle MH_CREATE_BLOOM;
     private static final MethodHandle MH_CREATE_RIBBON;
-    static final MethodHandle MH_DESTROY;
+    private static final MethodHandle MH_DESTROY;
 
     static {
         // rocksdb_filterpolicy_t* rocksdb_filterpolicy_create_bloom(double bits_per_key)
@@ -39,6 +42,12 @@ public final class FilterPolicy {
     /** Package-private: read by BlockBasedTableConfig. */
     final MemorySegment ptr;
 
+    /**
+     * True once ownership has been transferred to a BlockBasedTableConfig.
+     * After transfer, close() is a no-op — RocksDB manages the lifetime.
+     */
+    private boolean transferred;
+
     private FilterPolicy(MemorySegment ptr) {
         this.ptr = ptr;
     }
@@ -46,7 +55,6 @@ public final class FilterPolicy {
     /**
      * Creates a Bloom filter with the given number of bits per key.
      * Typical value: {@code 10} (≈1% false-positive rate).
-     * Ownership transfers to the {@link BlockBasedTableConfig} it is passed to.
      */
     public static FilterPolicy newBloom(double bitsPerKey) {
         try {
@@ -60,13 +68,35 @@ public final class FilterPolicy {
      * Creates a Ribbon filter (successor to Bloom, better space efficiency at
      * similar query cost). Uses {@code bloomEquivalentBitsPerKey} to set the
      * target false-positive rate equivalent to a Bloom filter at that setting.
-     * Ownership transfers to the {@link BlockBasedTableConfig} it is passed to.
      */
     public static FilterPolicy newRibbon(double bloomEquivalentBitsPerKey) {
         try {
             return new FilterPolicy((MemorySegment) MH_CREATE_RIBBON.invokeExact(bloomEquivalentBitsPerKey));
         } catch (Throwable t) {
             throw new RocksDBException("FilterPolicy.newRibbon failed", t);
+        }
+    }
+
+    /**
+     * Called by {@link BlockBasedTableConfig#setFilterPolicy(FilterPolicy)} to
+     * indicate that native ownership has transferred. Subsequent {@link #close()}
+     * calls are no-ops.
+     */
+    void transferOwnership() {
+        this.transferred = true;
+    }
+
+    /**
+     * Destroys the native filter policy unless ownership has been transferred
+     * to a {@link BlockBasedTableConfig}, in which case this is a no-op.
+     */
+    @Override
+    public void close() {
+        if (transferred) return;
+        try {
+            MH_DESTROY.invokeExact(ptr);
+        } catch (Throwable t) {
+            throw new RocksDBException("FilterPolicy destroy failed", t);
         }
     }
 }

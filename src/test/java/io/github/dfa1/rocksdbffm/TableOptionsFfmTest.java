@@ -92,7 +92,8 @@ class TableOptionsFfmTest {
     @Test
     void bloomFilter_returnsExistingKey(@TempDir Path dir) {
         // Given
-        try (var tbl = new BlockBasedTableConfig().setFilterPolicy(FilterPolicy.newBloom(10));
+        try (var filter = FilterPolicy.newBloom(10);
+             var tbl = new BlockBasedTableConfig().setFilterPolicy(filter);
              var opts = new Options().setCreateIfMissing(true).setTableFormatConfig(tbl);
              var db = RocksDB.open(opts, dir)) {
 
@@ -115,7 +116,8 @@ class TableOptionsFfmTest {
     @Test
     void ribbonFilter_returnsExistingKey(@TempDir Path dir) {
         // Given
-        try (var tbl = new BlockBasedTableConfig().setFilterPolicy(FilterPolicy.newRibbon(10));
+        try (var filter = FilterPolicy.newRibbon(10);
+             var tbl = new BlockBasedTableConfig().setFilterPolicy(filter);
              var opts = new Options().setCreateIfMissing(true).setTableFormatConfig(tbl);
              var db = RocksDB.open(opts, dir)) {
 
@@ -139,10 +141,11 @@ class TableOptionsFfmTest {
     void sharedBlockCache_servesCachedReads(@TempDir Path dir) {
         // Given
         try (var cache = new LRUCache(MemorySize.ofMB(64));
+             var filter = FilterPolicy.newBloom(10);
              var tbl = new BlockBasedTableConfig()
                  .setBlockCache(cache)
                  .setCacheIndexAndFilterBlocks(true)
-                 .setFilterPolicy(FilterPolicy.newBloom(10));
+                 .setFilterPolicy(filter);
              var opts = new Options().setCreateIfMissing(true).setTableFormatConfig(tbl);
              var db = RocksDB.open(opts, dir)) {
 
@@ -184,10 +187,11 @@ class TableOptionsFfmTest {
     @Test
     void twoLevelIndexSearch_allowsReadWrite(@TempDir Path dir) {
         // Given
-        try (var tbl = new BlockBasedTableConfig()
+        try (var filter = FilterPolicy.newBloom(10);
+             var tbl = new BlockBasedTableConfig()
                  .setIndexType(BlockBasedTableConfig.IndexType.TWO_LEVEL_INDEX_SEARCH)
                  .setPartitionFilters(true)
-                 .setFilterPolicy(FilterPolicy.newBloom(10));
+                 .setFilterPolicy(filter);
              var opts = new Options().setCreateIfMissing(true).setTableFormatConfig(tbl);
              var db = RocksDB.open(opts, dir)) {
 

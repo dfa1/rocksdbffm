@@ -3,6 +3,7 @@ package io.github.dfa1.rocksdbffm;
 import java.lang.foreign.*;
 import java.lang.invoke.MethodHandle;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 
 /**
  * FFM-based wrapper around the native RocksDB C library.
@@ -165,7 +166,7 @@ public final class RocksDB implements AutoCloseable {
      * Opens the database at {@code path} with {@code createIfMissing=true}.
      * Convenience overload; equivalent to {@code open(new Options().setCreateIfMissing(true), path)}.
      */
-    public static RocksDB open(String path) {
+    public static RocksDB open(Path path) {
         try (Options opts = new Options().setCreateIfMissing(true)) {
             return open(opts, path);
         }
@@ -175,9 +176,9 @@ public final class RocksDB implements AutoCloseable {
      * Opens the database at {@code path} using the supplied {@link Options}.
      * The caller retains ownership of {@code options} and may close it after this call returns.
      */
-    public static RocksDB open(Options options, String path) {
+    public static RocksDB open(Options options, Path path) {
         try (Arena arena = Arena.ofConfined()) {
-            MemorySegment pathSeg = arena.allocateFrom(path);
+            MemorySegment pathSeg = arena.allocateFrom(path.toString());
             MemorySegment errHolder = ERR_HOLDER.get();
             errHolder.set(ValueLayout.ADDRESS, 0, MemorySegment.NULL);
 
@@ -200,9 +201,9 @@ public final class RocksDB implements AutoCloseable {
      *
      * @param errorIfWalFileExists if true, fails when unrecovered WAL files are present
      */
-    public static RocksDB openReadOnly(Options options, String path, boolean errorIfWalFileExists) {
+    public static RocksDB openReadOnly(Options options, Path path, boolean errorIfWalFileExists) {
         try (Arena arena = Arena.ofConfined()) {
-            MemorySegment pathSeg = arena.allocateFrom(path);
+            MemorySegment pathSeg = arena.allocateFrom(path.toString());
             MemorySegment errHolder = ERR_HOLDER.get();
             errHolder.set(ValueLayout.ADDRESS, 0, MemorySegment.NULL);
 
@@ -224,14 +225,14 @@ public final class RocksDB implements AutoCloseable {
      * Opens the database at {@code path} in read-only mode.
      * Equivalent to {@code openReadOnly(options, path, false)}.
      */
-    public static RocksDB openReadOnly(Options options, String path) {
+    public static RocksDB openReadOnly(Options options, Path path) {
         return openReadOnly(options, path, false);
     }
 
     /**
      * Opens the database at {@code path} in read-only mode with default options.
      */
-    public static RocksDB openReadOnly(String path) {
+    public static RocksDB openReadOnly(Path path) {
         try (Options opts = new Options()) {
             return openReadOnly(opts, path, false);
         }

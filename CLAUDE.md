@@ -37,7 +37,7 @@ What features to cover
 - [x] put/get/delete
 - [x] batch
 - [ ] transaction
-- [ ] createIfMissing/readOnly
+- [x] createIfMissing/readOnly
 - [ ] iterator
 - [ ] options
 - [ ] statistics
@@ -51,6 +51,9 @@ What features to cover
 
 
 in case of doubt, use same design of RocksdbJNI (same names).
+
+Use `java.nio.file.Path` wherever RocksDB accepts a file-system path (open, backup, checkpoint, etc.).
+Never use raw `String` for paths in the FFM API surface.
 
 Design is:
 - have byte[] version of every method for quick access: explicitly mention that is slow in the javadoc

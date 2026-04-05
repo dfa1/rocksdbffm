@@ -43,7 +43,7 @@ public class FfmBenchmark {
     @Setup(Level.Trial)
     public void setup() throws Exception {
         dbPath = Files.createTempDirectory("bench-ffm-");
-        db = RocksDB.open(dbPath.toString());
+        db = RocksDB.open(dbPath);
 
         writeKeyBuf = ByteBuffer.allocateDirect(WRITE_KEY.length);
         writeKeyBuf.put(WRITE_KEY).flip();

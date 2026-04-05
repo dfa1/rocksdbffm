@@ -48,6 +48,7 @@ public final class RocksDB implements AutoCloseable {
     private static final MethodHandle MH_PINNABLESLICE_DESTROY;
     private static final MethodHandle MH_PINNABLESLICE_VALUE;
     private static final MethodHandle MH_DELETE;
+    private static final MethodHandle MH_WRITE;
     private static final MethodHandle MH_FREE;
 
     static {
@@ -123,6 +124,12 @@ public final class RocksDB implements AutoCloseable {
                 ValueLayout.ADDRESS, ValueLayout.ADDRESS,
                 ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
                 ValueLayout.ADDRESS));
+
+        // void rocksdb_write(db*, wo*, batch*, errptr**)
+        MH_WRITE = lookup("rocksdb_write",
+            FunctionDescriptor.ofVoid(
+                ValueLayout.ADDRESS, ValueLayout.ADDRESS,
+                ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
         MH_FREE = lookup("rocksdb_free",
             FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
@@ -310,6 +317,23 @@ public final class RocksDB implements AutoCloseable {
     }
 
     // -----------------------------------------------------------------------
+    // Batch write
+    // -----------------------------------------------------------------------
+
+    public void write(WriteBatch batch) {
+        MemorySegment errHolder = ERR_HOLDER.get();
+        errHolder.set(ValueLayout.ADDRESS, 0, MemorySegment.NULL);
+        try {
+            MH_WRITE.invokeExact(dbPtr, writeOptions, batch.ptr, errHolder);
+            checkError(errHolder);
+        } catch (RocksDBException e) {
+            throw e;
+        } catch (Throwable t) {
+            throw new RocksDBException("write batch failed", t);
+        }
+    }
+
+    // -----------------------------------------------------------------------
     // AutoCloseable
     // -----------------------------------------------------------------------
 
@@ -328,7 +352,7 @@ public final class RocksDB implements AutoCloseable {
     // Helpers
     // -----------------------------------------------------------------------
 
-    private static MethodHandle lookup(String name, FunctionDescriptor fd) {
+    static MethodHandle lookup(String name, FunctionDescriptor fd) {
         return LINKER.downcallHandle(
             LIB.find(name).orElseThrow(() ->
                 new UnsatisfiedLinkError("Symbol not found: " + name)),

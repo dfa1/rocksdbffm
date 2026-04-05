@@ -4,6 +4,7 @@ import org.openjdk.jmh.annotations.*;
 import org.rocksdb.Options;
 import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksDB;
+import org.rocksdb.WriteBatch;
 import org.rocksdb.WriteOptions;
 
 import java.io.IOException;
@@ -26,8 +27,10 @@ public class JniBenchmark {
     }
 
     private static final int NUM_KEYS = 10_000;
+    private static final int BATCH_SIZE = 100;
     private static final byte[] WRITE_KEY = "bench-key".getBytes();
     private static final byte[] WRITE_VALUE = "bench-value-data-0123456789".getBytes();
+    private static final byte[] BATCH_VALUE = "batch-value-data-0123456789".getBytes();
 
     private RocksDB db;
     private Options options;
@@ -39,6 +42,8 @@ public class JniBenchmark {
     private ByteBuffer writeValBuf;
     private ByteBuffer[] readKeyBufs;
     private ByteBuffer readValBuf;
+    private WriteBatch batch;
+    private byte[][] batchKeys;
 
     @State(Scope.Thread)
     public static class Counter {
@@ -67,10 +72,17 @@ public class JniBenchmark {
             readKeyBufs[i].put(k).flip();
             db.put(k, value);
         }
+
+        batchKeys = new byte[BATCH_SIZE][];
+        for (int i = 0; i < BATCH_SIZE; i++) {
+            batchKeys[i] = ("batch-key-" + i).getBytes();
+        }
+        batch = new WriteBatch();
     }
 
     @TearDown(Level.Trial)
     public void teardown() throws Exception {
+        batch.close();
         db.close();
         options.close();
         writeOptions.close();
@@ -91,6 +103,15 @@ public class JniBenchmark {
         key.rewind();
         readValBuf.clear();
         return db.get(readOptions, key, readValBuf);
+    }
+
+    @Benchmark
+    public void batchWrites() throws Exception {
+        batch.clear();
+        for (int i = 0; i < BATCH_SIZE; i++) {
+            batch.put(batchKeys[i], BATCH_VALUE);
+        }
+        db.write(writeOptions, batch);
     }
 
     private static void deleteDir(Path dir) throws IOException {

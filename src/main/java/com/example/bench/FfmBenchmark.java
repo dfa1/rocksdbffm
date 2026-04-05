@@ -1,6 +1,7 @@
 package com.example.bench;
 
 import com.example.ffm.RocksDB;
+import com.example.ffm.WriteBatch;
 import org.openjdk.jmh.annotations.*;
 
 import java.io.IOException;
@@ -19,8 +20,10 @@ import java.util.concurrent.TimeUnit;
 public class FfmBenchmark {
 
     private static final int NUM_KEYS = 10_000;
+    private static final int BATCH_SIZE = 100;
     private static final byte[] WRITE_KEY = "bench-key".getBytes();
     private static final byte[] WRITE_VALUE = "bench-value-data-0123456789".getBytes();
+    private static final byte[] BATCH_VALUE = "batch-value-data-0123456789".getBytes();
 
     private RocksDB db;
     private Path dbPath;
@@ -29,6 +32,8 @@ public class FfmBenchmark {
     private ByteBuffer writeValBuf;
     private ByteBuffer[] readKeyBufs;
     private ByteBuffer readValBuf;
+    private WriteBatch batch;
+    private byte[][] batchKeys;
 
     @State(Scope.Thread)
     public static class Counter {
@@ -54,10 +59,17 @@ public class FfmBenchmark {
             readKeyBufs[i].put(k).flip();
             db.put(k, value);
         }
+
+        batchKeys = new byte[BATCH_SIZE][];
+        for (int i = 0; i < BATCH_SIZE; i++) {
+            batchKeys[i] = ("batch-key-" + i).getBytes();
+        }
+        batch = WriteBatch.create();
     }
 
     @TearDown(Level.Trial)
     public void teardown() throws IOException {
+        batch.close();
         db.close();
         deleteDir(dbPath);
     }
@@ -75,6 +87,15 @@ public class FfmBenchmark {
         key.rewind();
         readValBuf.clear();
         return db.get(key, readValBuf);
+    }
+
+    @Benchmark
+    public void batchWrites() {
+        batch.clear();
+        for (int i = 0; i < BATCH_SIZE; i++) {
+            batch.put(batchKeys[i], BATCH_VALUE);
+        }
+        db.write(batch);
     }
 
     private static void deleteDir(Path dir) throws IOException {

@@ -49,4 +49,54 @@ class RocksDBFfmTest {
             assertArrayEquals(value, db.get(key));
         }
     }
+
+    @Test
+    void batchPutsAreVisible(@TempDir Path tempDir) {
+        try (RocksDB db = RocksDB.open(tempDir.toString());
+             WriteBatch batch = WriteBatch.create()) {
+
+            batch.put("k1".getBytes(), "v1".getBytes());
+            batch.put("k2".getBytes(), "v2".getBytes());
+            batch.put("k3".getBytes(), "v3".getBytes());
+            db.write(batch);
+
+            assertArrayEquals("v1".getBytes(), db.get("k1".getBytes()));
+            assertArrayEquals("v2".getBytes(), db.get("k2".getBytes()));
+            assertArrayEquals("v3".getBytes(), db.get("k3".getBytes()));
+        }
+    }
+
+    @Test
+    void batchDeleteRemovesKeys(@TempDir Path tempDir) {
+        try (RocksDB db = RocksDB.open(tempDir.toString());
+             WriteBatch batch = WriteBatch.create()) {
+
+            db.put("k1".getBytes(), "v1".getBytes());
+            db.put("k2".getBytes(), "v2".getBytes());
+
+            batch.delete("k1".getBytes());
+            batch.delete("k2".getBytes());
+            db.write(batch);
+
+            assertNull(db.get("k1".getBytes()));
+            assertNull(db.get("k2".getBytes()));
+        }
+    }
+
+    @Test
+    void batchCountReflectsOperations(@TempDir Path tempDir) {
+        try (RocksDB db = RocksDB.open(tempDir.toString());
+             WriteBatch batch = WriteBatch.create()) {
+
+            for (int i = 0; i < 50; i++) {
+                batch.put(("key-" + i).getBytes(), ("val-" + i).getBytes());
+            }
+            assertEquals(50, batch.count());
+            db.write(batch);
+
+            for (int i = 0; i < 50; i++) {
+                assertArrayEquals(("val-" + i).getBytes(), db.get(("key-" + i).getBytes()));
+            }
+        }
+    }
 }

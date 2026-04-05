@@ -73,9 +73,9 @@ public final class Snapshot implements AutoCloseable {
      * Returns the sequence number at which this snapshot was taken.
      * Useful for ordering and debugging.
      */
-    public long sequenceNumber() {
+    public SequenceNumber sequenceNumber() {
         try {
-            return (long) MH_SEQUENCE_NUMBER.invokeExact(ptr);
+            return SequenceNumber.of((long) MH_SEQUENCE_NUMBER.invokeExact(ptr));
         } catch (Throwable t) {
             throw new RocksDBException("snapshot sequenceNumber failed", t);
         }

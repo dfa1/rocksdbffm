@@ -34,6 +34,7 @@ To ensure type safety and consistent units across the API:
 - **Read-only headers:** NEVER modify system include files (e.g. `/opt/homebrew/...`, `/usr/include/...`). They are read-only references; all mappings live in Java source.
 - **Paths:** Never use raw `String` for file system paths. Always use `java.nio.file.Path` for any API surface that accepts paths (open, backup, checkpoint).
 - **Memory Sizes:** Never use raw `long` for byte counts (e.g., cache size, write buffer size). Always use the project's `MemorySize` type.
+- **Sequence Numbers:** Never use raw `long` for RocksDB sequence numbers. Always use the project's `SequenceNumber` type.
 
 ### 3. API Surface Design
 For every feature, provide three tiers of access:

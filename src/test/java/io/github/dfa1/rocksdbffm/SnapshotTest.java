@@ -60,7 +60,7 @@ class SnapshotTest {
             try (Snapshot snap = db.getSnapshot()) {
 
                 // Then
-                assertThat(snap.sequenceNumber()).isGreaterThan(0);
+                assertThat(snap.sequenceNumber().toLong()).isGreaterThan(0);
             }
         }
     }
@@ -74,7 +74,7 @@ class SnapshotTest {
                 try (Snapshot snap2 = db.getSnapshot()) {
 
                     // Then
-                    assertThat(snap2.sequenceNumber()).isGreaterThan(snap1.sequenceNumber());
+                    assertThat(snap2.sequenceNumber().isAfter(snap1.sequenceNumber())).isTrue();
                 }
             }
         }

@@ -97,6 +97,7 @@ For the full feature status and roadmap see `README.md`. This section maps each 
 | Snapshots | `Snapshot.java`; `ReadOptions.setSnapshot`; `RocksDB.getSnapshot`, `TransactionDB.getSnapshot`, `Transaction.getSnapshot` |
 | Flush | `FlushOptions.java`; `RocksDB.flush`, `RocksDB.flushWal`, `TransactionDB.flush`, `TransactionDB.flushWal` |
 | KeyMayExist | `RocksDB.keyMayExist` — byte[], ByteBuffer, MemorySegment, ReadOptions overload |
+| DB Properties | `DBProperty.java` (enum of well-known names); `RocksDB.getProperty`, `RocksDB.getLongProperty`, same on `TransactionDB` |
 | Statistics | `HistogramType.java`, `TickerType.java`, `StatsLevel.java`, `StatisticsHistogramData.java` |
 | Shared utilities | `Native.java` (`errHolder`, `checkError`, `toNative`), `MemorySize.java`, `RocksDBException.java` |
 
@@ -111,8 +112,8 @@ For the full feature status and roadmap see `README.md`. This section maps each 
 | ~~KeyMayExist~~ | ✅ Done — `RocksDB.keyMayExist` (byte[], ByteBuffer, MemorySegment, ReadOptions overload) |
 | **Compaction control** | `rocksdb_compact_range`, `rocksdb_suggest_compact_range`, `rocksdb_disable_file_deletions` |
 | **MultiGet** | `rocksdb_multi_get`, batched `rocksdb_slice_t` variant |
-| **DB Properties** | `rocksdb_property_value`, `rocksdb_property_int`, `rocksdb_approximate_sizes` |
-| **KeyMayExist** | `rocksdb_key_may_exist` |
+| ~~DB Properties~~ | ✅ Done — `DBProperty.java`, `RocksDB.getProperty`, `RocksDB.getLongProperty` (`rocksdb_approximate_sizes` not yet) |
+| ~~KeyMayExist~~ | ✅ Done — see above |
 | **DeleteRange** | `rocksdb_delete_range`, `rocksdb_writebatch_delete_range` |
 | **SST File Ingest** | `rocksdb_ingestexternalfile`, `rocksdb_sstfilewriter_*` |
 | **Backup Engine** | `rocksdb_backup_engine_open`, `rocksdb_backup_engine_create_new_backup` |

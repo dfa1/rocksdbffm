@@ -3,6 +3,8 @@ package io.github.dfa1.rocksdbffm;
 import java.lang.foreign.*;
 import java.lang.invoke.MethodHandle;
 import java.nio.file.Path;
+import java.util.Optional;
+import java.util.OptionalLong;
 
 /**
  * FFM wrapper for rocksdb_transactiondb_t — a RocksDB database with pessimistic
@@ -33,6 +35,8 @@ public final class TransactionDB implements AutoCloseable {
     private static final MethodHandle MH_CREATE_SNAPSHOT;
     private static final MethodHandle MH_FLUSH;
     private static final MethodHandle MH_FLUSH_WAL;
+    private static final MethodHandle MH_PROPERTY_VALUE;
+    private static final MethodHandle MH_PROPERTY_INT;
 
     // Direct (non-transactional) operations on the TransactionDB
     private static final MethodHandle MH_PUT;
@@ -93,6 +97,15 @@ public final class TransactionDB implements AutoCloseable {
         // void rocksdb_transactiondb_flush_wal(txndb*, sync, errptr**)
         MH_FLUSH_WAL = RocksDB.lookup("rocksdb_transactiondb_flush_wal",
             FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_BYTE, ValueLayout.ADDRESS));
+
+        // char* rocksdb_transactiondb_property_value(txndb*, propname)
+        MH_PROPERTY_VALUE = RocksDB.lookup("rocksdb_transactiondb_property_value",
+            FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+        // int rocksdb_transactiondb_property_int(txndb*, propname, uint64_t* out_val)
+        MH_PROPERTY_INT = RocksDB.lookup("rocksdb_transactiondb_property_int",
+            FunctionDescriptor.of(ValueLayout.JAVA_INT,
+                ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
     }
 
     // -----------------------------------------------------------------------
@@ -272,6 +285,47 @@ public final class TransactionDB implements AutoCloseable {
             return result;
         } catch (Throwable t) {
             throw RocksDBException.wrap("Native call failed", t);
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // DB Properties
+    // -----------------------------------------------------------------------
+
+    /** @see RocksDB#getProperty(DBProperty) */
+    public Optional<String> getProperty(DBProperty property) {
+        return getProperty(property.propertyName());
+    }
+
+    /** @see RocksDB#getProperty(String) */
+    public Optional<String> getProperty(String property) {
+        try (Arena arena = Arena.ofConfined()) {
+            MemorySegment propSeg = arena.allocateFrom(property);
+            MemorySegment result = (MemorySegment) MH_PROPERTY_VALUE.invokeExact(ptr, propSeg);
+            if (MemorySegment.NULL.equals(result)) return Optional.empty();
+            String value = result.reinterpret(Long.MAX_VALUE).getString(0);
+            MH_FREE.invokeExact(result);
+            return Optional.of(value);
+        } catch (Throwable t) {
+            throw RocksDBException.wrap("getProperty failed", t);
+        }
+    }
+
+    /** @see RocksDB#getLongProperty(DBProperty) */
+    public OptionalLong getLongProperty(DBProperty property) {
+        return getLongProperty(property.propertyName());
+    }
+
+    /** @see RocksDB#getLongProperty(String) */
+    public OptionalLong getLongProperty(String property) {
+        try (Arena arena = Arena.ofConfined()) {
+            MemorySegment propSeg = arena.allocateFrom(property);
+            MemorySegment out = arena.allocate(ValueLayout.JAVA_LONG);
+            int rc = (int) MH_PROPERTY_INT.invokeExact(ptr, propSeg, out);
+            if (rc != 0) return OptionalLong.empty();
+            return OptionalLong.of(out.get(ValueLayout.JAVA_LONG, 0));
+        } catch (Throwable t) {
+            throw RocksDBException.wrap("getLongProperty failed", t);
         }
     }
 

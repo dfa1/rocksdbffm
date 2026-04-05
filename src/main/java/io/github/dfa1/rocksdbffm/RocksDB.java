@@ -9,6 +9,8 @@ import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
+import java.util.Optional;
+import java.util.OptionalLong;
 
 /**
  * Main entry point for RocksDB operations.
@@ -44,6 +46,9 @@ public final class RocksDB implements AutoCloseable {
     private static final MethodHandle MH_FLUSH;
     private static final MethodHandle MH_FLUSH_WAL;
     private static final MethodHandle MH_KEY_MAY_EXIST;
+    private static final MethodHandle MH_PROPERTY_VALUE;
+    private static final MethodHandle MH_PROPERTY_INT;
+    private static final MethodHandle MH_FREE;
 
     static {
         String libPath = System.getProperty(
@@ -122,6 +127,17 @@ public final class RocksDB implements AutoCloseable {
                 ValueLayout.ADDRESS, ValueLayout.ADDRESS,  // value**, val_len*
                 ValueLayout.ADDRESS, ValueLayout.JAVA_LONG, // timestamp*, ts_len
                 ValueLayout.ADDRESS));                     // value_found*
+
+        // char* rocksdb_property_value(db*, propname) — returns NULL if not supported; caller frees
+        MH_PROPERTY_VALUE = lookup("rocksdb_property_value",
+            FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+        // int rocksdb_property_int(db*, propname, uint64_t* out_val) — 0=ok, -1=unsupported
+        MH_PROPERTY_INT = lookup("rocksdb_property_int",
+            FunctionDescriptor.of(ValueLayout.JAVA_INT,
+                ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+        MH_FREE = lookup("rocksdb_free", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
     }
 
     private final MemorySegment dbPtr;
@@ -481,6 +497,61 @@ public final class RocksDB implements AutoCloseable {
     /** Returns a new iterator using the supplied {@code readOptions}. */
     public RocksIterator newIterator(ReadOptions readOptions) {
         return RocksIterator.create(dbPtr, readOptions.ptr);
+    }
+
+    // -----------------------------------------------------------------------
+    // DB Properties
+    // -----------------------------------------------------------------------
+
+    /**
+     * Returns the value of a well-known DB property as a string, or
+     * {@link Optional#empty()} if the property is not supported.
+     */
+    public Optional<String> getProperty(DBProperty property) {
+        return getProperty(property.propertyName());
+    }
+
+    /**
+     * Returns the value of a DB property by raw name, or {@link Optional#empty()}
+     * if the property is not supported. Refer to {@link DBProperty} for common names.
+     * The returned string is decoded from the native heap and does not require manual freeing.
+     */
+    public Optional<String> getProperty(String property) {
+        try (Arena arena = Arena.ofConfined()) {
+            MemorySegment propSeg = arena.allocateFrom(property);
+            MemorySegment result = (MemorySegment) MH_PROPERTY_VALUE.invokeExact(dbPtr, propSeg);
+            if (MemorySegment.NULL.equals(result)) return Optional.empty();
+            String value = result.reinterpret(Long.MAX_VALUE).getString(0);
+            MH_FREE.invokeExact(result);
+            return Optional.of(value);
+        } catch (Throwable t) {
+            throw RocksDBException.wrap("getProperty failed", t);
+        }
+    }
+
+    /**
+     * Returns the value of a well-known numeric DB property, or
+     * {@link OptionalLong#empty()} if the property is not supported or is not numeric.
+     */
+    public OptionalLong getLongProperty(DBProperty property) {
+        return getLongProperty(property.propertyName());
+    }
+
+    /**
+     * Returns the value of a numeric DB property by raw name, or
+     * {@link OptionalLong#empty()} if the property is not supported or is not numeric.
+     * Refer to {@link DBProperty} for common names.
+     */
+    public OptionalLong getLongProperty(String property) {
+        try (Arena arena = Arena.ofConfined()) {
+            MemorySegment propSeg = arena.allocateFrom(property);
+            MemorySegment out = arena.allocate(ValueLayout.JAVA_LONG);
+            int rc = (int) MH_PROPERTY_INT.invokeExact(dbPtr, propSeg, out);
+            if (rc != 0) return OptionalLong.empty();
+            return OptionalLong.of(out.get(ValueLayout.JAVA_LONG, 0));
+        } catch (Throwable t) {
+            throw RocksDBException.wrap("getLongProperty failed", t);
+        }
     }
 
     // -----------------------------------------------------------------------

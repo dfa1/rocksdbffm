@@ -45,6 +45,7 @@ This project is currently experimental. Core features are implemented, but sever
 | Iterators | seekToFirst/Last, seek, seekForPrev, next/prev; all three access tiers |
 | Snapshots | Point-in-time consistent reads; `ReadOptions.setSnapshot`, sequence numbers |
 | Flush | `flush(FlushOptions)`, `flushWal(boolean sync)`; sync/async modes |
+| DB Properties | `getProperty(DBProperty)` → `Optional<String>`, `getLongProperty(DBProperty)` → `OptionalLong`; well-known names in `DBProperty` enum |
 | Statistics | TickerType, HistogramType, StatsLevel |
 
 ### Roadmap — rocksdbjni parity gaps
@@ -57,7 +58,7 @@ This project is currently experimental. Core features are implemented, but sever
 | ~~Flush~~ | ✅ Done | |
 | **Compaction control** | 🟠 Medium | Manual compaction, space reclaim |
 | **MultiGet** | 🟠 Medium | Bulk reads |
-| **DB Properties** | 🟠 Medium | Introspection and monitoring |
+| ~~DB Properties~~ | ✅ Done | `getProperty` / `getLongProperty`; `rocksdb_approximate_sizes` not yet |
 | ~~KeyMayExist~~ | ✅ Done | |
 | **DeleteRange** | 🟠 Medium | Range tombstones |
 | **SST File Ingest** | 🟠 Medium | High-speed bulk loading |

@@ -2,7 +2,6 @@ package com.example;
 
 import org.rocksdb.Options;
 import org.rocksdb.RocksDB;
-import org.rocksdb.RocksDBException;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -13,7 +12,7 @@ public class Main {
         RocksDB.loadLibrary();
     }
 
-    public static void main(String[] args) throws Exception {
+    static void main() throws Exception {
         Path dbPath = Path.of("/tmp/ffm-rocksdb-example");
         Files.createDirectories(dbPath);
 

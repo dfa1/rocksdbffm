@@ -9,8 +9,9 @@ import java.lang.invoke.MethodHandle;
 /**
  * Centralized utility for RocksDB native operations.
  * Handles symbol lookup, error checking, and common memory patterns.
+ * NB: this is package private
  */
-public final class Native {
+final class Native {
 
     private static final MethodHandle MH_FREE = RocksDB.lookup("rocksdb_free",
             FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));

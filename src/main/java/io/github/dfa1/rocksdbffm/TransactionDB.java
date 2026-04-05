@@ -103,18 +103,21 @@ public final class TransactionDB implements AutoCloseable {
      * The caller retains ownership of {@code dbOptions} and {@code txnDbOptions}.
      */
     public static TransactionDB open(Options dbOptions, TransactionDBOptions txnDbOptions, Path path) {
-        return Native.check(err -> {
-            try (Arena arena = Arena.ofConfined()) {
-                MemorySegment pathSeg = arena.allocateFrom(path.toString());
+        try (Arena arena = Arena.ofConfined()) {
+            MemorySegment err = Native.errHolder(arena);
+            MemorySegment pathSeg = arena.allocateFrom(path.toString());
 
-                MemorySegment ptr = (MemorySegment) MH_OPEN.invokeExact(
-                    dbOptions.ptr, txnDbOptions.ptr, pathSeg, err);
+            MemorySegment ptr = (MemorySegment) MH_OPEN.invokeExact(
+                dbOptions.ptr, txnDbOptions.ptr, pathSeg, err);
 
-                MemorySegment writeOpts = (MemorySegment) WriteOptions.MH_CREATE.invokeExact();
-                MemorySegment readOpts  = (MemorySegment) ReadOptions.MH_CREATE.invokeExact();
-                return new TransactionDB(ptr, writeOpts, readOpts);
-            }
-        });
+            Native.checkError(err);
+
+            MemorySegment writeOpts = (MemorySegment) WriteOptions.MH_CREATE.invokeExact();
+            MemorySegment readOpts  = (MemorySegment) ReadOptions.MH_CREATE.invokeExact();
+            return new TransactionDB(ptr, writeOpts, readOpts);
+        } catch (Throwable t) {
+            throw (t instanceof RocksDBException r) ? r : new RocksDBException("Native call failed", t);
+        }
     }
 
     // -----------------------------------------------------------------------
@@ -150,43 +153,50 @@ public final class TransactionDB implements AutoCloseable {
 
     /** Direct put, bypassing any active transaction. Slow path: allocates native memory. */
     public void put(byte[] key, byte[] value) {
-        Native.check(err -> {
-            try (Arena arena = Arena.ofConfined()) {
-                MemorySegment k = toNative(arena, key);
-                MemorySegment v = toNative(arena, value);
-                MH_PUT.invokeExact(ptr, writeOpts, k, (long) key.length, v, (long) value.length, err);
-            }
-        });
+        try (Arena arena = Arena.ofConfined()) {
+            MemorySegment err = Native.errHolder(arena);
+            MemorySegment k = toNative(arena, key);
+            MemorySegment v = toNative(arena, value);
+            MH_PUT.invokeExact(ptr, writeOpts, k, (long) key.length, v, (long) value.length, err);
+            Native.checkError(err);
+        } catch (Throwable t) {
+            throw (t instanceof RocksDBException r) ? r : new RocksDBException("Native call failed", t);
+        }
     }
 
     /** Direct get, reading committed data only. Returns {@code null} if not found. Slow path. */
     public byte[] get(byte[] key) {
-        return Native.check(err -> {
-            try (Arena arena = Arena.ofConfined()) {
-                MemorySegment k = toNative(arena, key);
-                MemorySegment valLenSeg = arena.allocate(ValueLayout.JAVA_LONG);
+        try (Arena arena = Arena.ofConfined()) {
+            MemorySegment err = Native.errHolder(arena);
+            MemorySegment k = toNative(arena, key);
+            MemorySegment valLenSeg = arena.allocate(ValueLayout.JAVA_LONG);
 
-                MemorySegment valPtr = (MemorySegment) MH_GET.invokeExact(
-                    ptr, readOpts, k, (long) key.length, valLenSeg, err);
+            MemorySegment valPtr = (MemorySegment) MH_GET.invokeExact(
+                ptr, readOpts, k, (long) key.length, valLenSeg, err);
 
-                if (MemorySegment.NULL.equals(valPtr)) return null;
+            Native.checkError(err);
 
-                long valLen = valLenSeg.get(ValueLayout.JAVA_LONG, 0);
-                byte[] result = valPtr.reinterpret(valLen).toArray(ValueLayout.JAVA_BYTE);
-                MH_FREE.invokeExact(valPtr);
-                return result;
-            }
-        });
+            if (MemorySegment.NULL.equals(valPtr)) return null;
+
+            long valLen = valLenSeg.get(ValueLayout.JAVA_LONG, 0);
+            byte[] result = valPtr.reinterpret(valLen).toArray(ValueLayout.JAVA_BYTE);
+            MH_FREE.invokeExact(valPtr);
+            return result;
+        } catch (Throwable t) {
+            throw (t instanceof RocksDBException r) ? r : new RocksDBException("Native call failed", t);
+        }
     }
 
     /** Direct delete, bypassing any active transaction. Slow path. */
     public void delete(byte[] key) {
-        Native.check(err -> {
-            try (Arena arena = Arena.ofConfined()) {
-                MemorySegment k = toNative(arena, key);
-                MH_DELETE.invokeExact(ptr, writeOpts, k, (long) key.length, err);
-            }
-        });
+        try (Arena arena = Arena.ofConfined()) {
+            MemorySegment err = Native.errHolder(arena);
+            MemorySegment k = toNative(arena, key);
+            MH_DELETE.invokeExact(ptr, writeOpts, k, (long) key.length, err);
+            Native.checkError(err);
+        } catch (Throwable t) {
+            throw (t instanceof RocksDBException r) ? r : new RocksDBException("Native call failed", t);
+        }
     }
 
     // -----------------------------------------------------------------------

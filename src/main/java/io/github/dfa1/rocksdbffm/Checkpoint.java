@@ -65,10 +65,14 @@ public final class Checkpoint implements AutoCloseable {
      * Close it when done — this does not affect the database or any exported checkpoints.
      */
     public static Checkpoint create(RocksDB db) {
-        return Native.check(err -> {
-            var ptr = (MemorySegment) MH_CREATE.invokeExact(db.dbPtr, err);
+        try (Arena arena = Arena.ofConfined()) {
+            MemorySegment err = Native.errHolder(arena);
+            var ptr = (MemorySegment) MH_CREATE.invokeExact(db.ptr(), err);
+            Native.checkError(err);
             return new Checkpoint(ptr);
-        });
+        } catch (Throwable t) {
+            throw (t instanceof RocksDBException r) ? r : new RocksDBException("Native call failed", t);
+        }
     }
 
     /**
@@ -85,12 +89,14 @@ public final class Checkpoint implements AutoCloseable {
      *                        to never flush (use WAL as-is).
      */
     public void exportTo(Path checkpointDir, long logSizeForFlush) {
-        Native.check(err -> {
-            try (var arena = Arena.ofConfined()) {
-                var dirSeg = arena.allocateFrom(checkpointDir.toString());
-                MH_EXPORT.invokeExact(ptr, dirSeg, logSizeForFlush, err);
-            }
-        });
+        try (Arena arena = Arena.ofConfined()) {
+            MemorySegment err = Native.errHolder(arena);
+            var dirSeg = arena.allocateFrom(checkpointDir.toString());
+            MH_EXPORT.invokeExact(ptr, dirSeg, logSizeForFlush, err);
+            Native.checkError(err);
+        } catch (Throwable t) {
+            throw (t instanceof RocksDBException r) ? r : new RocksDBException("Native call failed", t);
+        }
     }
 
     /**

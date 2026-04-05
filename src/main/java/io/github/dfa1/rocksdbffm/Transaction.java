@@ -103,23 +103,27 @@ public final class Transaction implements AutoCloseable {
 
     /** Stages a put inside this transaction. Slow path: allocates native memory for key/value. */
     public void put(byte[] key, byte[] value) {
-        Native.check(err -> {
-            try (Arena arena = Arena.ofConfined()) {
-                MemorySegment k = toNative(arena, key);
-                MemorySegment v = toNative(arena, value);
-                MH_PUT.invokeExact(ptr, k, (long) key.length, v, (long) value.length, err);
-            }
-        });
+        try (Arena arena = Arena.ofConfined()) {
+            MemorySegment err = Native.errHolder(arena);
+            MemorySegment k = toNative(arena, key);
+            MemorySegment v = toNative(arena, value);
+            MH_PUT.invokeExact(ptr, k, (long) key.length, v, (long) value.length, err);
+            Native.checkError(err);
+        } catch (Throwable t) {
+            throw (t instanceof RocksDBException r) ? r : new RocksDBException("Native call failed", t);
+        }
     }
 
     /** Stages a delete inside this transaction. Slow path: allocates native memory for key. */
     public void delete(byte[] key) {
-        Native.check(err -> {
-            try (Arena arena = Arena.ofConfined()) {
-                MemorySegment k = toNative(arena, key);
-                MH_DELETE.invokeExact(ptr, k, (long) key.length, err);
-            }
-        });
+        try (Arena arena = Arena.ofConfined()) {
+            MemorySegment err = Native.errHolder(arena);
+            MemorySegment k = toNative(arena, key);
+            MH_DELETE.invokeExact(ptr, k, (long) key.length, err);
+            Native.checkError(err);
+        } catch (Throwable t) {
+            throw (t instanceof RocksDBException r) ? r : new RocksDBException("Native call failed", t);
+        }
     }
 
     // -----------------------------------------------------------------------
@@ -133,23 +137,26 @@ public final class Transaction implements AutoCloseable {
      * <p>Slow path: allocates native memory for the key.
      */
     public byte[] get(ReadOptions readOptions, byte[] key) {
-        return Native.check(err -> {
-            try (Arena arena = Arena.ofConfined()) {
-                MemorySegment k = toNative(arena, key);
+        try (Arena arena = Arena.ofConfined()) {
+            MemorySegment err = Native.errHolder(arena);
+            MemorySegment k = toNative(arena, key);
 
-                MemorySegment pin = (MemorySegment) MH_GET_PINNED.invokeExact(
-                    ptr, readOptions.ptr, k, (long) key.length, err);
+            MemorySegment pin = (MemorySegment) MH_GET_PINNED.invokeExact(
+                ptr, readOptions.ptr, k, (long) key.length, err);
 
-                if (MemorySegment.NULL.equals(pin)) return null;
+            Native.checkError(err);
 
-                MemorySegment valLenSeg = arena.allocate(ValueLayout.JAVA_LONG);
-                MemorySegment valPtr = (MemorySegment) MH_PINNABLESLICE_VALUE.invokeExact(pin, valLenSeg);
-                long valLen = valLenSeg.get(ValueLayout.JAVA_LONG, 0);
-                byte[] result = valPtr.reinterpret(valLen).toArray(ValueLayout.JAVA_BYTE);
-                MH_PINNABLESLICE_DESTROY.invokeExact(pin);
-                return result;
-            }
-        });
+            if (MemorySegment.NULL.equals(pin)) return null;
+
+            MemorySegment valLenSeg = arena.allocate(ValueLayout.JAVA_LONG);
+            MemorySegment valPtr = (MemorySegment) MH_PINNABLESLICE_VALUE.invokeExact(pin, valLenSeg);
+            long valLen = valLenSeg.get(ValueLayout.JAVA_LONG, 0);
+            byte[] result = valPtr.reinterpret(valLen).toArray(ValueLayout.JAVA_BYTE);
+            MH_PINNABLESLICE_DESTROY.invokeExact(pin);
+            return result;
+        } catch (Throwable t) {
+            throw (t instanceof RocksDBException r) ? r : new RocksDBException("Native call failed", t);
+        }
     }
 
     /**
@@ -159,23 +166,26 @@ public final class Transaction implements AutoCloseable {
      * @param exclusive if true, acquires an exclusive (write) lock; otherwise a shared (read) lock
      */
     public byte[] getForUpdate(ReadOptions readOptions, byte[] key, boolean exclusive) {
-        return Native.check(err -> {
-            try (Arena arena = Arena.ofConfined()) {
-                MemorySegment k = toNative(arena, key);
-                MemorySegment valLenSeg = arena.allocate(ValueLayout.JAVA_LONG);
+        try (Arena arena = Arena.ofConfined()) {
+            MemorySegment err = Native.errHolder(arena);
+            MemorySegment k = toNative(arena, key);
+            MemorySegment valLenSeg = arena.allocate(ValueLayout.JAVA_LONG);
 
-                MemorySegment valPtr = (MemorySegment) MH_GET_FOR_UPDATE.invokeExact(
-                    ptr, readOptions.ptr, k, (long) key.length,
-                    valLenSeg, exclusive ? (byte) 1 : (byte) 0, err);
+            MemorySegment valPtr = (MemorySegment) MH_GET_FOR_UPDATE.invokeExact(
+                ptr, readOptions.ptr, k, (long) key.length,
+                valLenSeg, exclusive ? (byte) 1 : (byte) 0, err);
 
-                if (MemorySegment.NULL.equals(valPtr)) return null;
+            Native.checkError(err);
 
-                long valLen = valLenSeg.get(ValueLayout.JAVA_LONG, 0);
-                byte[] result = valPtr.reinterpret(valLen).toArray(ValueLayout.JAVA_BYTE);
-                MH_FREE.invokeExact(valPtr);
-                return result;
-            }
-        });
+            if (MemorySegment.NULL.equals(valPtr)) return null;
+
+            long valLen = valLenSeg.get(ValueLayout.JAVA_LONG, 0);
+            byte[] result = valPtr.reinterpret(valLen).toArray(ValueLayout.JAVA_BYTE);
+            MH_FREE.invokeExact(valPtr);
+            return result;
+        } catch (Throwable t) {
+            throw (t instanceof RocksDBException r) ? r : new RocksDBException("Native call failed", t);
+        }
     }
 
     // -----------------------------------------------------------------------
@@ -184,16 +194,24 @@ public final class Transaction implements AutoCloseable {
 
     /** Commits all staged operations in this transaction. */
     public void commit() {
-        Native.check(err -> {
+        try (Arena arena = Arena.ofConfined()) {
+            MemorySegment err = Native.errHolder(arena);
             MH_COMMIT.invokeExact(ptr, err);
-        });
+            Native.checkError(err);
+        } catch (Throwable t) {
+            throw (t instanceof RocksDBException r) ? r : new RocksDBException("Native call failed", t);
+        }
     }
 
     /** Rolls back all staged operations in this transaction. */
     public void rollback() {
-        Native.check(err -> {
+        try (Arena arena = Arena.ofConfined()) {
+            MemorySegment err = Native.errHolder(arena);
             MH_ROLLBACK.invokeExact(ptr, err);
-        });
+            Native.checkError(err);
+        } catch (Throwable t) {
+            throw (t instanceof RocksDBException r) ? r : new RocksDBException("Native call failed", t);
+        }
     }
 
     /** Records a savepoint. Rollback can return to this point via {@link #rollbackToSavePoint()}. */
@@ -207,9 +225,13 @@ public final class Transaction implements AutoCloseable {
 
     /** Rolls back to the most recent savepoint set by {@link #setSavePoint()}. */
     public void rollbackToSavePoint() {
-        Native.check(err -> {
+        try (Arena arena = Arena.ofConfined()) {
+            MemorySegment err = Native.errHolder(arena);
             MH_ROLLBACK_TO_SAVEPOINT.invokeExact(ptr, err);
-        });
+            Native.checkError(err);
+        } catch (Throwable t) {
+            throw (t instanceof RocksDBException r) ? r : new RocksDBException("Native call failed", t);
+        }
     }
 
     /**

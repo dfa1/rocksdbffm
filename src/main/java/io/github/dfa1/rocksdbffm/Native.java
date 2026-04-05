@@ -43,46 +43,4 @@ public final class Native {
             throw new RocksDBException(msg);
         }
     }
-
-    /**
-     * Executes a native call that might return an error.
-     * Allocates a temporary {@link Arena#ofConfined()} for the error holder.
-     */
-    public static void check(CheckedConsumer<MemorySegment> action) {
-        try (Arena arena = Arena.ofConfined()) {
-            MemorySegment holder = errHolder(arena);
-            action.accept(holder);
-            checkError(holder);
-        } catch (RocksDBException e) {
-            throw e;
-        } catch (Throwable t) {
-            throw new RocksDBException("Native call failed", t);
-        }
-    }
-
-    /**
-     * Executes a native call that returns a value and might return an error.
-     */
-    public static <T> T check(CheckedFunction<MemorySegment, T> action) {
-        try (Arena arena = Arena.ofConfined()) {
-            MemorySegment holder = errHolder(arena);
-            T result = action.apply(holder);
-            checkError(holder);
-            return result;
-        } catch (RocksDBException e) {
-            throw e;
-        } catch (Throwable t) {
-            throw new RocksDBException("Native call failed", t);
-        }
-    }
-
-    @FunctionalInterface
-    public interface CheckedConsumer<T> {
-        void accept(T t) throws Throwable;
-    }
-
-    @FunctionalInterface
-    public interface CheckedFunction<T, R> {
-        R apply(T t) throws Throwable;
-    }
 }

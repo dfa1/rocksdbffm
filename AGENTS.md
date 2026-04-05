@@ -45,18 +45,14 @@ For every feature, provide three tiers of access:
 ## ⚡ FFM Performance & Patterns
 
 ### 1. Centralized Error Handling
-**NEVER use ThreadLocals for error pointers.** Use the centralized `Native` utility:
+**NEVER use ThreadLocals for error pointers.** Use the centralized `Native` utility with the caller's `Arena`:
 
 ```java
-// Pattern A: Use caller's Arena (Preferred in hot paths)
 try (Arena arena = Arena.ofConfined()) {
     MemorySegment err = Native.errHolder(arena);
     MH_DO_SOMETHING.invokeExact(handle, ..., err);
     Native.checkError(err);
 }
-
-// Pattern B: Use helper (Convenient for one-off calls)
-Native.check(err -> MH_DO_SOMETHING.invokeExact(handle, ..., err));
 ```
 
 ### 2. Zero-Copy Patterns

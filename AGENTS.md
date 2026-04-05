@@ -42,13 +42,21 @@ For every feature, provide three tiers of access:
 
 ---
 
-## ⚡ FFM Performance Best Practices
+## ⚡ FFM Performance & Patterns
 
-### 1. Thread-Local Auxiliary Segments
-Avoid `Arena.ofConfined()` for small allocations on the hot path (like error holders or value lengths). Use a `ThreadLocal` pre-allocated `Arena.ofAuto()` segment:
+### 1. Centralized Error Handling
+**NEVER use ThreadLocals for error pointers.** Use the centralized `Native` utility:
+
 ```java
-private static final ThreadLocal<MemorySegment> ERR_HOLDER = ThreadLocal.withInitial(
-    () -> Arena.ofAuto().allocate(ValueLayout.ADDRESS));
+// Pattern A: Use caller's Arena (Preferred in hot paths)
+try (Arena arena = Arena.ofConfined()) {
+    MemorySegment err = Native.errHolder(arena);
+    MH_DO_SOMETHING.invokeExact(handle, ..., err);
+    Native.checkError(err);
+}
+
+// Pattern B: Use helper (Convenient for one-off calls)
+Native.check(err -> MH_DO_SOMETHING.invokeExact(handle, ..., err));
 ```
 
 ### 2. Zero-Copy Patterns

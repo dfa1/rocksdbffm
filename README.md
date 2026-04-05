@@ -2,20 +2,35 @@
 
 **rocksdbffm** is a Java wrapper for [RocksDB](https://rocksdb.org/) using the **Foreign Function & Memory (FFM) API** (Project Panama).
 
-The project provides a maintainable alternative to the traditional JNI-based `rocksdbjni`, targeting JDK 25 and above.
+The project aims to provide a more maintainable alternative to the traditional JNI-based `rocksdbjni`.
+The target is JDK 25+ because of `java.lang.foreign`.
 
 ## Why This Project Exists
 
-### 1. Reducing JNI Maintenance Lag
-There is often a significant delay between new features appearing in the RocksDB C++ core and their availability in the Java JNI wrappers. This is largely due to the complexity of maintaining C++ glue code. By using FFM, we can map C headers directly in Java, simplifying the process of supporting new C++ features.
+### 1. Inspired by community work
 
-### 2. Performance through Zero-Copy
-JNI typically requires copying data between native memory and the JVM heap. This wrapper is designed to minimize these copies:
-- **Pinnable Slices:** Utilizes `rocksdb_get_pinned` to access data directly from the RocksDB block cache.
+Especially this post [Expanding RocksDB’s Java FFI](https://rocksdb.org/blog/2024/02/20/foreign-function-interface.html).
+
+### 2. Reducing JNI Maintenance Lag
+There is often a significant delay between new features appearing in the RocksDB C++ core and their availability in
+the Java JNI wrappers. This is largely due to the complexity of maintaining C++ glue code. By using FFM, we can map
+C headers directly in Java, simplifying the process of supporting new C++ features.
+
+The code is mechanically generated and it can be inspected easily (as it is Java code)
+
+### 3. Safety
+
+FFM is much more safe than JNI: memory errors are not crashing the whole JVM.
+
+### 4. Performance through Zero-Copy
+Exposing `MemorySegment` methods:
+- **Pinnable Slices:** Utilizes `rocksdb_get_pinned`
 - **MemorySegment & ByteBuffer:** Support for `java.lang.foreign.MemorySegment` and direct `ByteBuffer` for data transfer between Java and native code.
-- **Thread-Local Optimizations:** Reuses thread-local auxiliary segments for error handling and value lengths to reduce allocations on hot paths.
+
 
 ## Performance Results
+> [!WARNING]
+> This needs much more work and verification.
 
 Benchmarks performed on JDK 25 (Apple M-series) compared to JNI:
 
@@ -93,6 +108,23 @@ All methods that accept a filesystem location (open, checkpoint, backup, …) ta
 
 This is a heavily AI-driven project. We intend to continue using AI as a cornerstone of our development process, from mapping C headers to optimizing the FFM implementation.
 
+## Getting Started
+
+### Requirements
+- JDK 25+.
+- RocksDB installed locally (e.g., `brew install rocksdb` on macOS).
+> [!WARNING]
+>  this works only in MacOS when rocksdb is installed
+
+### Build and Test
+```bash
+# Run unit tests
+mvn test
+```
+
+## License
+This project is licensed under the same terms as RocksDB (LevelDB/Apache 2.0).
+
 ## Contributing
 
 The project is open to contributions, particularly in the following areas:
@@ -100,24 +132,11 @@ The project is open to contributions, particularly in the following areas:
 - Benchmarking and performance profiling of the Java-to-Native boundary.
 - Improving the safety and lifecycle management of native objects.
 
-## Getting Started
+## TODO
 
-### Requirements
-- JDK 25+.
-- RocksDB installed locally (e.g., `brew install rocksdb` on macOS).
-
-### Build and Test
-```bash
-# Run unit tests
-mvn test
-
-# Run performance benchmarks
-mvn package -DskipTests
-java --enable-native-access=ALL-UNNAMED -jar target/benchmarks.jar
-```
-
-## License
-This project is licensed under the same terms as RocksDB (LevelDB/Apache 2.0).
-
----
-*Reference: [Expanding RocksDB’s Java FFI](https://rocksdb.org/blog/2024/02/20/foreign-function-interface.html)*
+- Create a community around this project => move away from "dfa1" user.
+- Cover all features of RocksDB in idiomatic/modern Java.
+- Use zig to cross-compile rocksdb for all major platforms (to simplify the build for windows/macos/linux).
+- Deploy to maven central.
+- Provide a pool for MemorySegment/ByteBuffer to make the library more
+  "battery included".

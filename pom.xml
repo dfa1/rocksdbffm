@@ -13,7 +13,7 @@
         <maven.compiler.source>25</maven.compiler.source>
         <maven.compiler.target>25</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <rocksdb.version>9.11.3</rocksdb.version>
+        <rocksdb.version>9.7.4</rocksdb.version>
     </properties>
 
     <dependencies>
@@ -21,6 +21,12 @@
             <groupId>org.rocksdb</groupId>
             <artifactId>rocksdbjni</artifactId>
             <version>${rocksdb.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>5.11.4</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 
@@ -36,6 +42,15 @@
                             <mainClass>com.example.Main</mainClass>
                         </manifest>
                     </archive>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.5.2</version>
+                <configuration>
+                    <argLine>--enable-native-access=ALL-UNNAMED</argLine>
+                    <reuseForks>false</reuseForks>
                 </configuration>
             </plugin>
         </plugins>

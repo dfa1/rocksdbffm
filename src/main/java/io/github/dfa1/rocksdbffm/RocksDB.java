@@ -9,6 +9,7 @@ import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Optional;
 import java.util.OptionalLong;
 
@@ -30,6 +31,7 @@ public final class RocksDB implements AutoCloseable {
     private static final SymbolLookup LIB;
 
     private static final MethodHandle MH_OPEN;
+    private static final MethodHandle MH_OPEN_WITH_TTL;
     private static final MethodHandle MH_OPEN_FOR_READ_ONLY;
     private static final MethodHandle MH_CLOSE;
     private static final MethodHandle MH_PUT;
@@ -63,6 +65,12 @@ public final class RocksDB implements AutoCloseable {
         MH_OPEN = lookup("rocksdb_open",
             FunctionDescriptor.of(ValueLayout.ADDRESS,
                 ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+        // rocksdb_t* rocksdb_open_with_ttl(opts*, name*, int ttl, errptr**)
+        MH_OPEN_WITH_TTL = lookup("rocksdb_open_with_ttl",
+            FunctionDescriptor.of(ValueLayout.ADDRESS,
+                ValueLayout.ADDRESS, ValueLayout.ADDRESS,
+                ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
 
         MH_OPEN_FOR_READ_ONLY = lookup("rocksdb_open_for_read_only",
             FunctionDescriptor.of(ValueLayout.ADDRESS,
@@ -242,6 +250,49 @@ public final class RocksDB implements AutoCloseable {
     public static RocksDB openReadOnly(Path path) {
         try (Options opts = new Options()) {
             return openReadOnly(opts, path, false);
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // TTL DB
+    // -----------------------------------------------------------------------
+
+    /**
+     * Opens (or creates) a TTL-aware database at {@code path}.
+     *
+     * <p>Keys are lazily expired: they are removed during the next compaction that
+     * covers their range, not at the exact moment the TTL elapses.  A {@code ttl}
+     * of {@link Duration#ZERO} disables expiry entirely.
+     *
+     * <p>The returned instance supports the full {@link RocksDB} API — reads,
+     * writes, iterators, snapshots, etc.
+     *
+     * @param options DB options (must have {@code createIfMissing} set as needed)
+     * @param path    filesystem path for the database
+     * @param ttl     time-to-live for each key; resolution is seconds
+     */
+    public static RocksDB openWithTtl(Options options, Path path, Duration ttl) {
+        try (Arena arena = Arena.ofConfined()) {
+            MemorySegment err     = Native.errHolder(arena);
+            MemorySegment pathSeg = arena.allocateFrom(path.toString());
+            int ttlSeconds        = (int) ttl.toSeconds();
+            MemorySegment dbPtr   = (MemorySegment) MH_OPEN_WITH_TTL.invokeExact(
+                options.ptr, pathSeg, ttlSeconds, err);
+            Native.checkError(err);
+            MemorySegment writeOptions = (MemorySegment) MH_WRITEOPTIONS_CREATE.invokeExact();
+            MemorySegment readOptions  = (MemorySegment) MH_READOPTIONS_CREATE.invokeExact();
+            return new RocksDB(dbPtr, writeOptions, readOptions);
+        } catch (Throwable t) {
+            throw RocksDBException.wrap("openWithTtl failed", t);
+        }
+    }
+
+    /**
+     * Opens (or creates) a TTL-aware database at {@code path} with default options.
+     */
+    public static RocksDB openWithTtl(Path path, Duration ttl) {
+        try (Options opts = new Options().setCreateIfMissing(true)) {
+            return openWithTtl(opts, path, ttl);
         }
     }
 

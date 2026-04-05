@@ -78,7 +78,7 @@ This project is currently experimental. The table below tracks parity with `rock
 | Compaction control | ❌ | Manual compaction, space reclaim |
 | SST File Ingest | ❌ | High-speed bulk loading |
 | Backup Engine | ❌ | Incremental backups |
-| TTL DB | ❌ | Auto-expiring keys |
+| TTL DB | ✅ | `openWithTtl(path, Duration)`; lazy expiry via compaction; full API available |
 | Optimistic Transactions | ❌ | Lock-free transactions |
 | CompactionFilter | ❌ | Custom compaction logic |
 | WAL Iterator | ❌ | Change log streaming |

@@ -71,7 +71,7 @@ public final class Checkpoint implements AutoCloseable {
             Native.checkError(err);
             return new Checkpoint(ptr);
         } catch (Throwable t) {
-            throw (t instanceof RocksDBException r) ? r : new RocksDBException("Native call failed", t);
+            throw RocksDBException.wrap("Native call failed", t);
         }
     }
 
@@ -95,7 +95,7 @@ public final class Checkpoint implements AutoCloseable {
             MH_EXPORT.invokeExact(ptr, dirSeg, logSizeForFlush, err);
             Native.checkError(err);
         } catch (Throwable t) {
-            throw (t instanceof RocksDBException r) ? r : new RocksDBException("Native call failed", t);
+            throw RocksDBException.wrap("Native call failed", t);
         }
     }
 

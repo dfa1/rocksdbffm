@@ -116,7 +116,7 @@ public final class Transaction implements AutoCloseable {
             MH_PUT.invokeExact(ptr, k, (long) key.length, v, (long) value.length, err);
             Native.checkError(err);
         } catch (Throwable t) {
-            throw (t instanceof RocksDBException r) ? r : new RocksDBException("Native call failed", t);
+            throw RocksDBException.wrap("Native call failed", t);
         }
     }
 
@@ -128,7 +128,7 @@ public final class Transaction implements AutoCloseable {
             MH_DELETE.invokeExact(ptr, k, (long) key.length, err);
             Native.checkError(err);
         } catch (Throwable t) {
-            throw (t instanceof RocksDBException r) ? r : new RocksDBException("Native call failed", t);
+            throw RocksDBException.wrap("Native call failed", t);
         }
     }
 
@@ -161,7 +161,7 @@ public final class Transaction implements AutoCloseable {
             MH_PINNABLESLICE_DESTROY.invokeExact(pin);
             return result;
         } catch (Throwable t) {
-            throw (t instanceof RocksDBException r) ? r : new RocksDBException("Native call failed", t);
+            throw RocksDBException.wrap("Native call failed", t);
         }
     }
 
@@ -190,7 +190,7 @@ public final class Transaction implements AutoCloseable {
             MH_FREE.invokeExact(valPtr);
             return result;
         } catch (Throwable t) {
-            throw (t instanceof RocksDBException r) ? r : new RocksDBException("Native call failed", t);
+            throw RocksDBException.wrap("Native call failed", t);
         }
     }
 
@@ -209,7 +209,7 @@ public final class Transaction implements AutoCloseable {
             if (MemorySegment.NULL.equals(snapPtr)) return null;
             return new Snapshot(snapPtr); // released via rocksdb_free
         } catch (Throwable t) {
-            throw (t instanceof RocksDBException r) ? r : new RocksDBException("getSnapshot failed", t);
+            throw RocksDBException.wrap("getSnapshot failed", t);
         }
     }
 
@@ -224,7 +224,7 @@ public final class Transaction implements AutoCloseable {
             MH_COMMIT.invokeExact(ptr, err);
             Native.checkError(err);
         } catch (Throwable t) {
-            throw (t instanceof RocksDBException r) ? r : new RocksDBException("Native call failed", t);
+            throw RocksDBException.wrap("Native call failed", t);
         }
     }
 
@@ -235,7 +235,7 @@ public final class Transaction implements AutoCloseable {
             MH_ROLLBACK.invokeExact(ptr, err);
             Native.checkError(err);
         } catch (Throwable t) {
-            throw (t instanceof RocksDBException r) ? r : new RocksDBException("Native call failed", t);
+            throw RocksDBException.wrap("Native call failed", t);
         }
     }
 
@@ -255,7 +255,7 @@ public final class Transaction implements AutoCloseable {
             MH_ROLLBACK_TO_SAVEPOINT.invokeExact(ptr, err);
             Native.checkError(err);
         } catch (Throwable t) {
-            throw (t instanceof RocksDBException r) ? r : new RocksDBException("Native call failed", t);
+            throw RocksDBException.wrap("Native call failed", t);
         }
     }
 

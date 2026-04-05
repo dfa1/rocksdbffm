@@ -145,7 +145,7 @@ public final class RocksDB implements AutoCloseable {
             MemorySegment readOptions = (MemorySegment) MH_READOPTIONS_CREATE.invokeExact();
             return new RocksDB(dbPtr, writeOptions, readOptions);
         } catch (Throwable t) {
-            throw (t instanceof RocksDBException r) ? r : new RocksDBException("open failed", t);
+            throw RocksDBException.wrap("open failed", t);
         }
     }
 
@@ -175,7 +175,7 @@ public final class RocksDB implements AutoCloseable {
             MemorySegment readOptions = (MemorySegment) MH_READOPTIONS_CREATE.invokeExact();
             return new RocksDB(dbPtr, writeOptions, readOptions);
         } catch (Throwable t) {
-            throw (t instanceof RocksDBException r) ? r : new RocksDBException("openReadOnly failed", t);
+            throw RocksDBException.wrap("openReadOnly failed", t);
         }
     }
 
@@ -213,7 +213,7 @@ public final class RocksDB implements AutoCloseable {
 
             Native.checkError(err);
         } catch (Throwable t) {
-            throw (t instanceof RocksDBException r) ? r : new RocksDBException("put failed", t);
+            throw RocksDBException.wrap("put failed", t);
         }
     }
 
@@ -240,7 +240,7 @@ public final class RocksDB implements AutoCloseable {
             MH_PINNABLESLICE_DESTROY.invokeExact(pin);
             return result;
         } catch (Throwable t) {
-            throw (t instanceof RocksDBException r) ? r : new RocksDBException("get failed", t);
+            throw RocksDBException.wrap("get failed", t);
         }
     }
 
@@ -255,7 +255,7 @@ public final class RocksDB implements AutoCloseable {
 
             Native.checkError(err);
         } catch (Throwable t) {
-            throw (t instanceof RocksDBException r) ? r : new RocksDBException("delete failed", t);
+            throw RocksDBException.wrap("delete failed", t);
         }
     }
 
@@ -278,7 +278,7 @@ public final class RocksDB implements AutoCloseable {
                 err);
             Native.checkError(err);
         } catch (Throwable t) {
-            throw (t instanceof RocksDBException r) ? r : new RocksDBException("put failed", t);
+            throw RocksDBException.wrap("put failed", t);
         }
     }
 
@@ -308,7 +308,7 @@ public final class RocksDB implements AutoCloseable {
             MH_PINNABLESLICE_DESTROY.invokeExact(pin);
             return (int) valLen;
         } catch (Throwable t) {
-            throw (t instanceof RocksDBException r) ? r : new RocksDBException("get failed", t);
+            throw RocksDBException.wrap("get failed", t);
         }
     }
 
@@ -326,7 +326,7 @@ public final class RocksDB implements AutoCloseable {
             MH_FLUSH.invokeExact(dbPtr, flushOptions.ptr, err);
             Native.checkError(err);
         } catch (Throwable t) {
-            throw (t instanceof RocksDBException r) ? r : new RocksDBException("flush failed", t);
+            throw RocksDBException.wrap("flush failed", t);
         }
     }
 
@@ -342,7 +342,7 @@ public final class RocksDB implements AutoCloseable {
             MH_FLUSH_WAL.invokeExact(dbPtr, sync ? (byte) 1 : (byte) 0, err);
             Native.checkError(err);
         } catch (Throwable t) {
-            throw (t instanceof RocksDBException r) ? r : new RocksDBException("flushWal failed", t);
+            throw RocksDBException.wrap("flushWal failed", t);
         }
     }
 
@@ -359,7 +359,7 @@ public final class RocksDB implements AutoCloseable {
             MemorySegment snapPtr = (MemorySegment) MH_CREATE_SNAPSHOT.invokeExact(dbPtr);
             return new Snapshot(dbPtr, snapPtr);
         } catch (Throwable t) {
-            throw (t instanceof RocksDBException r) ? r : new RocksDBException("getSnapshot failed", t);
+            throw RocksDBException.wrap("getSnapshot failed", t);
         }
     }
 
@@ -386,7 +386,7 @@ public final class RocksDB implements AutoCloseable {
             MH_PINNABLESLICE_DESTROY.invokeExact(pin);
             return result;
         } catch (Throwable t) {
-            throw (t instanceof RocksDBException r) ? r : new RocksDBException("get failed", t);
+            throw RocksDBException.wrap("get failed", t);
         }
     }
 
@@ -414,7 +414,7 @@ public final class RocksDB implements AutoCloseable {
             MH_WRITE.invokeExact(dbPtr, writeOptions, batch.ptr, err);
             Native.checkError(err);
         } catch (Throwable t) {
-            throw (t instanceof RocksDBException r) ? r : new RocksDBException("write failed", t);
+            throw RocksDBException.wrap("write failed", t);
         }
     }
 

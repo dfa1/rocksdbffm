@@ -125,12 +125,12 @@ public final class BlockBasedTableConfig implements AutoCloseable {
     // -----------------------------------------------------------------------
 
     /**
-     * Size of each data block in bytes. Default: 4 KB.
+     * Size of each data block. Default: 4 KB.
      * Larger blocks improve compression but increase read amplification.
      */
-    public BlockBasedTableConfig setBlockSize(long blockSize) {
+    public BlockBasedTableConfig setBlockSize(MemorySize blockSize) {
         try {
-            MH_SET_BLOCK_SIZE.invokeExact(ptr, blockSize);
+            MH_SET_BLOCK_SIZE.invokeExact(ptr, blockSize.toBytes());
         } catch (Throwable t) {
             throw new RocksDBException("setBlockSize failed", t);
         }

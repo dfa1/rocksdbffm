@@ -10,7 +10,7 @@ import java.lang.invoke.MethodHandle;
  * cache across multiple column families or DB instances.
  *
  * <pre>{@code
- * try (LRUCache cache = new LRUCache(64 * 1024 * 1024)) { // 64 MB
+ * try (LRUCache cache = new LRUCache(MemorySize.ofMB(64))) {
  *     BlockBasedTableConfig tbl = new BlockBasedTableConfig()
  *         .setBlockCache(cache);
  *     ...
@@ -54,48 +54,42 @@ public final class LRUCache implements AutoCloseable {
     /** Package-private: accessed by BlockBasedTableConfig. */
     final MemorySegment ptr;
 
-    /**
-     * Creates an LRU block cache with the given capacity in bytes.
-     */
-    public LRUCache(long capacityBytes) {
+    public LRUCache(MemorySize capacity) {
         try {
-            this.ptr = (MemorySegment) MH_CREATE.invokeExact(capacityBytes);
+            this.ptr = (MemorySegment) MH_CREATE.invokeExact(capacity.toBytes());
         } catch (Throwable t) {
             throw new RocksDBException("LRUCache create failed", t);
         }
     }
 
     /** Dynamically resizes the cache. Excess entries are evicted as needed. */
-    public void setCapacity(long capacityBytes) {
+    public void setCapacity(MemorySize capacity) {
         try {
-            MH_SET_CAPACITY.invokeExact(ptr, capacityBytes);
+            MH_SET_CAPACITY.invokeExact(ptr, capacity.toBytes());
         } catch (Throwable t) {
             throw new RocksDBException("setCapacity failed", t);
         }
     }
 
-    /** Returns the configured capacity in bytes. */
-    public long getCapacity() {
+    public MemorySize getCapacity() {
         try {
-            return (long) MH_GET_CAPACITY.invokeExact(ptr);
+            return MemorySize.ofBytes((long) MH_GET_CAPACITY.invokeExact(ptr));
         } catch (Throwable t) {
             throw new RocksDBException("getCapacity failed", t);
         }
     }
 
-    /** Returns the current memory usage in bytes. */
-    public long getUsage() {
+    public MemorySize getUsage() {
         try {
-            return (long) MH_GET_USAGE.invokeExact(ptr);
+            return MemorySize.ofBytes((long) MH_GET_USAGE.invokeExact(ptr));
         } catch (Throwable t) {
             throw new RocksDBException("getUsage failed", t);
         }
     }
 
-    /** Returns the current pinned memory usage in bytes. */
-    public long getPinnedUsage() {
+    public MemorySize getPinnedUsage() {
         try {
-            return (long) MH_GET_PINNED_USAGE.invokeExact(ptr);
+            return MemorySize.ofBytes((long) MH_GET_PINNED_USAGE.invokeExact(ptr));
         } catch (Throwable t) {
             throw new RocksDBException("getPinnedUsage failed", t);
         }

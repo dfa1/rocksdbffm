@@ -15,24 +15,24 @@ class TableOptionsFfmTest {
 
     @Test
     void lruCacheCapacity() {
-        try (LRUCache cache = new LRUCache(16 * 1024 * 1024)) {
-            assertEquals(16 * 1024 * 1024, cache.getCapacity());
+        try (LRUCache cache = new LRUCache(MemorySize.ofMB(16))) {
+            assertEquals(MemorySize.ofMB(16), cache.getCapacity());
         }
     }
 
     @Test
     void lruCacheSetCapacity() {
-        try (LRUCache cache = new LRUCache(8 * 1024 * 1024)) {
-            cache.setCapacity(32 * 1024 * 1024);
-            assertEquals(32 * 1024 * 1024, cache.getCapacity());
+        try (LRUCache cache = new LRUCache(MemorySize.ofMB(8))) {
+            cache.setCapacity(MemorySize.ofMB(32));
+            assertEquals(MemorySize.ofMB(32), cache.getCapacity());
         }
     }
 
     @Test
     void lruCacheUsageNonNegative() {
-        try (LRUCache cache = new LRUCache(16 * 1024 * 1024)) {
-            assertTrue(cache.getUsage() >= 0);
-            assertTrue(cache.getPinnedUsage() >= 0);
+        try (LRUCache cache = new LRUCache(MemorySize.ofMB(16))) {
+            assertTrue(cache.getUsage().compareTo(MemorySize.ZERO) >= 0);
+            assertTrue(cache.getPinnedUsage().compareTo(MemorySize.ZERO) >= 0);
         }
     }
 
@@ -54,7 +54,7 @@ class TableOptionsFfmTest {
     @Test
     void customBlockSize(@TempDir Path tempDir) {
         try (BlockBasedTableConfig tbl = new BlockBasedTableConfig()
-                .setBlockSize(16 * 1024);
+                .setBlockSize(MemorySize.ofKB(16));
              Options opts = new Options().setCreateIfMissing(true).setTableFormatConfig(tbl);
              RocksDB db = RocksDB.open(opts, tempDir)) {
 
@@ -103,7 +103,7 @@ class TableOptionsFfmTest {
 
     @Test
     void sharedBlockCacheWorks(@TempDir Path tempDir) {
-        try (LRUCache cache = new LRUCache(64 * 1024 * 1024);
+        try (LRUCache cache = new LRUCache(MemorySize.ofMB(64));
              BlockBasedTableConfig tbl = new BlockBasedTableConfig()
                  .setBlockCache(cache)
                  .setCacheIndexAndFilterBlocks(true)
@@ -118,7 +118,7 @@ class TableOptionsFfmTest {
                 assertArrayEquals(("val-" + i).getBytes(), db.get(("key-" + i).getBytes()));
             }
             // some data should now be cached
-            assertTrue(cache.getUsage() >= 0);
+            assertTrue(cache.getUsage().compareTo(MemorySize.ZERO) >= 0);
         }
     }
 

@@ -5,7 +5,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Path;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 class TableOptionsFfmTest {
 
@@ -14,25 +14,36 @@ class TableOptionsFfmTest {
     // -----------------------------------------------------------------------
 
     @Test
-    void lruCacheCapacity() {
-        try (LRUCache cache = new LRUCache(MemorySize.ofMB(16))) {
-            assertEquals(MemorySize.ofMB(16), cache.getCapacity());
+    void lruCache_reportsConfiguredCapacity() {
+        // Given / When
+        try (var sut = new LRUCache(MemorySize.ofMB(16))) {
+
+            // Then
+            assertThat(sut.getCapacity()).isEqualTo(MemorySize.ofMB(16));
         }
     }
 
     @Test
-    void lruCacheSetCapacity() {
-        try (LRUCache cache = new LRUCache(MemorySize.ofMB(8))) {
-            cache.setCapacity(MemorySize.ofMB(32));
-            assertEquals(MemorySize.ofMB(32), cache.getCapacity());
+    void lruCache_setCapacity_updatesCapacity() {
+        // Given
+        try (var sut = new LRUCache(MemorySize.ofMB(8))) {
+
+            // When
+            sut.setCapacity(MemorySize.ofMB(32));
+
+            // Then
+            assertThat(sut.getCapacity()).isEqualTo(MemorySize.ofMB(32));
         }
     }
 
     @Test
-    void lruCacheUsageNonNegative() {
-        try (LRUCache cache = new LRUCache(MemorySize.ofMB(16))) {
-            assertTrue(cache.getUsage().compareTo(MemorySize.ZERO) >= 0);
-            assertTrue(cache.getPinnedUsage().compareTo(MemorySize.ZERO) >= 0);
+    void lruCache_usageIsNonNegative() {
+        // Given / When
+        try (var sut = new LRUCache(MemorySize.ofMB(16))) {
+
+            // Then
+            assertThat(sut.getUsage()).isGreaterThanOrEqualTo(MemorySize.ZERO);
+            assertThat(sut.getPinnedUsage()).isGreaterThanOrEqualTo(MemorySize.ZERO);
         }
     }
 
@@ -41,25 +52,36 @@ class TableOptionsFfmTest {
     // -----------------------------------------------------------------------
 
     @Test
-    void defaultTableConfigWorks(@TempDir Path tempDir) {
-        try (BlockBasedTableConfig tbl = new BlockBasedTableConfig();
-             Options opts = new Options().setCreateIfMissing(true).setTableFormatConfig(tbl);
-             RocksDB db = RocksDB.open(opts, tempDir)) {
+    void defaultTableConfig_allowsReadWrite(@TempDir Path dir) {
+        // Given
+        try (var tbl = new BlockBasedTableConfig();
+             var opts = new Options().setCreateIfMissing(true).setTableFormatConfig(tbl);
+             var db = RocksDB.open(opts, dir)) {
 
             db.put("k".getBytes(), "v".getBytes());
-            assertArrayEquals("v".getBytes(), db.get("k".getBytes()));
+
+            // When
+            var result = db.get("k".getBytes());
+
+            // Then
+            assertThat(result).isEqualTo("v".getBytes());
         }
     }
 
     @Test
-    void customBlockSize(@TempDir Path tempDir) {
-        try (BlockBasedTableConfig tbl = new BlockBasedTableConfig()
-                .setBlockSize(MemorySize.ofKB(16));
-             Options opts = new Options().setCreateIfMissing(true).setTableFormatConfig(tbl);
-             RocksDB db = RocksDB.open(opts, tempDir)) {
+    void customBlockSize_allowsReadWrite(@TempDir Path dir) {
+        // Given
+        try (var tbl = new BlockBasedTableConfig().setBlockSize(MemorySize.ofKB(16));
+             var opts = new Options().setCreateIfMissing(true).setTableFormatConfig(tbl);
+             var db = RocksDB.open(opts, dir)) {
 
             db.put("key".getBytes(), "value".getBytes());
-            assertArrayEquals("value".getBytes(), db.get("key".getBytes()));
+
+            // When
+            var result = db.get("key".getBytes());
+
+            // Then
+            assertThat(result).isEqualTo("value".getBytes());
         }
     }
 
@@ -68,15 +90,21 @@ class TableOptionsFfmTest {
     // -----------------------------------------------------------------------
 
     @Test
-    void bloomFilterWorks(@TempDir Path tempDir) {
-        try (BlockBasedTableConfig tbl = new BlockBasedTableConfig()
-                .setFilterPolicy(FilterPolicy.newBloom(10));
-             Options opts = new Options().setCreateIfMissing(true).setTableFormatConfig(tbl);
-             RocksDB db = RocksDB.open(opts, tempDir)) {
+    void bloomFilter_returnsExistingKey(@TempDir Path dir) {
+        // Given
+        try (var tbl = new BlockBasedTableConfig().setFilterPolicy(FilterPolicy.newBloom(10));
+             var opts = new Options().setCreateIfMissing(true).setTableFormatConfig(tbl);
+             var db = RocksDB.open(opts, dir)) {
 
             db.put("bloom-key".getBytes(), "bloom-value".getBytes());
-            assertArrayEquals("bloom-value".getBytes(), db.get("bloom-key".getBytes()));
-            assertNull(db.get("absent".getBytes()));
+
+            // When
+            var hit  = db.get("bloom-key".getBytes());
+            var miss = db.get("absent".getBytes());
+
+            // Then
+            assertThat(hit).isEqualTo("bloom-value".getBytes());
+            assertThat(miss).isNull();
         }
     }
 
@@ -85,52 +113,67 @@ class TableOptionsFfmTest {
     // -----------------------------------------------------------------------
 
     @Test
-    void ribbonFilterWorks(@TempDir Path tempDir) {
-        try (BlockBasedTableConfig tbl = new BlockBasedTableConfig()
-                .setFilterPolicy(FilterPolicy.newRibbon(10));
-             Options opts = new Options().setCreateIfMissing(true).setTableFormatConfig(tbl);
-             RocksDB db = RocksDB.open(opts, tempDir)) {
+    void ribbonFilter_returnsExistingKey(@TempDir Path dir) {
+        // Given
+        try (var tbl = new BlockBasedTableConfig().setFilterPolicy(FilterPolicy.newRibbon(10));
+             var opts = new Options().setCreateIfMissing(true).setTableFormatConfig(tbl);
+             var db = RocksDB.open(opts, dir)) {
 
             db.put("ribbon-key".getBytes(), "ribbon-value".getBytes());
-            assertArrayEquals("ribbon-value".getBytes(), db.get("ribbon-key".getBytes()));
-            assertNull(db.get("absent".getBytes()));
+
+            // When
+            var hit  = db.get("ribbon-key".getBytes());
+            var miss = db.get("absent".getBytes());
+
+            // Then
+            assertThat(hit).isEqualTo("ribbon-value".getBytes());
+            assertThat(miss).isNull();
         }
     }
 
     // -----------------------------------------------------------------------
-    // Block cache integration
+    // Shared block cache
     // -----------------------------------------------------------------------
 
     @Test
-    void sharedBlockCacheWorks(@TempDir Path tempDir) {
-        try (LRUCache cache = new LRUCache(MemorySize.ofMB(64));
-             BlockBasedTableConfig tbl = new BlockBasedTableConfig()
+    void sharedBlockCache_servesCachedReads(@TempDir Path dir) {
+        // Given
+        try (var cache = new LRUCache(MemorySize.ofMB(64));
+             var tbl = new BlockBasedTableConfig()
                  .setBlockCache(cache)
                  .setCacheIndexAndFilterBlocks(true)
                  .setFilterPolicy(FilterPolicy.newBloom(10));
-             Options opts = new Options().setCreateIfMissing(true).setTableFormatConfig(tbl);
-             RocksDB db = RocksDB.open(opts, tempDir)) {
+             var opts = new Options().setCreateIfMissing(true).setTableFormatConfig(tbl);
+             var db = RocksDB.open(opts, dir)) {
 
             for (int i = 0; i < 100; i++) {
                 db.put(("key-" + i).getBytes(), ("val-" + i).getBytes());
             }
+
+            // When — read all keys to populate the cache
             for (int i = 0; i < 100; i++) {
-                assertArrayEquals(("val-" + i).getBytes(), db.get(("key-" + i).getBytes()));
+                assertThat(db.get(("key-" + i).getBytes())).isEqualTo(("val-" + i).getBytes());
             }
-            // some data should now be cached
-            assertTrue(cache.getUsage().compareTo(MemorySize.ZERO) >= 0);
+
+            // Then — cache should have been used
+            assertThat(cache.getUsage()).isGreaterThanOrEqualTo(MemorySize.ZERO);
         }
     }
 
     @Test
-    void noBlockCache(@TempDir Path tempDir) {
-        try (BlockBasedTableConfig tbl = new BlockBasedTableConfig()
-                .setNoBlockCache(true);
-             Options opts = new Options().setCreateIfMissing(true).setTableFormatConfig(tbl);
-             RocksDB db = RocksDB.open(opts, tempDir)) {
+    void noBlockCache_allowsReadWrite(@TempDir Path dir) {
+        // Given
+        try (var tbl = new BlockBasedTableConfig().setNoBlockCache(true);
+             var opts = new Options().setCreateIfMissing(true).setTableFormatConfig(tbl);
+             var db = RocksDB.open(opts, dir)) {
 
             db.put("k".getBytes(), "v".getBytes());
-            assertArrayEquals("v".getBytes(), db.get("k".getBytes()));
+
+            // When
+            var result = db.get("k".getBytes());
+
+            // Then
+            assertThat(result).isEqualTo("v".getBytes());
         }
     }
 
@@ -139,16 +182,22 @@ class TableOptionsFfmTest {
     // -----------------------------------------------------------------------
 
     @Test
-    void twoLevelIndexType(@TempDir Path tempDir) {
-        try (BlockBasedTableConfig tbl = new BlockBasedTableConfig()
-                .setIndexType(BlockBasedTableConfig.IndexType.TWO_LEVEL_INDEX_SEARCH)
-                .setPartitionFilters(true)
-                .setFilterPolicy(FilterPolicy.newBloom(10));
-             Options opts = new Options().setCreateIfMissing(true).setTableFormatConfig(tbl);
-             RocksDB db = RocksDB.open(opts, tempDir)) {
+    void twoLevelIndexSearch_allowsReadWrite(@TempDir Path dir) {
+        // Given
+        try (var tbl = new BlockBasedTableConfig()
+                 .setIndexType(BlockBasedTableConfig.IndexType.TWO_LEVEL_INDEX_SEARCH)
+                 .setPartitionFilters(true)
+                 .setFilterPolicy(FilterPolicy.newBloom(10));
+             var opts = new Options().setCreateIfMissing(true).setTableFormatConfig(tbl);
+             var db = RocksDB.open(opts, dir)) {
 
             db.put("k".getBytes(), "v".getBytes());
-            assertArrayEquals("v".getBytes(), db.get("k".getBytes()));
+
+            // When
+            var result = db.get("k".getBytes());
+
+            // Then
+            assertThat(result).isEqualTo("v".getBytes());
         }
     }
 
@@ -157,14 +206,19 @@ class TableOptionsFfmTest {
     // -----------------------------------------------------------------------
 
     @Test
-    void formatVersion5(@TempDir Path tempDir) {
-        try (BlockBasedTableConfig tbl = new BlockBasedTableConfig()
-                .setFormatVersion(5);
-             Options opts = new Options().setCreateIfMissing(true).setTableFormatConfig(tbl);
-             RocksDB db = RocksDB.open(opts, tempDir)) {
+    void formatVersion5_allowsReadWrite(@TempDir Path dir) {
+        // Given
+        try (var tbl = new BlockBasedTableConfig().setFormatVersion(5);
+             var opts = new Options().setCreateIfMissing(true).setTableFormatConfig(tbl);
+             var db = RocksDB.open(opts, dir)) {
 
             db.put("k".getBytes(), "v".getBytes());
-            assertArrayEquals("v".getBytes(), db.get("k".getBytes()));
+
+            // When
+            var result = db.get("k".getBytes());
+
+            // Then
+            assertThat(result).isEqualTo("v".getBytes());
         }
     }
 }

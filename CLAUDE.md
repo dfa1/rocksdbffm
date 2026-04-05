@@ -30,6 +30,16 @@ Write unit tests in JUnit 5 and @TempDir. JMH is used for all performance tests.
 Run tests:      mvn test
 Run benchmarks: mvn package -DskipTests && java --enable-native-access=ALL-UNNAMED -jar target/benchmarks.jar
 
+All unit tests follow the structure of:
+// Given
+var sut = new SubjectUnderTest();
+// When
+var result = sut.operation();
+// Then
+assertThat(result).isXXX()
+
+Use assertj as assertion library.
+
 What features to cover
 ----
 

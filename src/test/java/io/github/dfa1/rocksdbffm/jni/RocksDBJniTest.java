@@ -2,15 +2,12 @@ package io.github.dfa1.rocksdbffm.jni;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.rocksdb.Options;
-import org.rocksdb.RocksDB;
-import org.rocksdb.RocksDBException;
-import org.rocksdb.WriteBatch;
-import org.rocksdb.WriteOptions;
+import org.rocksdb.*;
 
 import java.nio.file.Path;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class RocksDBJniTest {
 
@@ -19,147 +16,189 @@ class RocksDBJniTest {
     }
 
     @Test
-    void putGetDelete(@TempDir Path tempDir) throws RocksDBException {
-        try (Options opts = new Options().setCreateIfMissing(true);
-             RocksDB db = RocksDB.open(opts, tempDir.toString())) {
+    void get_returnsStoredValue(@TempDir Path dir) throws RocksDBException {
+        // Given
+        try (var opts = new Options().setCreateIfMissing(true);
+             var db = RocksDB.open(opts, dir.toString())) {
 
-            byte[] key = "hello".getBytes();
-            byte[] value = "world".getBytes();
+            db.put("hello".getBytes(), "world".getBytes());
 
-            db.put(key, value);
-            assertArrayEquals(value, db.get(key));
+            // When
+            var result = db.get("hello".getBytes());
 
-            db.delete(key);
-            assertNull(db.get(key));
+            // Then
+            assertThat(result).isEqualTo("world".getBytes());
         }
     }
 
     @Test
-    void getMissingKeyReturnsNull(@TempDir Path tempDir) throws RocksDBException {
-        try (Options opts = new Options().setCreateIfMissing(true);
-             RocksDB db = RocksDB.open(opts, tempDir.toString())) {
-            assertNull(db.get("nonexistent".getBytes()));
+    void get_returnsNull_whenKeyAbsent(@TempDir Path dir) throws RocksDBException {
+        // Given
+        try (var opts = new Options().setCreateIfMissing(true);
+             var db = RocksDB.open(opts, dir.toString())) {
+
+            // When
+            var result = db.get("nonexistent".getBytes());
+
+            // Then
+            assertThat(result).isNull();
         }
     }
 
     @Test
-    void overwriteKey(@TempDir Path tempDir) throws RocksDBException {
-        try (Options opts = new Options().setCreateIfMissing(true);
-             RocksDB db = RocksDB.open(opts, tempDir.toString())) {
-            byte[] key = "k".getBytes();
-            db.put(key, "v1".getBytes());
-            db.put(key, "v2".getBytes());
-            assertArrayEquals("v2".getBytes(), db.get(key));
+    void get_returnsNull_afterDelete(@TempDir Path dir) throws RocksDBException {
+        // Given
+        try (var opts = new Options().setCreateIfMissing(true);
+             var db = RocksDB.open(opts, dir.toString())) {
+
+            db.put("k".getBytes(), "v".getBytes());
+
+            // When
+            db.delete("k".getBytes());
+
+            // Then
+            assertThat(db.get("k".getBytes())).isNull();
         }
     }
 
     @Test
-    void batchPutsAreVisible(@TempDir Path tempDir) throws RocksDBException {
-        try (Options opts = new Options().setCreateIfMissing(true);
-             RocksDB db = RocksDB.open(opts, tempDir.toString());
-             WriteOptions wo = new WriteOptions();
-             WriteBatch batch = new WriteBatch()) {
+    void put_overwritesExistingKey(@TempDir Path dir) throws RocksDBException {
+        // Given
+        try (var opts = new Options().setCreateIfMissing(true);
+             var db = RocksDB.open(opts, dir.toString())) {
+
+            db.put("k".getBytes(), "v1".getBytes());
+
+            // When
+            db.put("k".getBytes(), "v2".getBytes());
+
+            // Then
+            assertThat(db.get("k".getBytes())).isEqualTo("v2".getBytes());
+        }
+    }
+
+    @Test
+    void write_commitsBatchedPuts(@TempDir Path dir) throws RocksDBException {
+        // Given
+        try (var opts = new Options().setCreateIfMissing(true);
+             var db = RocksDB.open(opts, dir.toString());
+             var wo = new WriteOptions();
+             var batch = new WriteBatch()) {
 
             batch.put("k1".getBytes(), "v1".getBytes());
             batch.put("k2".getBytes(), "v2".getBytes());
             batch.put("k3".getBytes(), "v3".getBytes());
+
+            // When
             db.write(wo, batch);
 
-            assertArrayEquals("v1".getBytes(), db.get("k1".getBytes()));
-            assertArrayEquals("v2".getBytes(), db.get("k2".getBytes()));
-            assertArrayEquals("v3".getBytes(), db.get("k3".getBytes()));
+            // Then
+            assertThat(db.get("k1".getBytes())).isEqualTo("v1".getBytes());
+            assertThat(db.get("k2".getBytes())).isEqualTo("v2".getBytes());
+            assertThat(db.get("k3".getBytes())).isEqualTo("v3".getBytes());
         }
     }
 
     @Test
-    void batchDeleteRemovesKeys(@TempDir Path tempDir) throws RocksDBException {
-        try (Options opts = new Options().setCreateIfMissing(true);
-             RocksDB db = RocksDB.open(opts, tempDir.toString());
-             WriteOptions wo = new WriteOptions();
-             WriteBatch batch = new WriteBatch()) {
+    void write_commitsBatchedDeletes(@TempDir Path dir) throws RocksDBException {
+        // Given
+        try (var opts = new Options().setCreateIfMissing(true);
+             var db = RocksDB.open(opts, dir.toString());
+             var wo = new WriteOptions();
+             var batch = new WriteBatch()) {
 
             db.put("k1".getBytes(), "v1".getBytes());
             db.put("k2".getBytes(), "v2".getBytes());
-
             batch.delete("k1".getBytes());
             batch.delete("k2".getBytes());
+
+            // When
             db.write(wo, batch);
 
-            assertNull(db.get("k1".getBytes()));
-            assertNull(db.get("k2".getBytes()));
+            // Then
+            assertThat(db.get("k1".getBytes())).isNull();
+            assertThat(db.get("k2".getBytes())).isNull();
         }
     }
 
     @Test
-    void batchCountReflectsOperations(@TempDir Path tempDir) throws RocksDBException {
-        try (Options opts = new Options().setCreateIfMissing(true);
-             RocksDB db = RocksDB.open(opts, tempDir.toString());
-             WriteOptions wo = new WriteOptions();
-             WriteBatch batch = new WriteBatch()) {
+    void writeBatch_countReflectsQueuedOperations(@TempDir Path dir) throws RocksDBException {
+        // Given
+        try (var opts = new Options().setCreateIfMissing(true);
+             var db = RocksDB.open(opts, dir.toString());
+             var wo = new WriteOptions();
+             var batch = new WriteBatch()) {
 
             for (int i = 0; i < 50; i++) {
                 batch.put(("key-" + i).getBytes(), ("val-" + i).getBytes());
             }
-            assertEquals(50, batch.count());
+
+            // When / Then
+            assertThat(batch.count()).isEqualTo(50);
             db.write(wo, batch);
-
-            for (int i = 0; i < 50; i++) {
-                assertArrayEquals(("val-" + i).getBytes(), db.get(("key-" + i).getBytes()));
-            }
-        }
-    }
-
-    // -----------------------------------------------------------------------
-    // createIfMissing
-    // -----------------------------------------------------------------------
-
-    @Test
-    void createIfMissingFalseFailsOnNewDb(@TempDir Path tempDir) {
-        Path dbPath = tempDir.resolve("nonexistent");
-        try (Options opts = new Options().setCreateIfMissing(false)) {
-            assertThrows(RocksDBException.class,
-                () -> RocksDB.open(opts, dbPath.toString()));
         }
     }
 
     @Test
-    void createIfMissingTrueCreatesDb(@TempDir Path tempDir) throws RocksDBException {
-        Path dbPath = tempDir.resolve("newdb");
-        try (Options opts = new Options().setCreateIfMissing(true);
-             RocksDB db = RocksDB.open(opts, dbPath.toString())) {
+    void open_fails_whenDbAbsentAndCreateIfMissingFalse(@TempDir Path dir) {
+        // Given
+        var dbPath = dir.resolve("nonexistent");
+
+        try (var opts = new Options().setCreateIfMissing(false)) {
+            // When / Then
+            assertThatThrownBy(() -> RocksDB.open(opts, dbPath.toString()))
+                .isInstanceOf(RocksDBException.class);
+        }
+    }
+
+    @Test
+    void open_createsDb_whenCreateIfMissingTrue(@TempDir Path dir) throws RocksDBException {
+        // Given
+        var dbPath = dir.resolve("newdb");
+
+        try (var opts = new Options().setCreateIfMissing(true);
+             var db = RocksDB.open(opts, dbPath.toString())) {
+
+            // When
             db.put("k".getBytes(), "v".getBytes());
-            assertArrayEquals("v".getBytes(), db.get("k".getBytes()));
+
+            // Then
+            assertThat(db.get("k".getBytes())).isEqualTo("v".getBytes());
         }
     }
 
-    // -----------------------------------------------------------------------
-    // readOnly
-    // -----------------------------------------------------------------------
-
     @Test
-    void readOnlyAllowsReads(@TempDir Path tempDir) throws RocksDBException {
-        String path = tempDir.toString();
-        try (Options opts = new Options().setCreateIfMissing(true);
-             RocksDB rw = RocksDB.open(opts, path)) {
+    void openReadOnly_allowsReads(@TempDir Path dir) throws RocksDBException {
+        // Given
+        try (var opts = new Options().setCreateIfMissing(true);
+             var rw = RocksDB.open(opts, dir.toString())) {
             rw.put("k".getBytes(), "v".getBytes());
         }
-        try (Options opts = new Options();
-             RocksDB ro = RocksDB.openReadOnly(opts, path)) {
-            assertArrayEquals("v".getBytes(), ro.get("k".getBytes()));
+
+        try (var opts = new Options();
+             var ro = RocksDB.openReadOnly(opts, dir.toString())) {
+
+            // When
+            var result = ro.get("k".getBytes());
+
+            // Then
+            assertThat(result).isEqualTo("v".getBytes());
         }
     }
 
     @Test
-    void readOnlyRejectsPut(@TempDir Path tempDir) throws RocksDBException {
-        String path = tempDir.toString();
-        try (Options opts = new Options().setCreateIfMissing(true);
-             RocksDB rw = RocksDB.open(opts, path)) {
+    void openReadOnly_rejectsPut(@TempDir Path dir) throws RocksDBException {
+        // Given
+        try (var opts = new Options().setCreateIfMissing(true);
+             var rw = RocksDB.open(opts, dir.toString())) {
             rw.put("seed".getBytes(), "val".getBytes());
         }
-        try (Options opts = new Options();
-             RocksDB ro = RocksDB.openReadOnly(opts, path)) {
-            assertThrows(RocksDBException.class,
-                () -> ro.put("k".getBytes(), "v".getBytes()));
+
+        try (var opts = new Options();
+             var ro = RocksDB.openReadOnly(opts, dir.toString())) {
+            // When / Then
+            assertThatThrownBy(() -> ro.put("k".getBytes(), "v".getBytes()))
+                .isInstanceOf(RocksDBException.class);
         }
     }
 }

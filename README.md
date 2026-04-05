@@ -142,6 +142,9 @@ The project is open to contributions, particularly in the following areas:
 - Cover all features of RocksDB in idiomatic Java.
 - Provide a pool for MemorySegment/ByteBuffer to make the library more
   "battery included".
+- Add arena-accepting overloads to the `byte[]` API tier (Zig-style caller-owned allocator):
+  `db.put(arena, key, value)` / `db.get(arena, key)` / `db.delete(arena, key)`.
+  Lets callers amortize arena create/destroy over a batch of calls instead of paying it per call.
 - If community is aligned: run it as separated incubating project
   - Use zig to cross-compile rocksdb for all major platforms (to simplify the build for windows/macOS/linux).
   - Deploy to maven central.

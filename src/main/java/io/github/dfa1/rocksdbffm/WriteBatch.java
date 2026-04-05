@@ -17,6 +17,7 @@ public final class WriteBatch implements AutoCloseable {
     private static final MethodHandle MH_DESTROY;
     private static final MethodHandle MH_PUT;
     private static final MethodHandle MH_DELETE;
+    private static final MethodHandle MH_MERGE;
     private static final MethodHandle MH_DELETE_RANGE;
     private static final MethodHandle MH_CLEAR;
     private static final MethodHandle MH_COUNT;
@@ -39,6 +40,13 @@ public final class WriteBatch implements AutoCloseable {
         MH_DELETE = RocksDB.lookup("rocksdb_writebatch_delete",
             FunctionDescriptor.ofVoid(
                 ValueLayout.ADDRESS,
+                ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
+
+        // void rocksdb_writebatch_merge(batch*, key*, klen, val*, vlen)
+        MH_MERGE = RocksDB.lookup("rocksdb_writebatch_merge",
+            FunctionDescriptor.ofVoid(
+                ValueLayout.ADDRESS,
+                ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
                 ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
 
         // void rocksdb_writebatch_delete_range(batch*, start*, slen, end*, elen)
@@ -86,6 +94,39 @@ public final class WriteBatch implements AutoCloseable {
             MH_DELETE.invokeExact(ptr, k, (long) key.length);
         } catch (Throwable t) {
             throw new RocksDBException("writebatch delete failed", t);
+        }
+    }
+
+    /** Queues a merge operand for {@code key}. Slow path: copies key/value. */
+    public void merge(byte[] key, byte[] value) {
+        try (Arena arena = Arena.ofConfined()) {
+            MH_MERGE.invokeExact(ptr,
+                Native.toNative(arena, key),   (long) key.length,
+                Native.toNative(arena, value), (long) value.length);
+        } catch (Throwable t) {
+            throw new RocksDBException("writebatch merge failed", t);
+        }
+    }
+
+    /** Queues a merge operand for {@code key}. Zero-copy for direct buffers. */
+    public void merge(ByteBuffer key, ByteBuffer value) {
+        try {
+            MH_MERGE.invokeExact(ptr,
+                MemorySegment.ofBuffer(key),   (long) key.remaining(),
+                MemorySegment.ofBuffer(value), (long) value.remaining());
+        } catch (Throwable t) {
+            throw new RocksDBException("writebatch merge failed", t);
+        }
+    }
+
+    /** Queues a merge operand for {@code key}. Zero-copy. */
+    public void merge(MemorySegment key, MemorySegment value) {
+        try {
+            MH_MERGE.invokeExact(ptr,
+                key,   key.byteSize(),
+                value, value.byteSize());
+        } catch (Throwable t) {
+            throw new RocksDBException("writebatch merge failed", t);
         }
     }
 

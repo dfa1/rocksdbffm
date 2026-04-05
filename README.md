@@ -62,7 +62,7 @@ This project is currently experimental. The table below tracks parity with `rock
 | DB Properties | ✅ | `getProperty(DBProperty)` → `Optional<String>`, `getLongProperty(DBProperty)` → `OptionalLong` |
 | Statistics | ✅ | TickerType, HistogramType, StatsLevel |
 | Column Families | ❌ | Key namespace isolation |
-| Merge / MergeOperator | ❌ | Aggregation semantics |
+| Merge / MergeOperator | ✅ | `merge` on `RocksDB` and `WriteBatch`; custom `MergeOperator` via FFM upcall stubs; built-in uint64 add |
 | MultiGet | ❌ | Bulk reads |
 | DeleteRange | ✅ | Range tombstones; `deleteRange` on `RocksDB` and `WriteBatch`; all three access tiers |
 | Compaction control | ❌ | Manual compaction, space reclaim |

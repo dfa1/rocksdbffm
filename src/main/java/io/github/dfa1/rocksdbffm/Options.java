@@ -29,6 +29,8 @@ public final class Options implements AutoCloseable {
     private static final MethodHandle MH_STATISTICS_GET_STRING;
     private static final MethodHandle MH_STATISTICS_GET_TICKER_COUNT;
     private static final MethodHandle MH_STATISTICS_GET_HISTOGRAM_DATA;
+    private static final MethodHandle MH_SET_MERGE_OPERATOR;
+    private static final MethodHandle MH_SET_UINT64ADD_MERGE_OPERATOR;
     private static final MethodHandle MH_FREE;
 
     static {
@@ -66,6 +68,14 @@ public final class Options implements AutoCloseable {
 
         MH_STATISTICS_GET_HISTOGRAM_DATA = RocksDB.lookup("rocksdb_options_statistics_get_histogram_data",
             FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
+
+        // void rocksdb_options_set_merge_operator(opts*, mergeoperator_t*)
+        MH_SET_MERGE_OPERATOR = RocksDB.lookup("rocksdb_options_set_merge_operator",
+            FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+        // void rocksdb_options_set_uint64add_merge_operator(opts*)
+        MH_SET_UINT64ADD_MERGE_OPERATOR = RocksDB.lookup("rocksdb_options_set_uint64add_merge_operator",
+            FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
         MH_FREE = RocksDB.lookup("rocksdb_free",
             FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
@@ -162,6 +172,33 @@ public final class Options implements AutoCloseable {
         } catch (Throwable t) {
             throw new RocksDBException("getHistogramData failed", t);
         }
+    }
+
+    /**
+     * Attaches a custom merge operator. Ownership transfers to this Options object;
+     * {@link MergeOperator#close()} on the passed instance becomes a no-op.
+     */
+    public Options setMergeOperator(MergeOperator operator) {
+        try {
+            MH_SET_MERGE_OPERATOR.invokeExact(ptr, operator.ptr);
+            operator.transferOwnership();
+        } catch (Throwable t) {
+            throw new RocksDBException("setMergeOperator failed", t);
+        }
+        return this;
+    }
+
+    /**
+     * Configures the built-in uint64 add merge operator.
+     * Operands and values are treated as 8-byte little-endian unsigned integers.
+     */
+    public Options setUint64AddMergeOperator() {
+        try {
+            MH_SET_UINT64ADD_MERGE_OPERATOR.invokeExact(ptr);
+        } catch (Throwable t) {
+            throw new RocksDBException("setUint64AddMergeOperator failed", t);
+        }
+        return this;
     }
 
     /**

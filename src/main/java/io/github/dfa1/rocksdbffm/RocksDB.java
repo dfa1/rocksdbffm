@@ -37,6 +37,7 @@ public final class RocksDB implements AutoCloseable {
     private static final MethodHandle MH_PINNABLESLICE_VALUE;
     private static final MethodHandle MH_PINNABLESLICE_DESTROY;
     private static final MethodHandle MH_DELETE;
+    private static final MethodHandle MH_MERGE;
     private static final MethodHandle MH_DELETE_RANGE_CF;
     private static final MethodHandle MH_GET_DEFAULT_CF;
     private static final MethodHandle MH_WRITE;
@@ -89,6 +90,12 @@ public final class RocksDB implements AutoCloseable {
 
         MH_DELETE = lookup("rocksdb_delete",
             FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS,
+                ValueLayout.ADDRESS, ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
+
+        // void rocksdb_merge(db*, wo*, key*, klen, val*, vlen, errptr**)
+        MH_MERGE = lookup("rocksdb_merge",
+            FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS,
+                ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
                 ValueLayout.ADDRESS, ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
 
         // void rocksdb_delete_range_cf(db*, wo*, cf*, start*, slen, end*, elen, errptr**)
@@ -158,7 +165,7 @@ public final class RocksDB implements AutoCloseable {
     private final MemorySegment writeOptions;
     private final MemorySegment readOptions;
 
-    private RocksDB(MemorySegment dbPtr, MemorySegment writeOptions, MemorySegment readOptions) {
+    private     RocksDB(MemorySegment dbPtr, MemorySegment writeOptions, MemorySegment readOptions) {
         this.dbPtr = dbPtr;
         this.writeOptions = writeOptions;
         this.readOptions = readOptions;
@@ -298,6 +305,52 @@ public final class RocksDB implements AutoCloseable {
             Native.checkError(err);
         } catch (Throwable t) {
             throw RocksDBException.wrap("delete failed", t);
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // Public API — merge
+    // -----------------------------------------------------------------------
+
+    /** Applies a merge operand to {@code key}. Slow path: copies key/value. */
+    public void merge(byte[] key, byte[] value) {
+        try (Arena arena = Arena.ofConfined()) {
+            MemorySegment err = Native.errHolder(arena);
+            MH_MERGE.invokeExact(dbPtr, writeOptions,
+                Native.toNative(arena, key),   (long) key.length,
+                Native.toNative(arena, value), (long) value.length,
+                err);
+            Native.checkError(err);
+        } catch (Throwable t) {
+            throw RocksDBException.wrap("merge failed", t);
+        }
+    }
+
+    /** Applies a merge operand to {@code key}. Zero-copy for direct {@link java.nio.ByteBuffer}s. */
+    public void merge(ByteBuffer key, ByteBuffer value) {
+        try (Arena arena = Arena.ofConfined()) {
+            MemorySegment err = Native.errHolder(arena);
+            MH_MERGE.invokeExact(dbPtr, writeOptions,
+                MemorySegment.ofBuffer(key),   (long) key.remaining(),
+                MemorySegment.ofBuffer(value), (long) value.remaining(),
+                err);
+            Native.checkError(err);
+        } catch (Throwable t) {
+            throw RocksDBException.wrap("merge failed", t);
+        }
+    }
+
+    /** Applies a merge operand to {@code key}. Zero-copy native-first path. */
+    public void merge(MemorySegment key, MemorySegment value) {
+        try (Arena arena = Arena.ofConfined()) {
+            MemorySegment err = Native.errHolder(arena);
+            MH_MERGE.invokeExact(dbPtr, writeOptions,
+                key,   key.byteSize(),
+                value, value.byteSize(),
+                err);
+            Native.checkError(err);
+        } catch (Throwable t) {
+            throw RocksDBException.wrap("merge failed", t);
         }
     }
 

@@ -21,6 +21,7 @@ public final class Transaction implements AutoCloseable {
     private static final MethodHandle MH_COMMIT;
     private static final MethodHandle MH_ROLLBACK;
     private static final MethodHandle MH_DESTROY;
+    private static final MethodHandle MH_GET_SNAPSHOT;
     private static final MethodHandle MH_SET_SAVEPOINT;
     private static final MethodHandle MH_ROLLBACK_TO_SAVEPOINT;
     private static final MethodHandle MH_PUT;
@@ -88,6 +89,11 @@ public final class Transaction implements AutoCloseable {
 
         MH_FREE = RocksDB.lookup("rocksdb_free",
             FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+
+        // const rocksdb_snapshot_t* rocksdb_transaction_get_snapshot(txn*)
+        // Note: must be freed with rocksdb_free, not rocksdb_release_snapshot
+        MH_GET_SNAPSHOT = RocksDB.lookup("rocksdb_transaction_get_snapshot",
+            FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
     }
 
     private final MemorySegment ptr;
@@ -185,6 +191,25 @@ public final class Transaction implements AutoCloseable {
             return result;
         } catch (Throwable t) {
             throw (t instanceof RocksDBException r) ? r : new RocksDBException("Native call failed", t);
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // Snapshot
+    // -----------------------------------------------------------------------
+
+    /**
+     * Returns the snapshot associated with this transaction, or {@code null} if none
+     * was set via {@link TransactionOptions}.
+     * The returned snapshot must be closed after use (freed via {@code rocksdb_free}).
+     */
+    public Snapshot getSnapshot() {
+        try {
+            MemorySegment snapPtr = (MemorySegment) MH_GET_SNAPSHOT.invokeExact(ptr);
+            if (MemorySegment.NULL.equals(snapPtr)) return null;
+            return new Snapshot(snapPtr); // released via rocksdb_free
+        } catch (Throwable t) {
+            throw (t instanceof RocksDBException r) ? r : new RocksDBException("getSnapshot failed", t);
         }
     }
 

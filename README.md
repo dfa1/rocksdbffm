@@ -43,13 +43,14 @@ This project is currently experimental. Core features are implemented, but sever
 | Checkpoints | Point-in-time on-disk snapshot |
 | Table Options | BlockBasedTableConfig, LRUCache, FilterPolicy (Bloom) |
 | Iterators | seekToFirst/Last, seek, seekForPrev, next/prev; all three access tiers |
+| Snapshots | Point-in-time consistent reads; `ReadOptions.setSnapshot`, sequence numbers |
 | Statistics | TickerType, HistogramType, StatsLevel |
 
 ### Roadmap — rocksdbjni parity gaps
 
 | Feature | Priority | Notes |
 | :--- | :--- | :--- |
-| **Snapshots** | 🔴 High | Point-in-time consistent reads |
+| ~~Snapshots~~ | ✅ Done | |
 | **Column Families** | 🔴 High | Key namespace isolation |
 | **Merge / MergeOperator** | 🔴 High | Aggregation semantics |
 | **Flush** | 🔴 High | Explicit durability control |

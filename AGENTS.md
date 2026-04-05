@@ -31,6 +31,7 @@ Every class wrapping a native pointer **must** implement `AutoCloseable`.
 ### 2. Data Types & Path Handling
 To ensure type safety and consistent units across the API:
 - **C API Only:** We use the RocksDB C interface (`rocksdb/c.h`). Do not attempt to link directly to C++ symbols.
+- **Read-only headers:** NEVER modify system include files (e.g. `/opt/homebrew/...`, `/usr/include/...`). They are read-only references; all mappings live in Java source.
 - **Paths:** Never use raw `String` for file system paths. Always use `java.nio.file.Path` for any API surface that accepts paths (open, backup, checkpoint).
 - **Memory Sizes:** Never use raw `long` for byte counts (e.g., cache size, write buffer size). Always use the project's `MemorySize` type.
 
@@ -92,6 +93,7 @@ For the full feature status and roadmap see `README.md`. This section maps each 
 | Checkpoints | `Checkpoint.java` |
 | Table Options | `BlockBasedTableConfig.java`, `LRUCache.java`, `FilterPolicy.java` |
 | Iterators | `RocksIterator.java` |
+| Snapshots | `Snapshot.java`; `ReadOptions.setSnapshot`; `RocksDB.getSnapshot`, `TransactionDB.getSnapshot`, `Transaction.getSnapshot` |
 | Statistics | `HistogramType.java`, `TickerType.java`, `StatsLevel.java`, `StatisticsHistogramData.java` |
 | Shared utilities | `Native.java` (`errHolder`, `checkError`, `toNative`), `MemorySize.java`, `RocksDBException.java` |
 
@@ -99,7 +101,7 @@ For the full feature status and roadmap see `README.md`. This section maps each 
 
 | Feature | Key C API symbols |
 | :--- | :--- |
-| **Snapshots** | `rocksdb_create_snapshot`, `rocksdb_release_snapshot`, `rocksdb_readoptions_set_snapshot` |
+| ~~Snapshots~~ | ✅ Done — see `Snapshot.java` |
 | **Column Families** | `rocksdb_open_column_families`, `rocksdb_create_column_family`, `rocksdb_drop_column_family` |
 | **Merge / MergeOperator** | `rocksdb_merge`, `rocksdb_writebatch_merge`, `rocksdb_mergeoperator_create` |
 | **Flush** | `rocksdb_flush`, `rocksdb_flushoptions_create`, `rocksdb_flushoptions_set_wait` |

@@ -30,6 +30,7 @@ public final class TransactionDB implements AutoCloseable {
     private static final MethodHandle MH_OPEN;
     private static final MethodHandle MH_CLOSE;
     private static final MethodHandle MH_BEGIN;
+    private static final MethodHandle MH_CREATE_SNAPSHOT;
 
     // Direct (non-transactional) operations on the TransactionDB
     private static final MethodHandle MH_PUT;
@@ -78,6 +79,10 @@ public final class TransactionDB implements AutoCloseable {
 
         MH_FREE = RocksDB.lookup("rocksdb_free",
             FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+
+        // const rocksdb_snapshot_t* rocksdb_transactiondb_create_snapshot(txndb*)
+        MH_CREATE_SNAPSHOT = RocksDB.lookup("rocksdb_transactiondb_create_snapshot",
+            FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
     }
 
     // -----------------------------------------------------------------------
@@ -121,6 +126,23 @@ public final class TransactionDB implements AutoCloseable {
     }
 
     // -----------------------------------------------------------------------
+    // Snapshot
+    // -----------------------------------------------------------------------
+
+    /**
+     * Creates a snapshot of the current TransactionDB state.
+     * The returned snapshot must be closed after use.
+     */
+    public Snapshot getSnapshot() {
+        try {
+            MemorySegment snapPtr = (MemorySegment) MH_CREATE_SNAPSHOT.invokeExact(ptr);
+            return new Snapshot(ptr, snapPtr);
+        } catch (Throwable t) {
+            throw (t instanceof RocksDBException r) ? r : new RocksDBException("getSnapshot failed", t);
+        }
+    }
+
+    // -----------------------------------------------------------------------
     // Transaction API
     // -----------------------------------------------------------------------
 
@@ -159,6 +181,29 @@ public final class TransactionDB implements AutoCloseable {
             MemorySegment v = Native.toNative(arena,value);
             MH_PUT.invokeExact(ptr, writeOpts, k, (long) key.length, v, (long) value.length, err);
             Native.checkError(err);
+        } catch (Throwable t) {
+            throw (t instanceof RocksDBException r) ? r : new RocksDBException("Native call failed", t);
+        }
+    }
+
+    /** Direct get with explicit ReadOptions (e.g. for snapshot-pinned reads). Returns {@code null} if not found. */
+    public byte[] get(ReadOptions readOptions, byte[] key) {
+        try (Arena arena = Arena.ofConfined()) {
+            MemorySegment err = Native.errHolder(arena);
+            MemorySegment k = Native.toNative(arena, key);
+            MemorySegment valLenSeg = arena.allocate(ValueLayout.JAVA_LONG);
+
+            MemorySegment valPtr = (MemorySegment) MH_GET.invokeExact(
+                ptr, readOptions.ptr, k, (long) key.length, valLenSeg, err);
+
+            Native.checkError(err);
+
+            if (MemorySegment.NULL.equals(valPtr)) return null;
+
+            long valLen = valLenSeg.get(ValueLayout.JAVA_LONG, 0);
+            byte[] result = valPtr.reinterpret(valLen).toArray(ValueLayout.JAVA_BYTE);
+            MH_FREE.invokeExact(valPtr);
+            return result;
         } catch (Throwable t) {
             throw (t instanceof RocksDBException r) ? r : new RocksDBException("Native call failed", t);
         }

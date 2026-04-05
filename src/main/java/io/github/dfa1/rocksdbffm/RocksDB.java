@@ -40,6 +40,7 @@ public final class RocksDB implements AutoCloseable {
     private static final MethodHandle MH_WRITEOPTIONS_DESTROY;
     private static final MethodHandle MH_READOPTIONS_CREATE;
     private static final MethodHandle MH_READOPTIONS_DESTROY;
+    private static final MethodHandle MH_CREATE_SNAPSHOT;
 
     static {
         String libPath = System.getProperty(
@@ -95,6 +96,10 @@ public final class RocksDB implements AutoCloseable {
 
         MH_READOPTIONS_DESTROY = lookup("rocksdb_readoptions_destroy",
             FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+
+        // const rocksdb_snapshot_t* rocksdb_create_snapshot(db*)
+        MH_CREATE_SNAPSHOT = lookup("rocksdb_create_snapshot",
+            FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
     }
 
     private final MemorySegment dbPtr;
@@ -292,6 +297,50 @@ public final class RocksDB implements AutoCloseable {
             value.position(value.position() + toCopy);
             MH_PINNABLESLICE_DESTROY.invokeExact(pin);
             return (int) valLen;
+        } catch (Throwable t) {
+            throw (t instanceof RocksDBException r) ? r : new RocksDBException("get failed", t);
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // Snapshot
+    // -----------------------------------------------------------------------
+
+    /**
+     * Creates a snapshot of the current DB state.
+     * The returned snapshot must be closed after use to release native resources.
+     */
+    public Snapshot getSnapshot() {
+        try {
+            MemorySegment snapPtr = (MemorySegment) MH_CREATE_SNAPSHOT.invokeExact(dbPtr);
+            return new Snapshot(dbPtr, snapPtr);
+        } catch (Throwable t) {
+            throw (t instanceof RocksDBException r) ? r : new RocksDBException("getSnapshot failed", t);
+        }
+    }
+
+    /**
+     * Get with explicit ReadOptions, e.g. for snapshot-pinned reads.
+     * Uses PinnableSlice to avoid intermediate copies.
+     */
+    public byte[] get(ReadOptions readOptions, byte[] key) {
+        try (Arena arena = Arena.ofConfined()) {
+            MemorySegment err = Native.errHolder(arena);
+            MemorySegment keyNative = Native.toNative(arena, key);
+
+            MemorySegment pin = (MemorySegment) MH_GET_PINNED.invokeExact(
+                dbPtr, readOptions.ptr, keyNative, (long) key.length, err);
+
+            Native.checkError(err);
+
+            if (MemorySegment.NULL.equals(pin)) return null;
+
+            MemorySegment valLenSeg = arena.allocate(ValueLayout.JAVA_LONG);
+            MemorySegment valPtr = (MemorySegment) MH_PINNABLESLICE_VALUE.invokeExact(pin, valLenSeg);
+            long valLen = valLenSeg.get(ValueLayout.JAVA_LONG, 0);
+            byte[] result = valPtr.reinterpret(valLen).toArray(ValueLayout.JAVA_BYTE);
+            MH_PINNABLESLICE_DESTROY.invokeExact(pin);
+            return result;
         } catch (Throwable t) {
             throw (t instanceof RocksDBException r) ? r : new RocksDBException("get failed", t);
         }

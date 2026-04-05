@@ -52,14 +52,10 @@ This project is currently experimental. Core features are implemented, but sever
 
 | Feature | Priority | Notes |
 | :--- | :--- | :--- |
-| ~~Snapshots~~ | ✅ Done | |
 | **Column Families** | 🔴 High | Key namespace isolation |
 | **Merge / MergeOperator** | 🔴 High | Aggregation semantics |
-| ~~Flush~~ | ✅ Done | |
 | **Compaction control** | 🟠 Medium | Manual compaction, space reclaim |
 | **MultiGet** | 🟠 Medium | Bulk reads |
-| ~~DB Properties~~ | ✅ Done | `getProperty` / `getLongProperty`; `rocksdb_approximate_sizes` not yet |
-| ~~KeyMayExist~~ | ✅ Done | |
 | **DeleteRange** | 🟠 Medium | Range tombstones |
 | **SST File Ingest** | 🟠 Medium | High-speed bulk loading |
 | **Backup Engine** | 🟡 Low | Incremental backups |
@@ -121,7 +117,7 @@ java --enable-native-access=ALL-UNNAMED -jar target/benchmarks.jar
 ```
 
 ## License
-This project is licensed under the same terms as RocksDB (GPLv2/Apache 2.0).
+This project is licensed under the same terms as RocksDB (LevelDB/Apache 2.0).
 
 ---
 *Reference: [Expanding RocksDB’s Java FFI](https://rocksdb.org/blog/2024/02/20/foreign-function-interface.html)*

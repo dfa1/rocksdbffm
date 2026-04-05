@@ -28,8 +28,11 @@ Every class wrapping a native pointer **must** implement `AutoCloseable`.
 - **Ownership Transfer:** When one native object takes ownership of another (e.g., `FilterPolicy` → `BlockBasedTableConfig`), the transferring object must mark the ownership as transferred using a boolean flag. Its `close()` method should then become a no-op to prevent double-frees.
 - **Transfer Marker:** Use a method like `transferOwnership()` inside the setter that takes ownership.
 
-### 2. Path Handling
-- **Never use raw `String` for paths.** Use `java.nio.file.Path` for any API surface that accepts file-system paths (open, backup, checkpoint).
+### 2. Data Types & Path Handling
+To ensure type safety and consistent units across the API:
+- **C API Only:** We use the RocksDB C interface (`rocksdb/c.h`). Do not attempt to link directly to C++ symbols.
+- **Paths:** Never use raw `String` for file system paths. Always use `java.nio.file.Path` for any API surface that accepts paths (open, backup, checkpoint).
+- **Memory Sizes:** Never use raw `long` for byte counts (e.g., cache size, write buffer size). Always use the project's `MemorySize` type.
 
 ### 3. API Surface Design
 For every feature, provide three tiers of access:

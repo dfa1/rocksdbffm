@@ -11,7 +11,7 @@ This project is heavily AI-driven. As an agent, your goal is to:
 ---
 
 ## 🛠 Tech Stack
-- **Language:** Java 21+ (using JDK 25 features if available).
+- **Language:** Java 25+.
 - **Core API:** `java.lang.foreign` (Foreign Function & Memory API).
 - **Native Library:** RocksDB (C API via `include/rocksdb/c.h`).
 - **Build System:** Maven.

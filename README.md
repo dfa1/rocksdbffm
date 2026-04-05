@@ -2,7 +2,7 @@
 
 **rocksdbffm** is a Java wrapper for [RocksDB](https://rocksdb.org/) using the **Foreign Function & Memory (FFM) API** (Project Panama).
 
-The project provides a maintainable alternative to the traditional JNI-based `rocksdbjni`, targeting JDK 21 and above.
+The project provides a maintainable alternative to the traditional JNI-based `rocksdbjni`, targeting JDK 25 and above.
 
 ## Why This Project Exists
 
@@ -75,7 +75,7 @@ This project is currently experimental. Core features are implemented, but sever
 Several deliberate decisions set this library apart from `rocksdbjni`.
 
 ### Modern Java
-Requires JDK 21+. The API uses `java.lang.foreign` (FFM), records, sealed types, and pattern matching where they reduce boilerplate or improve safety. There is no legacy compatibility shim.
+Requires JDK 25+. The API uses `java.lang.foreign` (FFM), records, sealed types, and pattern matching where they reduce boilerplate or improve safety. There is no legacy compatibility shim.
 
 ### Exceptions for all errors
 Every operation that can fail throws `RocksDBException` (an unchecked exception). `rocksdbjni` historically returned `null`, `-1`, or relied on status objects that callers could silently ignore. Here a failure is always loud.
@@ -107,7 +107,7 @@ The project is open to contributions, particularly in the following areas:
 ## Getting Started
 
 ### Requirements
-- JDK 25 (recommended) or JDK 21+.
+- JDK 25+.
 - RocksDB installed locally (e.g., `brew install rocksdb` on macOS).
 
 ### Build and Test

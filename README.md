@@ -30,19 +30,29 @@ Exposing `MemorySegment` methods:
 
 
 ## Performance Results
-> [!WARNING]
-> This needs much more work and verification.
 
-Benchmarks performed on JDK 25 (Apple M-series) compared to JNI:
+Benchmarks performed on JDK 25 (Apple M-series) compared to JNI (`DirectByteBuffer` tier):
 
-| API Tier | Operation | FFM (ops/s) | JNI (ops/s) | Gain |
-| :--- | :--- | :---: | :---: | :---: |
-| byte[] | Reads | 2.75M | 2.10M | +30% |
-| Direct ByteBuffer | Reads | 3.02M | 2.04M | +48% |
-| Pinnable + TL Arena | Reads | 3.37M | 1.93M | +74% |
-| Pinnable + TL Arena | Writes | 0.67M | 0.58M | +17% |
+| Operation | FFM (ops/s) | JNI (ops/s) | Gain |
+| :--- | :---: | :---: | :---: |
+| Reads | 3,113,367 | 2,070,836 | **+50%** |
+| Writes | 686,200 | 608,558 | **+13%** |
+| Batch writes (100 ops) | 23,048 | 16,712 | **+38%** |
 
-*Note: Reads benefit from `PinnableSlice` which eliminates intermediate copies. Writes are bound by WAL/memtable performance.*
+*Reads benefit from `PinnableSlice` (zero intermediate copy from block cache). Writes are bound by WAL/memtable throughput.*
+
+### Running benchmarks
+
+```bash
+mvn test-compile -q
+CP="target/test-classes:target/classes:$(mvn dependency:build-classpath -DforceStdout 2>&1 | grep '^/')"
+
+# FFM
+java --enable-native-access=ALL-UNNAMED -cp "$CP" io.github.dfa1.rocksdbffm.benchmark.FfmBenchmark
+
+# JNI (baseline)
+java --enable-native-access=ALL-UNNAMED -cp "$CP" io.github.dfa1.rocksdbffm.benchmark.JniBenchmark
+```
 
 ## Roadmap
 

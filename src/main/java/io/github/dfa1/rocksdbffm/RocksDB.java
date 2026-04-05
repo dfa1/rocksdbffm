@@ -43,6 +43,7 @@ public final class RocksDB implements AutoCloseable {
     private static final MethodHandle MH_CREATE_SNAPSHOT;
     private static final MethodHandle MH_FLUSH;
     private static final MethodHandle MH_FLUSH_WAL;
+    private static final MethodHandle MH_KEY_MAY_EXIST;
 
     static {
         String libPath = System.getProperty(
@@ -110,6 +111,17 @@ public final class RocksDB implements AutoCloseable {
         // void rocksdb_flush_wal(db*, sync, errptr**)
         MH_FLUSH_WAL = lookup("rocksdb_flush_wal",
             FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_BYTE, ValueLayout.ADDRESS));
+
+        // unsigned char rocksdb_key_may_exist(db*, ro*, key*, klen,
+        //     char** value, size_t* val_len, timestamp*, ts_len, unsigned char* value_found)
+        // value/val_len/timestamp/value_found are all passed as NULL — pure Bloom filter check.
+        MH_KEY_MAY_EXIST = lookup("rocksdb_key_may_exist",
+            FunctionDescriptor.of(ValueLayout.JAVA_BYTE,
+                ValueLayout.ADDRESS, ValueLayout.ADDRESS,  // db*, ro*
+                ValueLayout.ADDRESS, ValueLayout.JAVA_LONG, // key*, klen
+                ValueLayout.ADDRESS, ValueLayout.ADDRESS,  // value**, val_len*
+                ValueLayout.ADDRESS, ValueLayout.JAVA_LONG, // timestamp*, ts_len
+                ValueLayout.ADDRESS));                     // value_found*
     }
 
     private final MemorySegment dbPtr;
@@ -257,6 +269,73 @@ public final class RocksDB implements AutoCloseable {
         } catch (Throwable t) {
             throw RocksDBException.wrap("delete failed", t);
         }
+    }
+
+    // -----------------------------------------------------------------------
+    // Public API — keyMayExist (Bloom filter check)
+    // -----------------------------------------------------------------------
+
+    /**
+     * Returns {@code false} if the key definitely does not exist in the database,
+     * allowing callers to skip an expensive {@link #get} call entirely.
+     * A return value of {@code true} means the key <em>may</em> exist and a full
+     * read is needed to confirm.
+     *
+     * <p>Slow path: copies the key into native memory.
+     */
+    public boolean keyMayExist(byte[] key) {
+        try (Arena arena = Arena.ofConfined()) {
+            MemorySegment k = Native.toNative(arena, key);
+            return keyMayExistNative(readOptions, k, key.length);
+        } catch (Throwable t) {
+            throw RocksDBException.wrap("keyMayExist failed", t);
+        }
+    }
+
+    /**
+     * {@link #keyMayExist(byte[])} with explicit {@link ReadOptions}, e.g. for
+     * snapshot-pinned checks. Slow path: copies the key into native memory.
+     */
+    public boolean keyMayExist(ReadOptions readOptions, byte[] key) {
+        try (Arena arena = Arena.ofConfined()) {
+            MemorySegment k = Native.toNative(arena, key);
+            return keyMayExistNative(readOptions.ptr, k, key.length);
+        } catch (Throwable t) {
+            throw RocksDBException.wrap("keyMayExist failed", t);
+        }
+    }
+
+    /**
+     * {@link #keyMayExist(byte[])} for direct {@link java.nio.ByteBuffer}s. Zero-copy.
+     */
+    public boolean keyMayExist(ByteBuffer key) {
+        try {
+            return keyMayExistNative(readOptions, MemorySegment.ofBuffer(key), key.remaining());
+        } catch (Throwable t) {
+            throw RocksDBException.wrap("keyMayExist failed", t);
+        }
+    }
+
+    /**
+     * {@link #keyMayExist(byte[])} for {@link java.lang.foreign.MemorySegment}s. Zero-copy.
+     */
+    public boolean keyMayExist(MemorySegment key) {
+        try {
+            return keyMayExistNative(readOptions, key, (int) key.byteSize());
+        } catch (Throwable t) {
+            throw RocksDBException.wrap("keyMayExist failed", t);
+        }
+    }
+
+    private boolean keyMayExistNative(MemorySegment roPtr, MemorySegment key, long keyLen)
+            throws Throwable {
+        return ((byte) MH_KEY_MAY_EXIST.invokeExact(
+            dbPtr, roPtr,
+            key, keyLen,
+            MemorySegment.NULL, MemorySegment.NULL,  // no value output
+            MemorySegment.NULL, 0L,                  // no timestamp
+            MemorySegment.NULL                       // no value_found output
+        )) != 0;
     }
 
     // -----------------------------------------------------------------------

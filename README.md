@@ -58,7 +58,7 @@ This project is currently experimental. Core features are implemented, but sever
 | **Compaction control** | 🟠 Medium | Manual compaction, space reclaim |
 | **MultiGet** | 🟠 Medium | Bulk reads |
 | **DB Properties** | 🟠 Medium | Introspection and monitoring |
-| **KeyMayExist** | 🟠 Medium | Bloom filter fast-path |
+| ~~KeyMayExist~~ | ✅ Done | |
 | **DeleteRange** | 🟠 Medium | Range tombstones |
 | **SST File Ingest** | 🟠 Medium | High-speed bulk loading |
 | **Backup Engine** | 🟡 Low | Incremental backups |

@@ -1,28 +1,27 @@
-package io.github.dfa1.rocksdbffm.jni;
+package io.github.dfa1.rocksdbffm;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.rocksdb.*;
 
 import java.nio.file.Path;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class TransactionDBJniTest {
+class TransactionDBTest {
 
-    static {
-        RocksDB.loadLibrary();
-    }
-
-    private static TransactionDB openDb(Path path) throws RocksDBException {
+    private static TransactionDB openDb(Path path) {
         try (var opts = new Options().setCreateIfMissing(true);
              var txnDbOpts = new TransactionDBOptions()) {
-            return TransactionDB.open(opts, txnDbOpts, path.toString());
+            return TransactionDB.open(opts, txnDbOpts, path);
         }
     }
 
+    // -----------------------------------------------------------------------
+    // commit / rollback
+    // -----------------------------------------------------------------------
+
     @Test
-    void commit_makesChangesVisible(@TempDir Path dir) throws RocksDBException {
+    void commit_makesChangesVisible(@TempDir Path dir) {
         // Given
         try (var db = openDb(dir);
              var wo = new WriteOptions();
@@ -39,7 +38,7 @@ class TransactionDBJniTest {
     }
 
     @Test
-    void rollback_discardsChanges(@TempDir Path dir) throws RocksDBException {
+    void rollback_discardsChanges(@TempDir Path dir) {
         // Given
         try (var db = openDb(dir);
              var wo = new WriteOptions();
@@ -55,8 +54,12 @@ class TransactionDBJniTest {
         }
     }
 
+    // -----------------------------------------------------------------------
+    // get within a transaction
+    // -----------------------------------------------------------------------
+
     @Test
-    void get_readsUncommittedWritesWithinSameTransaction(@TempDir Path dir) throws RocksDBException {
+    void get_readsUncommittedWritesWithinSameTransaction(@TempDir Path dir) {
         // Given
         try (var db = openDb(dir);
              var wo = new WriteOptions();
@@ -75,7 +78,7 @@ class TransactionDBJniTest {
     }
 
     @Test
-    void get_returnsNull_forAbsentKey(@TempDir Path dir) throws RocksDBException {
+    void get_returnsNull_forAbsentKey(@TempDir Path dir) {
         // Given
         try (var db = openDb(dir);
              var wo = new WriteOptions();
@@ -92,7 +95,7 @@ class TransactionDBJniTest {
     }
 
     @Test
-    void getForUpdate_locksAndReturnsValue(@TempDir Path dir) throws RocksDBException {
+    void getForUpdate_locksAndReturnsValue(@TempDir Path dir) {
         // Given
         seed(dir, "k", "original");
 
@@ -116,8 +119,12 @@ class TransactionDBJniTest {
         }
     }
 
+    // -----------------------------------------------------------------------
+    // delete within a transaction
+    // -----------------------------------------------------------------------
+
     @Test
-    void delete_removesKeyWithinTransaction(@TempDir Path dir) throws RocksDBException {
+    void delete_removesKeyWithinTransaction(@TempDir Path dir) {
         // Given
         seed(dir, "k", "v");
 
@@ -139,8 +146,12 @@ class TransactionDBJniTest {
         }
     }
 
+    // -----------------------------------------------------------------------
+    // savepoints
+    // -----------------------------------------------------------------------
+
     @Test
-    void rollbackToSavePoint_restoresPartialState(@TempDir Path dir) throws RocksDBException {
+    void rollbackToSavePoint_restoresPartialState(@TempDir Path dir) {
         // Given
         try (var db = openDb(dir);
              var wo = new WriteOptions();
@@ -160,13 +171,70 @@ class TransactionDBJniTest {
 
             txn.commit();
         }
+
+        try (var db = openDb(dir)) {
+            assertThat(db.get("k1".getBytes())).isEqualTo("v1".getBytes());
+            assertThat(db.get("k2".getBytes())).isNull();
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // direct (non-transactional) operations
+    // -----------------------------------------------------------------------
+
+    @Test
+    void directPut_isVisibleViaDirectGet(@TempDir Path dir) {
+        // Given
+        try (var db = openDb(dir)) {
+            // When
+            db.put("k".getBytes(), "v".getBytes());
+
+            // Then
+            assertThat(db.get("k".getBytes())).isEqualTo("v".getBytes());
+        }
+    }
+
+    @Test
+    void directDelete_removesKey(@TempDir Path dir) {
+        // Given
+        try (var db = openDb(dir)) {
+            db.put("k".getBytes(), "v".getBytes());
+
+            // When
+            db.delete("k".getBytes());
+
+            // Then
+            assertThat(db.get("k".getBytes())).isNull();
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // TransactionOptions
+    // -----------------------------------------------------------------------
+
+    @Test
+    void transactionOptions_setSnapshot_doesNotBreakNormalFlow(@TempDir Path dir) {
+        // Given
+        try (var db = openDb(dir);
+             var wo = new WriteOptions();
+             var txnOpts = new TransactionOptions().setSetSnapshot(true);
+             var txn = db.beginTransaction(wo, txnOpts)) {
+
+            txn.put("k".getBytes(), "v".getBytes());
+
+            // When
+            txn.commit();
+
+            // Then
+            assertThat(db.get("k".getBytes())).isEqualTo("v".getBytes());
+        }
     }
 
     // -----------------------------------------------------------------------
     // Helpers
     // -----------------------------------------------------------------------
 
-    private void seed(Path dir, String key, String value) throws RocksDBException {
+    private void seed(Path dir, String key, String value) {
         try (var db = openDb(dir);
              var wo = new WriteOptions();
              var txn = db.beginTransaction(wo)) {

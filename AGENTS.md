@@ -94,6 +94,7 @@ For the full feature status and roadmap see `README.md`. This section maps each 
 | Table Options | `BlockBasedTableConfig.java`, `LRUCache.java`, `FilterPolicy.java` |
 | Iterators | `RocksIterator.java` |
 | Snapshots | `Snapshot.java`; `ReadOptions.setSnapshot`; `RocksDB.getSnapshot`, `TransactionDB.getSnapshot`, `Transaction.getSnapshot` |
+| Flush | `FlushOptions.java`; `RocksDB.flush`, `RocksDB.flushWal`, `TransactionDB.flush`, `TransactionDB.flushWal` |
 | Statistics | `HistogramType.java`, `TickerType.java`, `StatsLevel.java`, `StatisticsHistogramData.java` |
 | Shared utilities | `Native.java` (`errHolder`, `checkError`, `toNative`), `MemorySize.java`, `RocksDBException.java` |
 
@@ -104,7 +105,7 @@ For the full feature status and roadmap see `README.md`. This section maps each 
 | ~~Snapshots~~ | ✅ Done — see `Snapshot.java` |
 | **Column Families** | `rocksdb_open_column_families`, `rocksdb_create_column_family`, `rocksdb_drop_column_family` |
 | **Merge / MergeOperator** | `rocksdb_merge`, `rocksdb_writebatch_merge`, `rocksdb_mergeoperator_create` |
-| **Flush** | `rocksdb_flush`, `rocksdb_flushoptions_create`, `rocksdb_flushoptions_set_wait` |
+| ~~Flush~~ | ✅ Done — see `FlushOptions.java` |
 | **Compaction control** | `rocksdb_compact_range`, `rocksdb_suggest_compact_range`, `rocksdb_disable_file_deletions` |
 | **MultiGet** | `rocksdb_multi_get`, batched `rocksdb_slice_t` variant |
 | **DB Properties** | `rocksdb_property_value`, `rocksdb_property_int`, `rocksdb_approximate_sizes` |

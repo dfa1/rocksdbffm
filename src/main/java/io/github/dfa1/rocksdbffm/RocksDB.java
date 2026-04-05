@@ -41,6 +41,8 @@ public final class RocksDB implements AutoCloseable {
     private static final MethodHandle MH_READOPTIONS_CREATE;
     private static final MethodHandle MH_READOPTIONS_DESTROY;
     private static final MethodHandle MH_CREATE_SNAPSHOT;
+    private static final MethodHandle MH_FLUSH;
+    private static final MethodHandle MH_FLUSH_WAL;
 
     static {
         String libPath = System.getProperty(
@@ -100,6 +102,14 @@ public final class RocksDB implements AutoCloseable {
         // const rocksdb_snapshot_t* rocksdb_create_snapshot(db*)
         MH_CREATE_SNAPSHOT = lookup("rocksdb_create_snapshot",
             FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+        // void rocksdb_flush(db*, flushopts*, errptr**)
+        MH_FLUSH = lookup("rocksdb_flush",
+            FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+        // void rocksdb_flush_wal(db*, sync, errptr**)
+        MH_FLUSH_WAL = lookup("rocksdb_flush_wal",
+            FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_BYTE, ValueLayout.ADDRESS));
     }
 
     private final MemorySegment dbPtr;
@@ -299,6 +309,40 @@ public final class RocksDB implements AutoCloseable {
             return (int) valLen;
         } catch (Throwable t) {
             throw (t instanceof RocksDBException r) ? r : new RocksDBException("get failed", t);
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // Flush
+    // -----------------------------------------------------------------------
+
+    /**
+     * Flushes all memtable data to SST files on disk.
+     * Blocks until the flush completes when {@link FlushOptions#isWait()} is {@code true}.
+     */
+    public void flush(FlushOptions flushOptions) {
+        try (Arena arena = Arena.ofConfined()) {
+            MemorySegment err = Native.errHolder(arena);
+            MH_FLUSH.invokeExact(dbPtr, flushOptions.ptr, err);
+            Native.checkError(err);
+        } catch (Throwable t) {
+            throw (t instanceof RocksDBException r) ? r : new RocksDBException("flush failed", t);
+        }
+    }
+
+    /**
+     * Flushes the WAL (write-ahead log) to disk.
+     *
+     * @param sync if {@code true}, performs an {@code fsync} after writing; otherwise
+     *             only guarantees the data has been written to the OS buffer
+     */
+    public void flushWal(boolean sync) {
+        try (Arena arena = Arena.ofConfined()) {
+            MemorySegment err = Native.errHolder(arena);
+            MH_FLUSH_WAL.invokeExact(dbPtr, sync ? (byte) 1 : (byte) 0, err);
+            Native.checkError(err);
+        } catch (Throwable t) {
+            throw (t instanceof RocksDBException r) ? r : new RocksDBException("flushWal failed", t);
         }
     }
 

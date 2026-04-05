@@ -44,6 +44,7 @@ This project is currently experimental. Core features are implemented, but sever
 | Table Options | BlockBasedTableConfig, LRUCache, FilterPolicy (Bloom) |
 | Iterators | seekToFirst/Last, seek, seekForPrev, next/prev; all three access tiers |
 | Snapshots | Point-in-time consistent reads; `ReadOptions.setSnapshot`, sequence numbers |
+| Flush | `flush(FlushOptions)`, `flushWal(boolean sync)`; sync/async modes |
 | Statistics | TickerType, HistogramType, StatsLevel |
 
 ### Roadmap — rocksdbjni parity gaps
@@ -53,7 +54,7 @@ This project is currently experimental. Core features are implemented, but sever
 | ~~Snapshots~~ | ✅ Done | |
 | **Column Families** | 🔴 High | Key namespace isolation |
 | **Merge / MergeOperator** | 🔴 High | Aggregation semantics |
-| **Flush** | 🔴 High | Explicit durability control |
+| ~~Flush~~ | ✅ Done | |
 | **Compaction control** | 🟠 Medium | Manual compaction, space reclaim |
 | **MultiGet** | 🟠 Medium | Bulk reads |
 | **DB Properties** | 🟠 Medium | Introspection and monitoring |

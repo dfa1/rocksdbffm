@@ -31,6 +31,8 @@ public final class TransactionDB implements AutoCloseable {
     private static final MethodHandle MH_CLOSE;
     private static final MethodHandle MH_BEGIN;
     private static final MethodHandle MH_CREATE_SNAPSHOT;
+    private static final MethodHandle MH_FLUSH;
+    private static final MethodHandle MH_FLUSH_WAL;
 
     // Direct (non-transactional) operations on the TransactionDB
     private static final MethodHandle MH_PUT;
@@ -83,6 +85,14 @@ public final class TransactionDB implements AutoCloseable {
         // const rocksdb_snapshot_t* rocksdb_transactiondb_create_snapshot(txndb*)
         MH_CREATE_SNAPSHOT = RocksDB.lookup("rocksdb_transactiondb_create_snapshot",
             FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+        // void rocksdb_transactiondb_flush(txndb*, flushopts*, errptr**)
+        MH_FLUSH = RocksDB.lookup("rocksdb_transactiondb_flush",
+            FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+        // void rocksdb_transactiondb_flush_wal(txndb*, sync, errptr**)
+        MH_FLUSH_WAL = RocksDB.lookup("rocksdb_transactiondb_flush_wal",
+            FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_BYTE, ValueLayout.ADDRESS));
     }
 
     // -----------------------------------------------------------------------
@@ -122,6 +132,39 @@ public final class TransactionDB implements AutoCloseable {
             return new TransactionDB(ptr, writeOpts, readOpts);
         } catch (Throwable t) {
             throw (t instanceof RocksDBException r) ? r : new RocksDBException("Native call failed", t);
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // Flush
+    // -----------------------------------------------------------------------
+
+    /**
+     * Flushes all memtable data to SST files on disk.
+     * Blocks until the flush completes when {@link FlushOptions#isWait()} is {@code true}.
+     */
+    public void flush(FlushOptions flushOptions) {
+        try (Arena arena = Arena.ofConfined()) {
+            MemorySegment err = Native.errHolder(arena);
+            MH_FLUSH.invokeExact(ptr, flushOptions.ptr, err);
+            Native.checkError(err);
+        } catch (Throwable t) {
+            throw (t instanceof RocksDBException r) ? r : new RocksDBException("flush failed", t);
+        }
+    }
+
+    /**
+     * Flushes the WAL (write-ahead log) to disk.
+     *
+     * @param sync if {@code true}, performs an {@code fsync} after writing
+     */
+    public void flushWal(boolean sync) {
+        try (Arena arena = Arena.ofConfined()) {
+            MemorySegment err = Native.errHolder(arena);
+            MH_FLUSH_WAL.invokeExact(ptr, sync ? (byte) 1 : (byte) 0, err);
+            Native.checkError(err);
+        } catch (Throwable t) {
+            throw (t instanceof RocksDBException r) ? r : new RocksDBException("flushWal failed", t);
         }
     }
 

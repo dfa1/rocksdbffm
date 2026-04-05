@@ -3,38 +3,60 @@ Project
 
 This is an experimental wrapper for rocksdb using FFM and JDK 25.
 Why we are building this? Because there is always a lag between cool stuff happening
-in rocksdb C++ and the JNI wrappers. Lately the lag is getting big...
+in RocksDB C++ and the JNI wrappers. Lately the lag is getting big...
 
-How to
+Package and module is io.github.dfa1.rocksdbffm.
+
+How to link to native code
 -----
 
-Using the local installation of rocksdb under
+By now, reuse the local installation of rocksdb via brew.
 
-/opt/homebrew/Cellar/rocksdb/10.10.1/
+Use the files under:
+/opt/homebrew/Cellar/rocksdb/${version}
 
 jextract is not bundled with the JDK — bindings are written manually using
 java.lang.foreign. The C header is at include/rocksdb/c.h.
 
+*Technical debt*: have the build of rocksdb in the tree so it works for every
+architecture.
 
 How to validate
 ---
 
 For every feature, build it with rocksdbjni and then rebuild it with FFM.
-Write unit tests in JUnit 5 and @TempDir.
+Write unit tests in JUnit 5 and @TempDir. JMH is used for all performance tests.
 
 Run tests:      mvn test
 Run benchmarks: mvn package -DskipTests && java --enable-native-access=ALL-UNNAMED -jar target/benchmarks.jar
 
-What feature to cover
+What features to cover
 ----
 
-- create/open a rocksdb database
-- put/get/delete
-- batch
-- transaction
-- and the iterator
-- try to cover a minimal amount of Options
+- [x] create/open a rocksdb database
+- [x] put/get/delete
+- [x] batch
+- [ ] transaction
+- [ ] createIfMissing/readOnly
+- [ ] iterator
+- [ ] options
+- [ ] statistics
+- [ ] tracing
+– [ ] secondary keys
+- [ ] `ByteBuffer` pool and some examples
+- [ ] `MemorySegment` version
+- [ ] checkpoint
+- [ ] module-info.java and full module support
+- any other feature users will request
 
+
+in case of doubt, use same design of RocksdbJNI (same names).
+
+Design is:
+- have byte[] version of every method for quick access: explicitly mention that is slow in the javadoc
+- have always the ByteBuffer version to support existing clients using it
+- have also the MemorySegment version for new clients
+- every feature is covered by unit tests, javadoc and examples
 
 FFM Best Practices
 ----

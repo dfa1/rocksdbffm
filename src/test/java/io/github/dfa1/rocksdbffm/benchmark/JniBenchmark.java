@@ -119,4 +119,12 @@ public class JniBenchmark {
              .sorted(Comparator.reverseOrder())
              .forEach(p -> p.toFile().delete());
     }
+
+    static void main() throws Exception {
+        org.openjdk.jmh.runner.options.Options opt = new org.openjdk.jmh.runner.options.OptionsBuilder()
+                .include(JniBenchmark.class.getSimpleName())
+                .build();
+
+        new org.openjdk.jmh.runner.Runner(opt).run();
+    }
 }

@@ -84,6 +84,10 @@ echo "[build-rocksdb] Building RocksDB $CLASSIFIER$CROSS with zig cc/c++ (jobs=$
 export CC="zig cc -target $ZIG_TARGET"
 export CXX="zig c++ -target $ZIG_TARGET"
 export PORTABLE=1
+# TODO: to have hermetic zig build, disable external libs for now
+export ROCKSDB_DISABLE_SNAPPY=1
+export ROCKSDB_DISABLE_BZ2=1
+export ROCKSDB_DISABLE_ZLIB=1
 
 cd "$ROCKSDB_DIR"
 

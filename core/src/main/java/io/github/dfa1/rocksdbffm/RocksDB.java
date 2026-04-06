@@ -346,9 +346,25 @@ public final class RocksDB implements AutoCloseable {
 	}
 
 	// -----------------------------------------------------------------------
-	// Public API — byte[] variants
+	// Put
 	// -----------------------------------------------------------------------
 
+	public void put(byte[] key, byte[] value) {
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = Native.errHolder(arena);
+			MemorySegment keyNative = Native.toNative(arena, key);
+			MemorySegment valNative = Native.toNative(arena, value);
+
+			MH_PUT.invokeExact(dbPtr, writeOptions,
+					keyNative, (long) key.length,
+					valNative, (long) value.length,
+					err);
+
+			Native.checkError(err);
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("put failed", t);
+		}
+	}
 
 	public void put(Arena arena, byte[] key, byte[] value) {
 		try {
@@ -367,23 +383,77 @@ public final class RocksDB implements AutoCloseable {
 		}
 	}
 
-
-	public void put(byte[] key, byte[] value) {
+	/**
+	 * Zero-copy put: MemorySegment.ofBuffer() wraps the direct buffer's native
+	 * memory without any heap→native copy.
+	 */
+	public void put(ByteBuffer key, ByteBuffer value) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
-			MemorySegment keyNative = Native.toNative(arena, key);
-			MemorySegment valNative = Native.toNative(arena, value);
-
+			MemorySegment keyNative = MemorySegment.ofBuffer(key);
+			MemorySegment valNative = MemorySegment.ofBuffer(value);
 			MH_PUT.invokeExact(dbPtr, writeOptions,
-					keyNative, (long) key.length,
-					valNative, (long) value.length,
+					keyNative, (long) key.remaining(),
+					valNative, (long) value.remaining(),
 					err);
-
 			Native.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("put failed", t);
 		}
 	}
+
+	/**
+	 * Zero-copy put: caller supplies pre-allocated native segments.
+	 * No heap→native copy occurs; key/value are passed directly to RocksDB.
+	 */
+	public void put(MemorySegment key, MemorySegment value) {
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = Native.errHolder(arena);
+			MH_PUT.invokeExact(dbPtr, writeOptions,
+					key, key.byteSize(),
+					value, value.byteSize(),
+					err);
+			Native.checkError(err);
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("put failed", t);
+		}
+	}
+
+	public void put(Arena arena, MemorySegment key, MemorySegment value) {
+		try {
+			MemorySegment err = Native.errHolder(arena);
+			MH_PUT.invokeExact(dbPtr, writeOptions,
+					key, key.byteSize(),
+					value, value.byteSize(),
+					err);
+			Native.checkError(err);
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("put failed", t);
+		}
+	}
+
+	// TODO: like put but uses pool... it is 3% faster on my M5, but often there is no difference
+	public void put2(MemorySegment key, MemorySegment value) {
+		MemorySegment acquire = Native.ERROR.acquire();
+		try {
+			MH_PUT.invokeExact(
+					dbPtr,
+					writeOptions,
+					key, key.byteSize(),
+					value, value.byteSize(),
+					acquire
+			);
+			Native.checkError(acquire);
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("put failed", t);
+		} finally {
+			Native.ERROR.release(acquire);
+		}
+	}
+
+	// -----------------------------------------------------------------------
+	// Get
+	// -----------------------------------------------------------------------
 
 	/**
 	 * Get via PinnableSlice: pins data directly from the block cache,
@@ -412,6 +482,92 @@ public final class RocksDB implements AutoCloseable {
 		}
 	}
 
+	/**
+	 * Get with explicit ReadOptions, e.g. for snapshot-pinned reads.
+	 * Uses PinnableSlice to avoid intermediate copies.
+	 */
+	public byte[] get(ReadOptions readOptions, byte[] key) {
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = Native.errHolder(arena);
+			MemorySegment keyNative = Native.toNative(arena, key);
+
+			MemorySegment pin = (MemorySegment) MH_GET_PINNED.invokeExact(
+					dbPtr, readOptions.ptr, keyNative, (long) key.length, err);
+
+			Native.checkError(err);
+
+			if (MemorySegment.NULL.equals(pin)) return null;
+
+			MemorySegment valLenSeg = arena.allocate(ValueLayout.JAVA_LONG);
+			MemorySegment valPtr = (MemorySegment) MH_PINNABLESLICE_VALUE.invokeExact(pin, valLenSeg);
+			long valLen = valLenSeg.get(ValueLayout.JAVA_LONG, 0);
+			byte[] result = valPtr.reinterpret(valLen).toArray(ValueLayout.JAVA_BYTE);
+			MH_PINNABLESLICE_DESTROY.invokeExact(pin);
+			return result;
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("get failed", t);
+		}
+	}
+
+	/**
+	 * Single-copy get via PinnableSlice + direct output ByteBuffer.
+	 * Pins data from the block cache and copies once into the caller's buffer.
+	 * No Arena allocation occurs on the hot path.
+	 * Returns the actual value length, or -1 if not found.
+	 */
+	public int get(ByteBuffer key, ByteBuffer value) {
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = Native.errHolder(arena);
+			MemorySegment keyNative = MemorySegment.ofBuffer(key);
+			MemorySegment pin = (MemorySegment) MH_GET_PINNED.invokeExact(
+					dbPtr, readOptions, keyNative, (long) key.remaining(), err);
+
+			Native.checkError(err);
+
+			if (MemorySegment.NULL.equals(pin)) return -1;
+
+			MemorySegment valLenSeg = arena.allocate(ValueLayout.JAVA_LONG);
+			MemorySegment valPtr = (MemorySegment) MH_PINNABLESLICE_VALUE.invokeExact(pin, valLenSeg);
+			long valLen = valLenSeg.get(ValueLayout.JAVA_LONG, 0);
+			int toCopy = (int) Math.min(valLen, value.remaining());
+			MemorySegment.ofBuffer(value).copyFrom(valPtr.reinterpret(toCopy));
+			value.position(value.position() + toCopy);
+			MH_PINNABLESLICE_DESTROY.invokeExact(pin);
+			return (int) valLen;
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("get failed", t);
+		}
+	}
+
+	/**
+	 * Zero-copy get via PinnableSlice into a caller-supplied native segment.
+	 * Pins data from the block cache and copies once into {@code value}.
+	 * Returns the actual value length, or -1 if not found.
+	 */
+	public long get(MemorySegment key, MemorySegment value) {
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = Native.errHolder(arena);
+			MemorySegment pin = (MemorySegment) MH_GET_PINNED.invokeExact(
+					dbPtr, readOptions, key, key.byteSize(), err);
+
+			Native.checkError(err);
+
+			MemorySegment valLenSeg = arena.allocate(ValueLayout.JAVA_LONG);
+			MemorySegment valPtr = (MemorySegment) MH_PINNABLESLICE_VALUE.invokeExact(pin, valLenSeg);
+			long valLen = valLenSeg.get(ValueLayout.JAVA_LONG, 0);
+			long toCopy = Math.min(valLen, value.byteSize());
+			value.copyFrom(valPtr.reinterpret(toCopy));
+			MH_PINNABLESLICE_DESTROY.invokeExact(pin);
+			return valLen;
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("get failed", t);
+		}
+	}
+
+	// -----------------------------------------------------------------------
+	// Delete
+	// -----------------------------------------------------------------------
+
 	public void delete(byte[] key) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
@@ -426,62 +582,6 @@ public final class RocksDB implements AutoCloseable {
 			throw RocksDBException.wrap("delete failed", t);
 		}
 	}
-
-	// -----------------------------------------------------------------------
-	// Public API — merge
-	// -----------------------------------------------------------------------
-
-	/**
-	 * Applies a merge operand to {@code key}. Slow path: copies key/value.
-	 */
-	public void merge(byte[] key, byte[] value) {
-		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
-			MH_MERGE.invokeExact(dbPtr, writeOptions,
-					Native.toNative(arena, key), (long) key.length,
-					Native.toNative(arena, value), (long) value.length,
-					err);
-			Native.checkError(err);
-		} catch (Throwable t) {
-			throw RocksDBException.wrap("merge failed", t);
-		}
-	}
-
-	/**
-	 * Applies a merge operand to {@code key}. Zero-copy for direct {@link java.nio.ByteBuffer}s.
-	 */
-	public void merge(ByteBuffer key, ByteBuffer value) {
-		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
-			MH_MERGE.invokeExact(dbPtr, writeOptions,
-					MemorySegment.ofBuffer(key), (long) key.remaining(),
-					MemorySegment.ofBuffer(value), (long) value.remaining(),
-					err);
-			Native.checkError(err);
-		} catch (Throwable t) {
-			throw RocksDBException.wrap("merge failed", t);
-		}
-	}
-
-	/**
-	 * Applies a merge operand to {@code key}. Zero-copy native-first path.
-	 */
-	public void merge(MemorySegment key, MemorySegment value) {
-		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
-			MH_MERGE.invokeExact(dbPtr, writeOptions,
-					key, key.byteSize(),
-					value, value.byteSize(),
-					err);
-			Native.checkError(err);
-		} catch (Throwable t) {
-			throw RocksDBException.wrap("merge failed", t);
-		}
-	}
-
-	// -----------------------------------------------------------------------
-	// Public API — deleteRange (range tombstone)
-	// -----------------------------------------------------------------------
 
 	/**
 	 * Deletes all keys in the half-open range [{@code startKey}, {@code endKey}).
@@ -539,7 +639,59 @@ public final class RocksDB implements AutoCloseable {
 	}
 
 	// -----------------------------------------------------------------------
-	// Public API — keyMayExist (Bloom filter check)
+	// Merge
+	// -----------------------------------------------------------------------
+
+	/**
+	 * Applies a merge operand to {@code key}. Slow path: copies key/value.
+	 */
+	public void merge(byte[] key, byte[] value) {
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = Native.errHolder(arena);
+			MH_MERGE.invokeExact(dbPtr, writeOptions,
+					Native.toNative(arena, key), (long) key.length,
+					Native.toNative(arena, value), (long) value.length,
+					err);
+			Native.checkError(err);
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("merge failed", t);
+		}
+	}
+
+	/**
+	 * Applies a merge operand to {@code key}. Zero-copy for direct {@link java.nio.ByteBuffer}s.
+	 */
+	public void merge(ByteBuffer key, ByteBuffer value) {
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = Native.errHolder(arena);
+			MH_MERGE.invokeExact(dbPtr, writeOptions,
+					MemorySegment.ofBuffer(key), (long) key.remaining(),
+					MemorySegment.ofBuffer(value), (long) value.remaining(),
+					err);
+			Native.checkError(err);
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("merge failed", t);
+		}
+	}
+
+	/**
+	 * Applies a merge operand to {@code key}. Zero-copy native-first path.
+	 */
+	public void merge(MemorySegment key, MemorySegment value) {
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = Native.errHolder(arena);
+			MH_MERGE.invokeExact(dbPtr, writeOptions,
+					key, key.byteSize(),
+					value, value.byteSize(),
+					err);
+			Native.checkError(err);
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("merge failed", t);
+		}
+	}
+
+	// -----------------------------------------------------------------------
+	// KeyMayExist (Bloom filter check)
 	// -----------------------------------------------------------------------
 
 	/**
@@ -606,134 +758,62 @@ public final class RocksDB implements AutoCloseable {
 	}
 
 	// -----------------------------------------------------------------------
-	// Public API — direct ByteBuffer variants (highest performance)
+	// Write (batch)
 	// -----------------------------------------------------------------------
 
-	/**
-	 * Zero-copy put: MemorySegment.ofBuffer() wraps the direct buffer's native
-	 * memory without any heap→native copy.
-	 */
-	public void put(ByteBuffer key, ByteBuffer value) {
+	public void write(WriteBatch batch) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
-			MemorySegment keyNative = MemorySegment.ofBuffer(key);
-			MemorySegment valNative = MemorySegment.ofBuffer(value);
-			MH_PUT.invokeExact(dbPtr, writeOptions,
-					keyNative, (long) key.remaining(),
-					valNative, (long) value.remaining(),
-					err);
+			MH_WRITE.invokeExact(dbPtr, writeOptions, batch.ptr, err);
 			Native.checkError(err);
 		} catch (Throwable t) {
-			throw RocksDBException.wrap("put failed", t);
+			throw RocksDBException.wrap("write failed", t);
 		}
 	}
 
-	/**
-	 * Single-copy get via PinnableSlice + direct output ByteBuffer.
-	 * Pins data from the block cache and copies once into the caller's buffer.
-	 * No Arena allocation occurs on the hot path.
-	 * Returns the actual value length, or -1 if not found.
-	 */
-	public int get(ByteBuffer key, ByteBuffer value) {
-		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
-			MemorySegment keyNative = MemorySegment.ofBuffer(key);
-			MemorySegment pin = (MemorySegment) MH_GET_PINNED.invokeExact(
-					dbPtr, readOptions, keyNative, (long) key.remaining(), err);
-
-			Native.checkError(err);
-
-			if (MemorySegment.NULL.equals(pin)) return -1;
-
-			MemorySegment valLenSeg = arena.allocate(ValueLayout.JAVA_LONG);
-			MemorySegment valPtr = (MemorySegment) MH_PINNABLESLICE_VALUE.invokeExact(pin, valLenSeg);
-			long valLen = valLenSeg.get(ValueLayout.JAVA_LONG, 0);
-			int toCopy = (int) Math.min(valLen, value.remaining());
-			MemorySegment.ofBuffer(value).copyFrom(valPtr.reinterpret(toCopy));
-			value.position(value.position() + toCopy);
-			MH_PINNABLESLICE_DESTROY.invokeExact(pin);
-			return (int) valLen;
-		} catch (Throwable t) {
-			throw RocksDBException.wrap("get failed", t);
-		}
-	}
-
-	// -----------------------------------------------------------------------
-	// Public API — MemorySegment variants (native-first, zero-copy)
-	// -----------------------------------------------------------------------
-
-	/**
-	 * Zero-copy put: caller supplies pre-allocated native segments.
-	 * No heap→native copy occurs; key/value are passed directly to RocksDB.
-	 */
-	public void put(MemorySegment key, MemorySegment value) {
-		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
-			MH_PUT.invokeExact(dbPtr, writeOptions,
-					key, key.byteSize(),
-					value, value.byteSize(),
-					err);
-			Native.checkError(err);
-		} catch (Throwable t) {
-			throw RocksDBException.wrap("put failed", t);
-		}
-	}
-
-	public void put(Arena arena, MemorySegment key, MemorySegment value) {
+	public void write(Arena arena, WriteBatch batch) {
 		try {
 			MemorySegment err = Native.errHolder(arena);
-			MH_PUT.invokeExact(dbPtr, writeOptions,
-					key, key.byteSize(),
-					value, value.byteSize(),
-					err);
+			MH_WRITE.invokeExact(dbPtr, writeOptions, batch.ptr, err);
 			Native.checkError(err);
 		} catch (Throwable t) {
-			throw RocksDBException.wrap("put failed", t);
+			throw RocksDBException.wrap("write failed", t);
 		}
 	}
 
-	// TODO: like put but uses pool... it is 3% faster on my M5, but often there is no difference
-	public void put2(MemorySegment key, MemorySegment value) {
-		MemorySegment acquire = Native.ERROR.acquire();
+	// -----------------------------------------------------------------------
+	// Snapshot
+	// -----------------------------------------------------------------------
+
+	/**
+	 * Creates a snapshot of the current DB state.
+	 * The returned snapshot must be closed after use to release native resources.
+	 */
+	public Snapshot getSnapshot() {
 		try {
-			MH_PUT.invokeExact(
-					dbPtr,
-					writeOptions,
-					key, key.byteSize(),
-					value, value.byteSize(),
-					acquire
-			);
-			Native.checkError(acquire);
+			MemorySegment snapPtr = (MemorySegment) MH_CREATE_SNAPSHOT.invokeExact(dbPtr);
+			return new Snapshot(dbPtr, snapPtr);
 		} catch (Throwable t) {
-			throw RocksDBException.wrap("put failed", t);
-		} finally {
-			Native.ERROR.release(acquire);
+			throw RocksDBException.wrap("getSnapshot failed", t);
 		}
+	}
+
+	// -----------------------------------------------------------------------
+	// Iterator
+	// -----------------------------------------------------------------------
+
+	/**
+	 * Returns a new iterator using the database's default read options.
+	 */
+	public RocksIterator newIterator() {
+		return RocksIterator.create(dbPtr, readOptions);
 	}
 
 	/**
-	 * Zero-copy get via PinnableSlice into a caller-supplied native segment.
-	 * Pins data from the block cache and copies once into {@code value}.
-	 * Returns the actual value length, or -1 if not found.
+	 * Returns a new iterator using the supplied {@code readOptions}.
 	 */
-	public long get(MemorySegment key, MemorySegment value) {
-		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
-			MemorySegment pin = (MemorySegment) MH_GET_PINNED.invokeExact(
-					dbPtr, readOptions, key, key.byteSize(), err);
-
-			Native.checkError(err);
-
-			MemorySegment valLenSeg = arena.allocate(ValueLayout.JAVA_LONG);
-			MemorySegment valPtr = (MemorySegment) MH_PINNABLESLICE_VALUE.invokeExact(pin, valLenSeg);
-			long valLen = valLenSeg.get(ValueLayout.JAVA_LONG, 0);
-			long toCopy = Math.min(valLen, value.byteSize());
-			value.copyFrom(valPtr.reinterpret(toCopy));
-			MH_PINNABLESLICE_DESTROY.invokeExact(pin);
-			return valLen;
-		} catch (Throwable t) {
-			throw RocksDBException.wrap("get failed", t);
-		}
+	public RocksIterator newIterator(ReadOptions readOptions) {
+		return RocksIterator.create(dbPtr, readOptions.ptr);
 	}
 
 	// -----------------------------------------------------------------------
@@ -768,68 +848,6 @@ public final class RocksDB implements AutoCloseable {
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("flushWal failed", t);
 		}
-	}
-
-	// -----------------------------------------------------------------------
-	// Snapshot
-	// -----------------------------------------------------------------------
-
-	/**
-	 * Creates a snapshot of the current DB state.
-	 * The returned snapshot must be closed after use to release native resources.
-	 */
-	public Snapshot getSnapshot() {
-		try {
-			MemorySegment snapPtr = (MemorySegment) MH_CREATE_SNAPSHOT.invokeExact(dbPtr);
-			return new Snapshot(dbPtr, snapPtr);
-		} catch (Throwable t) {
-			throw RocksDBException.wrap("getSnapshot failed", t);
-		}
-	}
-
-	/**
-	 * Get with explicit ReadOptions, e.g. for snapshot-pinned reads.
-	 * Uses PinnableSlice to avoid intermediate copies.
-	 */
-	public byte[] get(ReadOptions readOptions, byte[] key) {
-		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
-			MemorySegment keyNative = Native.toNative(arena, key);
-
-			MemorySegment pin = (MemorySegment) MH_GET_PINNED.invokeExact(
-					dbPtr, readOptions.ptr, keyNative, (long) key.length, err);
-
-			Native.checkError(err);
-
-			if (MemorySegment.NULL.equals(pin)) return null;
-
-			MemorySegment valLenSeg = arena.allocate(ValueLayout.JAVA_LONG);
-			MemorySegment valPtr = (MemorySegment) MH_PINNABLESLICE_VALUE.invokeExact(pin, valLenSeg);
-			long valLen = valLenSeg.get(ValueLayout.JAVA_LONG, 0);
-			byte[] result = valPtr.reinterpret(valLen).toArray(ValueLayout.JAVA_BYTE);
-			MH_PINNABLESLICE_DESTROY.invokeExact(pin);
-			return result;
-		} catch (Throwable t) {
-			throw RocksDBException.wrap("get failed", t);
-		}
-	}
-
-	// -----------------------------------------------------------------------
-	// Iterator
-	// -----------------------------------------------------------------------
-
-	/**
-	 * Returns a new iterator using the database's default read options.
-	 */
-	public RocksIterator newIterator() {
-		return RocksIterator.create(dbPtr, readOptions);
-	}
-
-	/**
-	 * Returns a new iterator using the supplied {@code readOptions}.
-	 */
-	public RocksIterator newIterator(ReadOptions readOptions) {
-		return RocksIterator.create(dbPtr, readOptions.ptr);
 	}
 
 	// -----------------------------------------------------------------------
@@ -871,32 +889,7 @@ public final class RocksDB implements AutoCloseable {
 	}
 
 	// -----------------------------------------------------------------------
-	// Batch write
-	// -----------------------------------------------------------------------
-
-	public void write(Arena arena, WriteBatch batch) {
-		try {
-			MemorySegment err = Native.errHolder(arena);
-			MH_WRITE.invokeExact(dbPtr, writeOptions, batch.ptr, err);
-			Native.checkError(err);
-		} catch (Throwable t) {
-			throw RocksDBException.wrap("write failed", t);
-		}
-	}
-
-
-	public void write(WriteBatch batch) {
-		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
-			MH_WRITE.invokeExact(dbPtr, writeOptions, batch.ptr, err);
-			Native.checkError(err);
-		} catch (Throwable t) {
-			throw RocksDBException.wrap("write failed", t);
-		}
-	}
-
-	// -----------------------------------------------------------------------
-	// Public API — compaction control
+	// Compaction
 	// -----------------------------------------------------------------------
 
 	/**

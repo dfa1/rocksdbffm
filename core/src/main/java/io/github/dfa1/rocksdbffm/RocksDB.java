@@ -17,6 +17,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalLong;
+import java.util.Set;
 
 /**
  * Main entry point for RocksDB operations.
@@ -940,6 +941,76 @@ public final class RocksDB implements AutoCloseable {
      */
     public void ingestExternalFile(Path file) {
         ingestExternalFile(List.of(file));
+    }
+
+    // -----------------------------------------------------------------------
+    // Compression support probe
+    // -----------------------------------------------------------------------
+
+    private static volatile Set<CompressionType> supportedCompressions;
+
+    /**
+     * Returns the set of compression types compiled into the loaded RocksDB library.
+     *
+     * <p>{@link CompressionType#NO_COMPRESSION} is always included. The result is
+     * cached after the first call.
+     *
+     * <pre>{@code
+     * Set<CompressionType> supported = RocksDB.getSupportedCompressions();
+     * }</pre>
+     */
+    public static Set<CompressionType> getSupportedCompressions() {
+        if (supportedCompressions == null) {
+            synchronized (RocksDB.class) {
+                if (supportedCompressions == null) {
+                    supportedCompressions = probeCompressions();
+                }
+            }
+        }
+        return supportedCompressions;
+    }
+
+    private static Set<CompressionType> probeCompressions() {
+        Set<CompressionType> result = java.util.EnumSet.of(CompressionType.NO_COMPRESSION);
+        Path tmpDir = null;
+        try {
+            tmpDir = java.nio.file.Files.createTempDirectory("rocksdbffm-compress-probe-");
+            for (CompressionType type : CompressionType.values()) {
+                if (type == CompressionType.NO_COMPRESSION) continue;
+                if (probeCompression(type, tmpDir)) result.add(type);
+            }
+        } catch (java.io.IOException ignored) {
+        } finally {
+            if (tmpDir != null) deleteQuietly(tmpDir);
+        }
+        return java.util.Collections.unmodifiableSet(result);
+    }
+
+    private static boolean probeCompression(CompressionType type, Path tmpDir) {
+        Path dbPath = tmpDir.resolve(type.name().toLowerCase());
+        try (Options opts = new Options().setCreateIfMissing(true).setCompression(type);
+             RocksDB db = open(opts, dbPath);
+             FlushOptions fo = new FlushOptions().setWait(true)) {
+            db.put(new byte[]{0}, new byte[]{0});
+            db.flush(fo);
+            return true;
+        } catch (RocksDBException ignored) {
+            return false;
+        } finally {
+            deleteQuietly(dbPath);
+        }
+    }
+
+    private static void deleteQuietly(Path path) {
+        try {
+            if (java.nio.file.Files.isDirectory(path)) {
+                try (var stream = java.nio.file.Files.list(path)) {
+                    stream.forEach(RocksDB::deleteQuietly);
+                }
+            }
+            java.nio.file.Files.deleteIfExists(path);
+        } catch (java.io.IOException ignored) {
+        }
     }
 
     // -----------------------------------------------------------------------

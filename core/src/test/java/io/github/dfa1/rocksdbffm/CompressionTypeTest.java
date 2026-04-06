@@ -12,33 +12,28 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class CompressionTypeTest {
 
     // -----------------------------------------------------------------------
-    // getSupportedTypes
+    // getSupportedCompressions
     // -----------------------------------------------------------------------
 
     @Test
-    void getSupportedTypes_alwaysContainsNoCompression() {
-        // Given / When
-        Set<CompressionType> supported = CompressionType.getSupportedTypes();
-
-        // Then
-        assertThat(supported).contains(CompressionType.NO_COMPRESSION);
+    void getSupportedCompressions_alwaysContainsNoCompression() {
+        assertThat(RocksDB.getSupportedCompressions()).contains(CompressionType.NO_COMPRESSION);
     }
 
     @Test
-    void getSupportedTypes_isNonEmpty() {
-        assertThat(CompressionType.getSupportedTypes()).isNotEmpty();
+    void getSupportedCompressions_isNonEmpty() {
+        assertThat(RocksDB.getSupportedCompressions()).isNotEmpty();
     }
 
     @Test
-    void getSupportedTypes_isStable() {
-        // Two calls return the same set (cached)
-        assertThat(CompressionType.getSupportedTypes())
-            .isEqualTo(CompressionType.getSupportedTypes());
+    void getSupportedCompressions_isStable() {
+        assertThat(RocksDB.getSupportedCompressions())
+            .isEqualTo(RocksDB.getSupportedCompressions());
     }
 
     @Test
-    void getSupportedTypes_isUnmodifiable() {
-        Set<CompressionType> supported = CompressionType.getSupportedTypes();
+    void getSupportedCompressions_isUnmodifiable() {
+        Set<CompressionType> supported = RocksDB.getSupportedCompressions();
         assertThatThrownBy(() -> supported.add(CompressionType.SNAPPY))
             .isInstanceOf(UnsupportedOperationException.class);
     }
@@ -50,9 +45,7 @@ class CompressionTypeTest {
     @Test
     void options_setCompression_roundTrips() {
         try (Options opts = new Options()) {
-            // When
             opts.setCompression(CompressionType.NO_COMPRESSION);
-            // Then
             assertThat(opts.getCompression()).isEqualTo(CompressionType.NO_COMPRESSION);
         }
     }
@@ -73,20 +66,15 @@ class CompressionTypeTest {
                 .setCreateIfMissing(true)
                 .setCompression(CompressionType.NO_COMPRESSION);
              RocksDB db = RocksDB.open(opts, dir)) {
-            // When
             db.put("k".getBytes(), "v".getBytes());
-
-            // Then
             assertThat(db.get("k".getBytes())).isEqualTo("v".getBytes());
         }
     }
 
     @Test
     void openDb_withEachSupportedCompression_writesAndReadsBack(@TempDir Path dir) {
-        // For every compression type that the library was built with, open a DB,
-        // write a key, and read it back.
         int i = 0;
-        for (CompressionType type : CompressionType.getSupportedTypes()) {
+        for (CompressionType type : RocksDB.getSupportedCompressions()) {
             Path dbPath = dir.resolve("db-" + i++);
             try (Options opts = new Options()
                     .setCreateIfMissing(true)

@@ -88,4 +88,34 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <!--
+            Build RocksDB from the git submodule using zig cc/c++.
+            Activate with: mvn -Pnative-build ...
+            The script is idempotent: skips if the lib is already present.
+        -->
+        <profile>
+            <id>native-build</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <version>3.5.0</version>
+                        <executions>
+                            <execution>
+                                <id>build-rocksdb-native</id>
+                                <phase>generate-resources</phase>
+                                <goals><goal>exec</goal></goals>
+                                <configuration>
+                                    <executable>${project.basedir}/scripts/build-rocksdb.sh</executable>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

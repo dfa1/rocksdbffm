@@ -1,5 +1,7 @@
 package io.github.dfa1.rocksdbffm;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.foreign.Arena;
 import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.Linker;
@@ -8,7 +10,9 @@ import java.lang.foreign.SymbolLookup;
 import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.OptionalLong;
@@ -61,11 +65,7 @@ public final class RocksDB implements AutoCloseable {
     private static final MethodHandle MH_ENABLE_FILE_DELETIONS;
 
     static {
-        String libPath = System.getProperty(
-            "rocksdb.lib.path",
-            "/opt/homebrew/Cellar/rocksdb/10.10.1/lib/librocksdb.dylib"
-        );
-        LIB = SymbolLookup.libraryLookup(libPath, Arena.ofAuto());
+        LIB = SymbolLookup.libraryLookup(resolveLibPath(), Arena.ofAuto());
 
         MH_OPEN = lookup("rocksdb_open",
             FunctionDescriptor.of(ValueLayout.ADDRESS,
@@ -899,6 +899,48 @@ public final class RocksDB implements AutoCloseable {
     // -----------------------------------------------------------------------
     // Helpers
     // -----------------------------------------------------------------------
+
+    /**
+     * Resolves the path to the native RocksDB shared library using a three-step
+     * strategy:
+     * <ol>
+     *   <li>{@code -Drocksdb.lib.path} system property — explicit override</li>
+     *   <li>Classpath resource {@code /native/<os>-<arch>/librocksdb.<ext>} bundled
+     *       in the JAR — extracted to a temp file on first use</li>
+     *   <li>Homebrew default path (macOS fallback for local dev without a JAR build)</li>
+     * </ol>
+     */
+    private static String resolveLibPath() {
+        // 1. Explicit override
+        String explicit = System.getProperty("rocksdb.lib.path");
+        if (explicit != null) return explicit;
+
+        // 2. Bundled in JAR / classpath
+        String classifier = classifier();
+        String ext        = classifier.startsWith("osx") ? "dylib" : "so";
+        String resource   = "/native/" + classifier + "/librocksdb." + ext;
+        try (InputStream in = RocksDB.class.getResourceAsStream(resource)) {
+            if (in != null) {
+                Path tmp = Files.createTempFile("librocksdb-", "." + ext);
+                tmp.toFile().deleteOnExit();
+                Files.copy(in, tmp, StandardCopyOption.REPLACE_EXISTING);
+                return tmp.toString();
+            }
+        } catch (IOException e) {
+            throw new UnsatisfiedLinkError("Failed to extract bundled RocksDB: " + e.getMessage());
+        }
+
+        // 3. Homebrew fallback (macOS local dev)
+        return "/opt/homebrew/Cellar/rocksdb/10.10.1/lib/librocksdb.dylib";
+    }
+
+    private static String classifier() {
+        String os   = System.getProperty("os.name", "").toLowerCase();
+        String arch = System.getProperty("os.arch", "").toLowerCase();
+        String osName   = os.contains("mac") ? "osx" : "linux";
+        String archName = (arch.equals("aarch64") || arch.equals("arm64")) ? "aarch64" : "x86_64";
+        return osName + "-" + archName;
+    }
 
     static MethodHandle lookup(String name, FunctionDescriptor fd) {
         return LINKER.downcallHandle(

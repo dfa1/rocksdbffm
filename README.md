@@ -41,7 +41,7 @@ Benchmarks performed on JDK 25 (Apple M-series), RocksDB v10.10.1, compared to J
 | Writes | 688,503 | 590,209 | **+17%** |
 | Batch writes (100 ops) | 23,982 | 16,532 | **+45%** |
 
-*Reads benefit from `PinnableSlice` (zero intermediate copy from block cache). Writes are bound by WAL/memtable throughput.*
+*Both libraries use `PinnableSlice` for reads. The gains come from lower FFM downcall overhead vs JNI (no frame setup, no thread-state transitions, JIT-compiled stubs). Write gains are smaller because WAL/memtable I/O dominates. Batch write gains multiply because overhead is paid 100× per iteration.*
 
 ### Running benchmarks
 

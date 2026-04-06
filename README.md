@@ -71,6 +71,7 @@ This project is currently experimental. The table below tracks parity with `rock
 | Flush | ✅ | `flush(FlushOptions)`, `flushWal(boolean sync)`; sync/async modes |
 | DB Properties | ✅ | `getProperty(DBProperty)` → `Optional<String>`, `getLongProperty(DBProperty)` → `OptionalLong` |
 | Statistics | ✅ | TickerType, HistogramType, StatsLevel |
+| Compression | ✅ | `CompressionType` enum (NO/Snappy/zlib/bz2/LZ4/LZ4HC/Xpress/Zstd); `Options.setCompression`; `CompressionType.getSupportedTypes()` runtime probe |
 | Column Families | ❌ | Key namespace isolation |
 | Merge / MergeOperator | ✅ | `merge` on `RocksDB` and `WriteBatch`; custom `MergeOperator` via FFM upcall stubs; built-in uint64 add |
 | MultiGet | ❌ | Bulk reads |

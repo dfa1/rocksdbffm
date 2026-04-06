@@ -29,6 +29,8 @@ public final class Options implements AutoCloseable {
     private static final MethodHandle MH_STATISTICS_GET_STRING;
     private static final MethodHandle MH_STATISTICS_GET_TICKER_COUNT;
     private static final MethodHandle MH_STATISTICS_GET_HISTOGRAM_DATA;
+    private static final MethodHandle MH_SET_COMPRESSION;
+    private static final MethodHandle MH_GET_COMPRESSION;
     private static final MethodHandle MH_SET_MERGE_OPERATOR;
     private static final MethodHandle MH_SET_UINT64ADD_MERGE_OPERATOR;
     private static final MethodHandle MH_FREE;
@@ -68,6 +70,14 @@ public final class Options implements AutoCloseable {
 
         MH_STATISTICS_GET_HISTOGRAM_DATA = RocksDB.lookup("rocksdb_options_statistics_get_histogram_data",
             FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
+
+        // void rocksdb_options_set_compression(opts*, int)
+        MH_SET_COMPRESSION = RocksDB.lookup("rocksdb_options_set_compression",
+            FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
+
+        // int rocksdb_options_get_compression(opts*)
+        MH_GET_COMPRESSION = RocksDB.lookup("rocksdb_options_get_compression",
+            FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
 
         // void rocksdb_options_set_merge_operator(opts*, mergeoperator_t*)
         MH_SET_MERGE_OPERATOR = RocksDB.lookup("rocksdb_options_set_merge_operator",
@@ -199,6 +209,30 @@ public final class Options implements AutoCloseable {
             throw new RocksDBException("setUint64AddMergeOperator failed", t);
         }
         return this;
+    }
+
+    /**
+     * Sets the compression algorithm for all levels.
+     * Use {@link CompressionType#getSupportedTypes()} to check which types are available.
+     *
+     * @return {@code this} for chaining
+     */
+    public Options setCompression(CompressionType type) {
+        try {
+            MH_SET_COMPRESSION.invokeExact(ptr, type.getValue());
+            return this;
+        } catch (Throwable t) {
+            throw new RocksDBException("setCompression failed", t);
+        }
+    }
+
+    /** Returns the compression algorithm configured for this Options. */
+    public CompressionType getCompression() {
+        try {
+            return CompressionType.fromValue((int) MH_GET_COMPRESSION.invokeExact(ptr));
+        } catch (Throwable t) {
+            throw new RocksDBException("getCompression failed", t);
+        }
     }
 
     /**

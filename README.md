@@ -33,15 +33,19 @@ Exposing `MemorySegment` methods:
 
 ## Performance Results
 
-Benchmarks performed on JDK 25 (Apple M-series), RocksDB v10.10.1, compared to JNI (`DirectByteBuffer` tier):
+Benchmarks performed on JDK 25 (Apple M-series), RocksDB v10.10.1. Each tier uses the same single pre-seeded key so the numbers reflect pure call overhead, not cache miss variance.
 
-| Operation | FFM (ops/s) | JNI (ops/s) | Gain |
-| :--- | :---: | :---: | :---: |
-| Reads | 2,905,778 | 1,905,202 | **+52%** |
-| Writes | 688,503 | 590,209 | **+17%** |
-| Batch writes (100 ops) | 23,982 | 16,532 | **+45%** |
+| Operation | API tier | FFM (ops/s) | JNI (ops/s) | Gain |
+| :--- | :--- | :---: | :---: | :---: |
+| Reads | `byte[]` | 7,135,339 | 3,650,076 | **+96%** |
+| Reads | `DirectByteBuffer` | 7,208,352 | 3,648,803 | **+98%** |
+| Reads | `MemorySegment` | 6,660,448 | — | — |
+| Writes | `byte[]` | 660,808 | 593,081 | **+11%** |
+| Writes | `DirectByteBuffer` | 692,222 | 594,497 | **+16%** |
+| Writes | `MemorySegment` | 682,567 | — | — |
+| Batch writes (100 ops) | `byte[]` | 24,265 | 17,015 | **+43%** |
 
-*Both libraries use `PinnableSlice` for reads. The gains come from lower FFM downcall overhead vs JNI (no frame setup, no thread-state transitions, JIT-compiled stubs). Write gains are smaller because WAL/memtable I/O dominates. Batch write gains multiply because overhead is paid 100× per iteration.*
+*Both libraries use `PinnableSlice` for reads. Read gains (~2×) come from the absence of JNI frame setup and thread-state transitions — FFM downcall stubs are JIT-compiled directly. Write gains are smaller because WAL/memtable I/O dominates. Batch write gains multiply because per-call overhead is paid 100× per iteration.*
 
 ### Running benchmarks
 

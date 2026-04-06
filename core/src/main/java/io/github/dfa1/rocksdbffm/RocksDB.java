@@ -630,6 +630,54 @@ public final class RocksDB implements AutoCloseable {
     }
 
     // -----------------------------------------------------------------------
+    // Public API — MemorySegment variants (native-first, zero-copy)
+    // -----------------------------------------------------------------------
+
+    /**
+     * Zero-copy put: caller supplies pre-allocated native segments.
+     * No heap→native copy occurs; key/value are passed directly to RocksDB.
+     */
+    public void put(MemorySegment key, MemorySegment value) {
+        try (Arena arena = Arena.ofConfined()) {
+            MemorySegment err = Native.errHolder(arena);
+            MH_PUT.invokeExact(dbPtr, writeOptions,
+                key, key.byteSize(),
+                value, value.byteSize(),
+                err);
+            Native.checkError(err);
+        } catch (Throwable t) {
+            throw RocksDBException.wrap("put failed", t);
+        }
+    }
+
+    /**
+     * Zero-copy get via PinnableSlice into a caller-supplied native segment.
+     * Pins data from the block cache and copies once into {@code value}.
+     * Returns the actual value length, or -1 if not found.
+     */
+    public long get(MemorySegment key, MemorySegment value) {
+        try (Arena arena = Arena.ofConfined()) {
+            MemorySegment err = Native.errHolder(arena);
+            MemorySegment pin = (MemorySegment) MH_GET_PINNED.invokeExact(
+                dbPtr, readOptions, key, key.byteSize(), err);
+
+            Native.checkError(err);
+
+            if (MemorySegment.NULL.equals(pin)) return -1L;
+
+            MemorySegment valLenSeg = arena.allocate(ValueLayout.JAVA_LONG);
+            MemorySegment valPtr = (MemorySegment) MH_PINNABLESLICE_VALUE.invokeExact(pin, valLenSeg);
+            long valLen = valLenSeg.get(ValueLayout.JAVA_LONG, 0);
+            long toCopy = Math.min(valLen, value.byteSize());
+            value.copyFrom(valPtr.reinterpret(toCopy));
+            MH_PINNABLESLICE_DESTROY.invokeExact(pin);
+            return valLen;
+        } catch (Throwable t) {
+            throw RocksDBException.wrap("get failed", t);
+        }
+    }
+
+    // -----------------------------------------------------------------------
     // Flush
     // -----------------------------------------------------------------------
 

@@ -26,10 +26,11 @@ public class JniBenchmark {
         RocksDB.loadLibrary();
     }
 
-    private static final int NUM_KEYS = 10_000;
     private static final int BATCH_SIZE = 100;
-    private static final byte[] WRITE_KEY = "bench-key".getBytes();
-    private static final byte[] WRITE_VALUE = "bench-value-data-0123456789".getBytes();
+    private static final byte[] READ_KEY_BYTES   = "read-key".getBytes();
+    private static final byte[] READ_VALUE_BYTES  = "read-value-data-0123456789".getBytes();
+    private static final byte[] WRITE_KEY_BYTES  = "bench-key".getBytes();
+    private static final byte[] WRITE_VALUE_BYTES = "bench-value-data-0123456789".getBytes();
     private static final byte[] BATCH_VALUE = "batch-value-data-0123456789".getBytes();
 
     private RocksDB db;
@@ -38,17 +39,19 @@ public class JniBenchmark {
     private ReadOptions readOptions;
     private Path dbPath;
 
+    // byte[] tier
+    private byte[] writeKey;
+    private byte[] writeValue;
+    private byte[] readKey;
+
+    // ByteBuffer tier
     private ByteBuffer writeKeyBuf;
     private ByteBuffer writeValBuf;
-    private ByteBuffer[] readKeyBufs;
+    private ByteBuffer readKeyBuf;
     private ByteBuffer readValBuf;
+
     private WriteBatch batch;
     private byte[][] batchKeys;
-
-    @State(Scope.Thread)
-    public static class Counter {
-        int index = 0;
-    }
 
     @Setup(Level.Trial)
     public void setup() throws Exception {
@@ -58,20 +61,22 @@ public class JniBenchmark {
         writeOptions = new WriteOptions();
         readOptions = new ReadOptions();
 
-        writeKeyBuf = ByteBuffer.allocateDirect(WRITE_KEY.length);
-        writeKeyBuf.put(WRITE_KEY).flip();
-        writeValBuf = ByteBuffer.allocateDirect(WRITE_VALUE.length);
-        writeValBuf.put(WRITE_VALUE).flip();
+        // --- byte[] tier ---
+        writeKey = WRITE_KEY_BYTES.clone();
+        writeValue = WRITE_VALUE_BYTES.clone();
+        readKey = READ_KEY_BYTES.clone();
 
-        readKeyBufs = new ByteBuffer[NUM_KEYS];
+        // --- ByteBuffer tier ---
+        writeKeyBuf = ByteBuffer.allocateDirect(WRITE_KEY_BYTES.length);
+        writeKeyBuf.put(WRITE_KEY_BYTES).flip();
+        writeValBuf = ByteBuffer.allocateDirect(WRITE_VALUE_BYTES.length);
+        writeValBuf.put(WRITE_VALUE_BYTES).flip();
+        readKeyBuf = ByteBuffer.allocateDirect(READ_KEY_BYTES.length);
+        readKeyBuf.put(READ_KEY_BYTES).flip();
         readValBuf = ByteBuffer.allocateDirect(64);
-        byte[] value = "read-value-data-0123456789".getBytes();
-        for (int i = 0; i < NUM_KEYS; i++) {
-            byte[] k = ("key-" + i).getBytes();
-            readKeyBufs[i] = ByteBuffer.allocateDirect(k.length);
-            readKeyBufs[i].put(k).flip();
-            db.put(k, value);
-        }
+
+        // Seed the read key
+        db.put(READ_KEY_BYTES, READ_VALUE_BYTES);
 
         batchKeys = new byte[BATCH_SIZE][];
         for (int i = 0; i < BATCH_SIZE; i++) {
@@ -90,20 +95,35 @@ public class JniBenchmark {
         deleteDir(dbPath);
     }
 
+    // ---- byte[] tier -------------------------------------------------------
+
     @Benchmark
-    public void writes() throws Exception {
+    public void writesBytes() throws Exception {
+        db.put(writeKey, writeValue);
+    }
+
+    @Benchmark
+    public byte[] readsBytes() throws Exception {
+        return db.get(readKey);
+    }
+
+    // ---- ByteBuffer tier ---------------------------------------------------
+
+    @Benchmark
+    public void writesDirectByteBuffer() throws Exception {
         writeKeyBuf.rewind();
         writeValBuf.rewind();
         db.put(writeOptions, writeKeyBuf, writeValBuf);
     }
 
     @Benchmark
-    public int reads(Counter counter) throws Exception {
-        ByteBuffer key = readKeyBufs[counter.index++ % NUM_KEYS];
-        key.rewind();
+    public int readsDirectByteBuffer() throws Exception {
+        readKeyBuf.rewind();
         readValBuf.clear();
-        return db.get(readOptions, key, readValBuf);
+        return db.get(readOptions, readKeyBuf, readValBuf);
     }
+
+    // ---- batch (byte[] keys) -----------------------------------------------
 
     @Benchmark
     public void batchWrites() throws Exception {

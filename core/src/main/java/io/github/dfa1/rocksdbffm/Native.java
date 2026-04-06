@@ -40,6 +40,7 @@ final class Native {
 	 */
 	public static MemorySegment toNative(Arena arena, byte[] bytes) {
 		MemorySegment seg = arena.allocate(bytes.length);
+		// TODO: check if this is better seg.copyFrom(MemorySegment.ofArray(bytes));
 		MemorySegment.copy(bytes, 0, seg, ValueLayout.JAVA_BYTE, 0, bytes.length);
 		return seg;
 	}

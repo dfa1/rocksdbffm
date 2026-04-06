@@ -349,6 +349,25 @@ public final class RocksDB implements AutoCloseable {
 	// Public API — byte[] variants
 	// -----------------------------------------------------------------------
 
+
+	public void put(Arena arena, byte[] key, byte[] value) {
+		try {
+			MemorySegment err = Native.errHolder(arena);
+			MemorySegment keyNative = Native.toNative(arena, key);
+			MemorySegment valNative = Native.toNative(arena, value);
+
+			MH_PUT.invokeExact(dbPtr, writeOptions,
+					keyNative, (long) key.length,
+					valNative, (long) value.length,
+					err);
+
+			Native.checkError(err);
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("put failed", t);
+		}
+	}
+
+
 	public void put(byte[] key, byte[] value) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
@@ -660,6 +679,38 @@ public final class RocksDB implements AutoCloseable {
 		}
 	}
 
+	public void put(Arena arena, MemorySegment key, MemorySegment value) {
+		try {
+			MemorySegment err = Native.errHolder(arena);
+			MH_PUT.invokeExact(dbPtr, writeOptions,
+					key, key.byteSize(),
+					value, value.byteSize(),
+					err);
+			Native.checkError(err);
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("put failed", t);
+		}
+	}
+
+	// TODO: like put but uses pool... it is 3% faster on my M5, but often there is no difference
+	public void put2(MemorySegment key, MemorySegment value) {
+		MemorySegment acquire = Native.ERROR.acquire();
+		try {
+			MH_PUT.invokeExact(
+					dbPtr,
+					writeOptions,
+					key, key.byteSize(),
+					value, value.byteSize(),
+					acquire
+			);
+			Native.checkError(acquire);
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("put failed", t);
+		} finally {
+			Native.ERROR.release(acquire);
+		}
+	}
+
 	/**
 	 * Zero-copy get via PinnableSlice into a caller-supplied native segment.
 	 * Pins data from the block cache and copies once into {@code value}.
@@ -672,8 +723,6 @@ public final class RocksDB implements AutoCloseable {
 					dbPtr, readOptions, key, key.byteSize(), err);
 
 			Native.checkError(err);
-
-			if (MemorySegment.NULL.equals(pin)) return -1L;
 
 			MemorySegment valLenSeg = arena.allocate(ValueLayout.JAVA_LONG);
 			MemorySegment valPtr = (MemorySegment) MH_PINNABLESLICE_VALUE.invokeExact(pin, valLenSeg);
@@ -824,6 +873,17 @@ public final class RocksDB implements AutoCloseable {
 	// -----------------------------------------------------------------------
 	// Batch write
 	// -----------------------------------------------------------------------
+
+	public void write(Arena arena, WriteBatch batch) {
+		try {
+			MemorySegment err = Native.errHolder(arena);
+			MH_WRITE.invokeExact(dbPtr, writeOptions, batch.ptr, err);
+			Native.checkError(err);
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("write failed", t);
+		}
+	}
+
 
 	public void write(WriteBatch batch) {
 		try (Arena arena = Arena.ofConfined()) {

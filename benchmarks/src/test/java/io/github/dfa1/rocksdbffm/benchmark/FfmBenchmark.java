@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
 @Fork(value = 1, jvmArgsPrepend = {"--enable-native-access=ALL-UNNAMED", "--sun-misc-unsafe-memory-access=allow"})
 public class FfmBenchmark {
 
-    private static final int BATCH_SIZE = 100;
+    private static final int BATCH_SIZE = 10000;
     private static final byte[] READ_KEY_BYTES  = "read-key".getBytes();
     private static final byte[] READ_VALUE_BYTES = "read-value-data-0123456789".getBytes();
     private static final byte[] WRITE_KEY_BYTES  = "bench-key".getBytes();
@@ -48,7 +48,7 @@ public class FfmBenchmark {
     // MemorySegment tier — confined arena held open for the full trial lifetime
     private Arena arenaMemorySegment;
     private MemorySegment writeKeyMemorySegment;
-    private MemorySegment writeValMemorySegment;
+    private MemorySegment writeValueMemorySegment;
     private MemorySegment readKeyMemorySegment;
     private MemorySegment readValMemorySegment;
 
@@ -77,7 +77,7 @@ public class FfmBenchmark {
         // --- MemorySegment tier ---
         arenaMemorySegment = Arena.ofConfined();
         writeKeyMemorySegment = arenaMemorySegment.allocateFrom(ValueLayout.JAVA_BYTE, WRITE_KEY_BYTES);
-        writeValMemorySegment = arenaMemorySegment.allocateFrom(ValueLayout.JAVA_BYTE, WRITE_VALUE_BYTES);
+        writeValueMemorySegment = arenaMemorySegment.allocateFrom(ValueLayout.JAVA_BYTE, WRITE_VALUE_BYTES);
         readKeyMemorySegment = arenaMemorySegment.allocateFrom(ValueLayout.JAVA_BYTE, READ_KEY_BYTES);
         readValMemorySegment = arenaMemorySegment.allocate(64);
 
@@ -102,9 +102,16 @@ public class FfmBenchmark {
 
     // ---- byte[] tier -------------------------------------------------------
 
+    private static final Arena ARENA = Arena.ofAuto();
+
     @Benchmark
     public void writesBytes() {
         db.put(writeKeyBytes, writeValueBytes);
+    }
+
+    @Benchmark
+    public void writesBytesArena() {
+        db.put(ARENA, writeKeyBytes, writeValueBytes);
     }
 
     @Benchmark
@@ -129,10 +136,19 @@ public class FfmBenchmark {
     }
 
     // ---- MemorySegment tier (FFM-only) ------------------------------------
+    @Benchmark
+    public void writesMemorySegment2() {
+        db.put2(writeKeyMemorySegment, writeValueMemorySegment);
+    }
+
+    @Benchmark
+    public void writesMemorySegmentArena() {
+        db.put(ARENA, writeKeyMemorySegment, writeValueMemorySegment);
+    }
 
     @Benchmark
     public void writesMemorySegment() {
-        db.put(writeKeyMemorySegment, writeValMemorySegment);
+        db.put(writeKeyMemorySegment, writeValueMemorySegment);
     }
 
     @Benchmark
@@ -151,6 +167,17 @@ public class FfmBenchmark {
         db.write(batch);
     }
 
+    @Benchmark
+    public void batchWritesArena() {
+        batch.clear();
+        try (Arena arena = Arena.ofConfined()) {
+            for (int i = 0; i < BATCH_SIZE; i++) {
+                batch.put(arena, batchKeys[i], BATCH_VALUE);
+            }
+            db.write(arena, batch);
+        }
+    }
+
     private static void deleteDir(Path dir) throws IOException {
         Files.walk(dir)
              .sorted(Comparator.reverseOrder())
@@ -159,6 +186,7 @@ public class FfmBenchmark {
 
     static void main() throws Exception {
         org.openjdk.jmh.runner.options.Options opt = new OptionsBuilder()
+                .addProfiler(GCProfiler.class)
                 .include(FfmBenchmark.class.getSimpleName())
                 .build();
 

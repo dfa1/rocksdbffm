@@ -20,7 +20,7 @@
         <maven.compiler.source>25</maven.compiler.source>
         <maven.compiler.target>25</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <rocksdb.version>9.7.4</rocksdb.version>
+        <rocksdb.version>10.10.1</rocksdb.version>
     </properties>
 
     <dependencyManagement>

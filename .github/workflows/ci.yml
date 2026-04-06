@@ -29,11 +29,8 @@ jobs:
       - name: Cache RocksDB native build
         uses: actions/cache@v4
         with:
-          path: src/main/resources/native
+          path: native/osx-aarch64/src/main/resources/native
           key: rocksdb-v10.10.1-${{ runner.os }}-${{ runner.arch }}
 
-      - name: Build RocksDB native library
-        run: mvn generate-resources -Pnative-build -q
-
-      - name: Test
+      - name: Build and test
         run: mvn test

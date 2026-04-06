@@ -1,15 +1,23 @@
 #!/usr/bin/env bash
-# Build RocksDB shared library using zig cc/c++ and install it into
-# src/main/resources/native/<classifier>/ so Maven bundles it in the JAR.
+# Build RocksDB shared library using zig cc/c++ and install it into the
+# caller's resources directory so Maven bundles it in the JAR.
 #
 # Usage:
-#   ./scripts/build-rocksdb.sh            # native platform
-#   ./scripts/build-rocksdb.sh --jobs 8   # override parallelism
+#   ./scripts/build-rocksdb.sh <output-resources-dir>
+#
+# Example (Maven exec plugin passes ${project.basedir}/src/main/resources):
+#   ./scripts/build-rocksdb.sh /path/to/native/osx-aarch64/src/main/resources
 set -euo pipefail
 
+if [ $# -lt 1 ]; then
+    echo "Usage: $0 <output-resources-dir>" >&2
+    exit 1
+fi
+
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"   # multi-module root
 ROCKSDB_DIR="$PROJECT_DIR/rocksdb"
+OUTPUT_RESOURCES="$1"
 JOBS="${ROCKSDB_BUILD_JOBS:-$(sysctl -n hw.logicalcpu 2>/dev/null || nproc)}"
 
 # ---------------------------------------------------------------------------
@@ -29,10 +37,7 @@ case "$ARCH" in
 esac
 CLASSIFIER="${OS_NAME}-${ARCH_NAME}"
 
-# ---------------------------------------------------------------------------
-# Destination: bundled into the JAR via Maven resources
-# ---------------------------------------------------------------------------
-DEST_DIR="$PROJECT_DIR/src/main/resources/native/$CLASSIFIER"
+DEST_DIR="$OUTPUT_RESOURCES/native/$CLASSIFIER"
 mkdir -p "$DEST_DIR"
 
 # Skip if already built (CI cache or repeated local builds)

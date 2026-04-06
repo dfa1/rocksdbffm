@@ -33,22 +33,22 @@ public class FfmBenchmark {
     private Path dbPath;
 
     // byte[] tier
-    private byte[] writeKey;
-    private byte[] writeValue;
-    private byte[] readKey;
+    private byte[] writeKeyBytes;
+    private byte[] writeValueBytes;
+    private byte[] readKeyBytes;
 
     // ByteBuffer tier
-    private ByteBuffer writeKeyBuf;
-    private ByteBuffer writeValBuf;
-    private ByteBuffer readKeyBuf;
-    private ByteBuffer readValBuf;
+    private ByteBuffer writeKeyByteBuffer;
+    private ByteBuffer writeValByteBuffer;
+    private ByteBuffer readKeyByteBuffer;
+    private ByteBuffer readValByteBuffer;
 
     // MemorySegment tier — confined arena held open for the full trial lifetime
-    private Arena msArena;
-    private MemorySegment writeKeyMs;
-    private MemorySegment writeValMs;
-    private MemorySegment readKeyMs;
-    private MemorySegment readValMs;
+    private Arena arenaMemorySegment;
+    private MemorySegment writeKeyMemorySegment;
+    private MemorySegment writeValMemorySegment;
+    private MemorySegment readKeyMemorySegment;
+    private MemorySegment readValMemorySegment;
 
     private WriteBatch batch;
     private byte[][] batchKeys;
@@ -59,25 +59,25 @@ public class FfmBenchmark {
         db = RocksDB.open(dbPath);
 
         // --- byte[] tier ---
-        writeKey = WRITE_KEY_BYTES.clone();
-        writeValue = WRITE_VALUE_BYTES.clone();
-        readKey = READ_KEY_BYTES.clone();
+        writeKeyBytes = WRITE_KEY_BYTES.clone();
+        writeValueBytes = WRITE_VALUE_BYTES.clone();
+        readKeyBytes = READ_KEY_BYTES.clone();
 
         // --- ByteBuffer tier ---
-        writeKeyBuf = ByteBuffer.allocateDirect(WRITE_KEY_BYTES.length);
-        writeKeyBuf.put(WRITE_KEY_BYTES).flip();
-        writeValBuf = ByteBuffer.allocateDirect(WRITE_VALUE_BYTES.length);
-        writeValBuf.put(WRITE_VALUE_BYTES).flip();
-        readKeyBuf = ByteBuffer.allocateDirect(READ_KEY_BYTES.length);
-        readKeyBuf.put(READ_KEY_BYTES).flip();
-        readValBuf = ByteBuffer.allocateDirect(64);
+        writeKeyByteBuffer = ByteBuffer.allocateDirect(WRITE_KEY_BYTES.length);
+        writeKeyByteBuffer.put(WRITE_KEY_BYTES).flip();
+        writeValByteBuffer = ByteBuffer.allocateDirect(WRITE_VALUE_BYTES.length);
+        writeValByteBuffer.put(WRITE_VALUE_BYTES).flip();
+        readKeyByteBuffer = ByteBuffer.allocateDirect(READ_KEY_BYTES.length);
+        readKeyByteBuffer.put(READ_KEY_BYTES).flip();
+        readValByteBuffer = ByteBuffer.allocateDirect(64);
 
         // --- MemorySegment tier ---
-        msArena = Arena.ofConfined();
-        writeKeyMs = msArena.allocateFrom(ValueLayout.JAVA_BYTE, WRITE_KEY_BYTES);
-        writeValMs = msArena.allocateFrom(ValueLayout.JAVA_BYTE, WRITE_VALUE_BYTES);
-        readKeyMs = msArena.allocateFrom(ValueLayout.JAVA_BYTE, READ_KEY_BYTES);
-        readValMs = msArena.allocate(64);
+        arenaMemorySegment = Arena.ofConfined();
+        writeKeyMemorySegment = arenaMemorySegment.allocateFrom(ValueLayout.JAVA_BYTE, WRITE_KEY_BYTES);
+        writeValMemorySegment = arenaMemorySegment.allocateFrom(ValueLayout.JAVA_BYTE, WRITE_VALUE_BYTES);
+        readKeyMemorySegment = arenaMemorySegment.allocateFrom(ValueLayout.JAVA_BYTE, READ_KEY_BYTES);
+        readValMemorySegment = arenaMemorySegment.allocate(64);
 
         // Seed the read key
         db.put(READ_KEY_BYTES, READ_VALUE_BYTES);
@@ -94,7 +94,7 @@ public class FfmBenchmark {
     public void teardown() throws IOException {
         batch.close();
         db.close();
-        msArena.close();
+        arenaMemorySegment.close();
         deleteDir(dbPath);
     }
 
@@ -102,40 +102,40 @@ public class FfmBenchmark {
 
     @Benchmark
     public void writesBytes() {
-        db.put(writeKey, writeValue);
+        db.put(writeKeyBytes, writeValueBytes);
     }
 
     @Benchmark
     public byte[] readsBytes() {
-        return db.get(readKey);
+        return db.get(readKeyBytes);
     }
 
     // ---- ByteBuffer tier ---------------------------------------------------
 
     @Benchmark
     public void writesDirectByteBuffer() {
-        writeKeyBuf.rewind();
-        writeValBuf.rewind();
-        db.put(writeKeyBuf, writeValBuf);
+        writeKeyByteBuffer.rewind();
+        writeValByteBuffer.rewind();
+        db.put(writeKeyByteBuffer, writeValByteBuffer);
     }
 
     @Benchmark
     public int readsDirectByteBuffer() {
-        readKeyBuf.rewind();
-        readValBuf.clear();
-        return db.get(readKeyBuf, readValBuf);
+        readKeyByteBuffer.rewind();
+        readValByteBuffer.clear();
+        return db.get(readKeyByteBuffer, readValByteBuffer);
     }
 
     // ---- MemorySegment tier (FFM-only) ------------------------------------
 
     @Benchmark
     public void writesMemorySegment() {
-        db.put(writeKeyMs, writeValMs);
+        db.put(writeKeyMemorySegment, writeValMemorySegment);
     }
 
     @Benchmark
     public long readsMemorySegment() {
-        return db.get(readKeyMs, readValMs);
+        return db.get(readKeyMemorySegment, readValMemorySegment);
     }
 
     // ---- batch (byte[] keys, same as JNI) ---------------------------------

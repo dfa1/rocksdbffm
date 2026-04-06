@@ -87,6 +87,11 @@ export PORTABLE=1
 
 cd "$ROCKSDB_DIR"
 
+# zig cc/c++ treats some warnings as errors that RocksDB's own build does not
+# expect (e.g. -Wunused-parameter in util/compression.cc). Suppress them for
+# all builds so the Makefile does not abort on RocksDB's own code.
+EXTRA_FLAGS="-Wno-error"
+
 if [ -n "$CROSS" ]; then
     # Cross-compilation: existing .o files and make_config.mk are for the host
     # architecture. Remove them so RocksDB's build_detect_platform regenerates
@@ -97,13 +102,9 @@ if [ -n "$CROSS" ]; then
     # build_detect_platform reads TARGET_OS from the environment (falls back to
     # uname -s). Export it so platform detection targets the right OS.
     export TARGET_OS="$ROCKSDB_OS"
-
-    # Suppress warnings-as-errors that fire only during cross-compilation
-    # (e.g. -Wunused-parameter in RocksDB code built with a stricter zig cc).
-    make shared_lib EXTRA_CXXFLAGS="-Wno-error" EXTRA_CFLAGS="-Wno-error" -j"$JOBS"
-else
-    make shared_lib -j"$JOBS"
 fi
+
+make shared_lib EXTRA_CXXFLAGS="$EXTRA_FLAGS" EXTRA_CFLAGS="$EXTRA_FLAGS" -j"$JOBS"
 
 # ---------------------------------------------------------------------------
 # Install

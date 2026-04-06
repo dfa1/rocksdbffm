@@ -6,6 +6,8 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
+        <module name="rocksdbffm-core" />
+        <module name="rocksdbffm-native-osx-aarch64" />
       </profile>
       <profile name="Annotation profile for rocksdbffm" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
@@ -33,13 +35,11 @@
           <entry name="$MAVEN_REPOSITORY$/net/sf/jopt-simple/jopt-simple/5.0.4/jopt-simple-5.0.4.jar" />
           <entry name="$MAVEN_REPOSITORY$/org/apache/commons/commons-math3/3.6.1/commons-math3-3.6.1.jar" />
         </processorPath>
+        <module name="rocksdbffm-benchmarks" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
-      <module name="rocksdbffm-benchmarks" target="25" />
-      <module name="rocksdbffm-core" target="25" />
       <module name="rocksdbffm-native-linux-x86_64" target="25" />
-      <module name="rocksdbffm-native-osx-aarch64" target="25" />
     </bytecodeTargetLevel>
   </component>
 </project>

@@ -3,6 +3,8 @@ package io.github.dfa1.rocksdbffm.benchmark;
 import io.github.dfa1.rocksdbffm.RocksDB;
 import io.github.dfa1.rocksdbffm.WriteBatch;
 import org.openjdk.jmh.annotations.*;
+import org.openjdk.jmh.profile.GCProfiler;
+import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 import java.io.IOException;
 import java.lang.foreign.Arena;
@@ -156,7 +158,7 @@ public class FfmBenchmark {
     }
 
     static void main() throws Exception {
-        org.openjdk.jmh.runner.options.Options opt = new org.openjdk.jmh.runner.options.OptionsBuilder()
+        org.openjdk.jmh.runner.options.Options opt = new OptionsBuilder()
                 .include(FfmBenchmark.class.getSimpleName())
                 .build();
 

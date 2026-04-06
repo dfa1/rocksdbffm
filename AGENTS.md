@@ -13,8 +13,9 @@ This project is heavily AI-driven. As an agent, your goal is to:
 ## 🛠 Tech Stack
 - **Language:** Java 25+.
 - **Core API:** `java.lang.foreign` (Foreign Function & Memory API).
-- **Native Library:** RocksDB (C API via `include/rocksdb/c.h`).
-- **Build System:** Maven.
+- **Native Library:** RocksDB (C API via `include/rocksdb/c.h`), built from the `rocksdb/` git submodule (pinned to v10.10.1).
+- **Native Compiler:** `zig cc` / `zig c++` — used as a drop-in C/C++ compiler via `CC="zig cc" CXX="zig c++" PORTABLE=1 make shared_lib`. Zig bundles clang + libc++ for every target, enabling cross-compilation without a separate sysroot.
+- **Build System:** Maven. Run `mvn generate-resources -Pnative-build` once to build the native lib; `mvn test` thereafter.
 - **Testing:** JUnit 5, AssertJ.
 - **Benchmarking:** JMH (Java Microbenchmark Harness).
 
@@ -32,6 +33,7 @@ Every class wrapping a native pointer **must** implement `AutoCloseable`.
 To ensure type safety and consistent units across the API:
 - **C API Only:** We use the RocksDB C interface (`rocksdb/c.h`). Do not attempt to link directly to C++ symbols.
 - **Read-only headers:** NEVER modify system include files (e.g. `/opt/homebrew/...`, `/usr/include/...`). They are read-only references; all mappings live in Java source.
+- **Library loading:** `RocksDB.java` loads the native library from the classpath resource `/native/<os>-<arch>/librocksdb.<ext>` (bundled by the `native-build` Maven profile). There is no brew/system fallback. NEVER add hardcoded system paths back.
 - **Paths:** Never use raw `String` for file system paths. Always use `java.nio.file.Path` for any API surface that accepts paths (open, backup, checkpoint).
 - **Memory Sizes:** Never use raw `long` for byte counts (e.g., cache size, write buffer size). Always use the project's `MemorySize` type.
 - **Sequence Numbers:** Never use raw `long` for RocksDB sequence numbers. Always use the project's `SequenceNumber` type.
@@ -136,4 +138,4 @@ For the full feature status and roadmap see `README.md`. This section maps each 
 ---
 
 ## 🏗 Technical Debt
-- **Native Build Integration:** Currently relies on local `brew install rocksdb`. We need an in-tree build of RocksDB to support cross-architecture distribution.
+- **Linux support:** `scripts/build-rocksdb.sh` and the CI workflow currently target macOS only. Linux support requires adding `linux-x86_64` and `linux-aarch64` to the matrix and testing the Makefile build under zig on those platforms.

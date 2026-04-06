@@ -116,12 +116,13 @@ This is a heavily AI-driven project. We intend to continue using AI as a corners
 
 ### Requirements
 - JDK 25+.
-- RocksDB installed locally (e.g., `brew install rocksdb` on macOS).
-> [!WARNING]
->  this works only in macOS when rocksdb is installed
+- [Zig](https://ziglang.org/) (any 0.15.x build).
 
 ### Build and Test
 ```bash
+# Build RocksDB from the submodule (first time or after a clean)
+mvn generate-resources -Pnative-build
+
 # Run unit tests
 mvn test
 ```

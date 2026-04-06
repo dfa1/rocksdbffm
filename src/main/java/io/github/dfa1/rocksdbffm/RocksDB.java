@@ -901,13 +901,11 @@ public final class RocksDB implements AutoCloseable {
     // -----------------------------------------------------------------------
 
     /**
-     * Resolves the path to the native RocksDB shared library using a three-step
-     * strategy:
+     * Resolves the path to the native RocksDB shared library:
      * <ol>
      *   <li>{@code -Drocksdb.lib.path} system property — explicit override</li>
      *   <li>Classpath resource {@code /native/<os>-<arch>/librocksdb.<ext>} bundled
      *       in the JAR — extracted to a temp file on first use</li>
-     *   <li>Homebrew default path (macOS fallback for local dev without a JAR build)</li>
      * </ol>
      */
     private static String resolveLibPath() {
@@ -930,8 +928,9 @@ public final class RocksDB implements AutoCloseable {
             throw new UnsatisfiedLinkError("Failed to extract bundled RocksDB: " + e.getMessage());
         }
 
-        // 3. Homebrew fallback (macOS local dev)
-        return "/opt/homebrew/Cellar/rocksdb/10.10.1/lib/librocksdb.dylib";
+        throw new UnsatisfiedLinkError(
+            "No bundled RocksDB library found for platform " + classifier +
+            ". Run: mvn generate-resources -Pnative-build");
     }
 
     private static String classifier() {

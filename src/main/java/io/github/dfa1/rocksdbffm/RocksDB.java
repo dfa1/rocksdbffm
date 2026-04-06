@@ -54,6 +54,11 @@ public final class RocksDB implements AutoCloseable {
     private static final MethodHandle MH_PROPERTY_VALUE;
     private static final MethodHandle MH_PROPERTY_INT;
     private static final MethodHandle MH_FREE;
+    private static final MethodHandle MH_COMPACT_RANGE;
+    private static final MethodHandle MH_COMPACT_RANGE_OPT;
+    private static final MethodHandle MH_SUGGEST_COMPACT_RANGE;
+    private static final MethodHandle MH_DISABLE_FILE_DELETIONS;
+    private static final MethodHandle MH_ENABLE_FILE_DELETIONS;
 
     static {
         String libPath = System.getProperty(
@@ -167,6 +172,37 @@ public final class RocksDB implements AutoCloseable {
                 ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
         MH_FREE = lookup("rocksdb_free", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+
+        // void rocksdb_compact_range(db*, start*, slen, limit*, llen)
+        // NULL pointers mean "beginning" / "end" of keyspace
+        MH_COMPACT_RANGE = lookup("rocksdb_compact_range",
+            FunctionDescriptor.ofVoid(
+                ValueLayout.ADDRESS,
+                ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
+                ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
+
+        // void rocksdb_compact_range_opt(db*, compactopts*, start*, slen, limit*, llen)
+        MH_COMPACT_RANGE_OPT = lookup("rocksdb_compact_range_opt",
+            FunctionDescriptor.ofVoid(
+                ValueLayout.ADDRESS, ValueLayout.ADDRESS,
+                ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
+                ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
+
+        // void rocksdb_suggest_compact_range(db*, start*, slen, limit*, llen, errptr**)
+        MH_SUGGEST_COMPACT_RANGE = lookup("rocksdb_suggest_compact_range",
+            FunctionDescriptor.ofVoid(
+                ValueLayout.ADDRESS,
+                ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
+                ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
+                ValueLayout.ADDRESS));
+
+        // void rocksdb_disable_file_deletions(db*, errptr**)
+        MH_DISABLE_FILE_DELETIONS = lookup("rocksdb_disable_file_deletions",
+            FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+        // void rocksdb_enable_file_deletions(db*, errptr**)
+        MH_ENABLE_FILE_DELETIONS = lookup("rocksdb_enable_file_deletions",
+            FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
     }
 
     private final MemorySegment dbPtr;
@@ -725,6 +761,123 @@ public final class RocksDB implements AutoCloseable {
             Native.checkError(err);
         } catch (Throwable t) {
             throw RocksDBException.wrap("write failed", t);
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // Public API — compaction control
+    // -----------------------------------------------------------------------
+
+    /**
+     * Manually triggers compaction over the entire key space.
+     * Blocks until the compaction completes.
+     */
+    public void compactRange() {
+        compactRange((MemorySegment) null, (MemorySegment) null);
+    }
+
+    /**
+     * Manually triggers compaction over {@code [startKey, endKey]}.
+     * Pass {@code null} for either bound to indicate the beginning/end of the key space.
+     * Blocks until the compaction completes.
+     */
+    public void compactRange(byte[] startKey, byte[] endKey) {
+        try (Arena arena = Arena.ofConfined()) {
+            MemorySegment s = startKey == null ? MemorySegment.NULL : Native.toNative(arena, startKey);
+            MemorySegment e = endKey   == null ? MemorySegment.NULL : Native.toNative(arena, endKey);
+            long slen = startKey == null ? 0L : (long) startKey.length;
+            long elen = endKey   == null ? 0L : (long) endKey.length;
+            MH_COMPACT_RANGE.invokeExact(dbPtr, s, slen, e, elen);
+        } catch (Throwable t) {
+            throw RocksDBException.wrap("compactRange failed", t);
+        }
+    }
+
+    /** {@link ByteBuffer} overload of {@link #compactRange(byte[], byte[])}. */
+    public void compactRange(ByteBuffer startKey, ByteBuffer endKey) {
+        try {
+            MemorySegment s = startKey == null ? MemorySegment.NULL : MemorySegment.ofBuffer(startKey);
+            MemorySegment e = endKey   == null ? MemorySegment.NULL : MemorySegment.ofBuffer(endKey);
+            long slen = startKey == null ? 0L : (long) startKey.remaining();
+            long elen = endKey   == null ? 0L : (long) endKey.remaining();
+            MH_COMPACT_RANGE.invokeExact(dbPtr, s, slen, e, elen);
+        } catch (Throwable t) {
+            throw RocksDBException.wrap("compactRange failed", t);
+        }
+    }
+
+    /** {@link MemorySegment} overload of {@link #compactRange(byte[], byte[])}. */
+    public void compactRange(MemorySegment startKey, MemorySegment endKey) {
+        try {
+            MemorySegment s = startKey == null ? MemorySegment.NULL : startKey;
+            MemorySegment e = endKey   == null ? MemorySegment.NULL : endKey;
+            long slen = (s == MemorySegment.NULL) ? 0L : s.byteSize();
+            long elen = (e == MemorySegment.NULL) ? 0L : e.byteSize();
+            MH_COMPACT_RANGE.invokeExact(dbPtr, s, slen, e, elen);
+        } catch (Throwable t) {
+            throw RocksDBException.wrap("compactRange failed", t);
+        }
+    }
+
+    /**
+     * Manually triggers compaction over {@code [startKey, endKey]} with explicit options.
+     * Pass {@code null} for either key bound to indicate the beginning/end of the key space.
+     */
+    public void compactRange(CompactOptions opts, byte[] startKey, byte[] endKey) {
+        try (Arena arena = Arena.ofConfined()) {
+            MemorySegment s = startKey == null ? MemorySegment.NULL : Native.toNative(arena, startKey);
+            MemorySegment e = endKey   == null ? MemorySegment.NULL : Native.toNative(arena, endKey);
+            long slen = startKey == null ? 0L : (long) startKey.length;
+            long elen = endKey   == null ? 0L : (long) endKey.length;
+            MH_COMPACT_RANGE_OPT.invokeExact(dbPtr, opts.ptr, s, slen, e, elen);
+        } catch (Throwable t) {
+            throw RocksDBException.wrap("compactRange failed", t);
+        }
+    }
+
+    /**
+     * Hints to RocksDB that the range {@code [startKey, endKey]} may benefit from compaction,
+     * but does not block. RocksDB may ignore this hint.
+     * Pass {@code null} for either bound to indicate the beginning/end of the key space.
+     */
+    public void suggestCompactRange(byte[] startKey, byte[] endKey) {
+        try (Arena arena = Arena.ofConfined()) {
+            MemorySegment err = Native.errHolder(arena);
+            MemorySegment s = startKey == null ? MemorySegment.NULL : Native.toNative(arena, startKey);
+            MemorySegment e = endKey   == null ? MemorySegment.NULL : Native.toNative(arena, endKey);
+            long slen = startKey == null ? 0L : (long) startKey.length;
+            long elen = endKey   == null ? 0L : (long) endKey.length;
+            MH_SUGGEST_COMPACT_RANGE.invokeExact(dbPtr, s, slen, e, elen, err);
+            Native.checkError(err);
+        } catch (Throwable t) {
+            throw RocksDBException.wrap("suggestCompactRange failed", t);
+        }
+    }
+
+    /**
+     * Prevents new SST files from being deleted (e.g., before taking an external backup).
+     * Must be paired with {@link #enableFileDeletions()}.
+     */
+    public void disableFileDeletions() {
+        try (Arena arena = Arena.ofConfined()) {
+            MemorySegment err = Native.errHolder(arena);
+            MH_DISABLE_FILE_DELETIONS.invokeExact(dbPtr, err);
+            Native.checkError(err);
+        } catch (Throwable t) {
+            throw RocksDBException.wrap("disableFileDeletions failed", t);
+        }
+    }
+
+    /**
+     * Re-enables SST file deletions after a prior {@link #disableFileDeletions()} call.
+     */
+    public void enableFileDeletions() {
+        try (Arena arena = Arena.ofConfined()) {
+            MemorySegment err = Native.errHolder(arena);
+            MH_ENABLE_FILE_DELETIONS.invokeExact(dbPtr, err);
+            Native.checkError(err);
+        } catch (Throwable t) {
+            throw RocksDBException.wrap("enableFileDeletions failed", t);
         }
     }
 

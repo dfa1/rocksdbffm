@@ -97,6 +97,7 @@ For the full feature status and roadmap see `README.md`. This section maps each 
 | Options | `Options.java`, `ReadOptions.java`, `WriteOptions.java` |
 | WriteBatch | `WriteBatch.java` |
 | Transactions | `Transaction.java`, `TransactionDB.java`, `TransactionDBOptions.java`, `TransactionOptions.java` |
+| Optimistic Transactions | `OptimisticTransactionDB.java`, `OptimisticTransactionOptions.java` |
 | Checkpoints | `Checkpoint.java` |
 | Table Options | `BlockBasedTableConfig.java`, `LRUCache.java`, `FilterPolicy.java` |
 | Iterators | `RocksIterator.java` |
@@ -106,6 +107,8 @@ For the full feature status and roadmap see `README.md`. This section maps each 
 | DB Properties | `DBProperty.java` (enum of well-known names); `RocksDB.getProperty`, `RocksDB.getLongProperty`, same on `TransactionDB` |
 | Statistics | `HistogramType.java`, `TickerType.java`, `StatsLevel.java`, `StatisticsHistogramData.java` |
 | Shared utilities | `Native.java` (`errHolder`, `checkError`, `toNative`), `MemorySize.java`, `RocksDBException.java` |
+| Compaction control | `CompactOptions.java`; `RocksDB.compactRange`, `suggestCompactRange`, `disableFileDeletions`, `enableFileDeletions` |
+| Secondary DB | `SecondaryDB.java` |
 
 ### Missing features — key C API entry points
 
@@ -116,7 +119,7 @@ For the full feature status and roadmap see `README.md`. This section maps each 
 | **Merge / MergeOperator** | `rocksdb_merge`, `rocksdb_writebatch_merge`, `rocksdb_mergeoperator_create` |
 | ~~Flush~~ | ✅ Done — see `FlushOptions.java` |
 | ~~KeyMayExist~~ | ✅ Done — `RocksDB.keyMayExist` (byte[], ByteBuffer, MemorySegment, ReadOptions overload) |
-| **Compaction control** | `rocksdb_compact_range`, `rocksdb_suggest_compact_range`, `rocksdb_disable_file_deletions` |
+| ~~Compaction control~~ | ✅ Done — `CompactOptions.java`; `RocksDB.compactRange`, `suggestCompactRange`, `disableFileDeletions`, `enableFileDeletions` |
 | **MultiGet** | `rocksdb_multi_get`, batched `rocksdb_slice_t` variant |
 | ~~DB Properties~~ | ✅ Done — `DBProperty.java`, `RocksDB.getProperty`, `RocksDB.getLongProperty` (`rocksdb_approximate_sizes` not yet) |
 | ~~KeyMayExist~~ | ✅ Done — see above |
@@ -124,11 +127,11 @@ For the full feature status and roadmap see `README.md`. This section maps each 
 | **SST File Ingest** | `rocksdb_ingestexternalfile`, `rocksdb_sstfilewriter_*` |
 | **Backup Engine** | `rocksdb_backup_engine_open`, `rocksdb_backup_engine_create_new_backup` |
 | **TTL DB** | `rocksdb_open_with_ttl` |
-| **Optimistic Transactions** | `rocksdb_optimistictransactiondb_*` |
+| ~~Optimistic Transactions~~ | ✅ Done — `OptimisticTransactionDB.java`, `OptimisticTransactionOptions.java` |
 | **CompactionFilter** | `rocksdb_compactionfilter_create` |
 | **WAL Iterator** | `rocksdb_get_updates_since`, `rocksdb_wal_iterator_*` |
 | **Rate Limiter** | `rocksdb_ratelimiter_create`, `rocksdb_options_set_ratelimiter` |
-| **Secondary DB** | `rocksdb_open_as_secondary`, `rocksdb_try_catch_up_with_primary` |
+| ~~Secondary DB~~ | ✅ Done — `SecondaryDB.java`; `tryCatchUpWithPrimary`, get (pinnable slice), iterator, snapshot, properties |
 
 ---
 

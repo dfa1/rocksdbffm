@@ -75,15 +75,15 @@ This project is currently experimental. The table below tracks parity with `rock
 | Merge / MergeOperator | ✅ | `merge` on `RocksDB` and `WriteBatch`; custom `MergeOperator` via FFM upcall stubs; built-in uint64 add |
 | MultiGet | ❌ | Bulk reads |
 | DeleteRange | ✅ | Range tombstones; `deleteRange` on `RocksDB` and `WriteBatch`; all three access tiers |
-| Compaction control | ❌ | Manual compaction, space reclaim |
+| Compaction control | ✅ | `compactRange` (all three tiers + `CompactOptions`), `suggestCompactRange`, `disableFileDeletions`, `enableFileDeletions` |
 | SST File Ingest | ❌ | High-speed bulk loading |
 | Backup Engine | ❌ | Incremental backups |
 | TTL DB | ✅ | `openWithTtl(path, Duration)`; lazy expiry via compaction; full API available |
-| Optimistic Transactions | ❌ | Lock-free transactions |
+| Optimistic Transactions | ✅ | `OptimisticTransactionDB`; conflict detection at commit; `OptimisticTransactionOptions` |
 | CompactionFilter | ❌ | Custom compaction logic |
 | WAL Iterator | ❌ | Change log streaming |
 | Rate Limiter | ❌ | Write rate limiting |
-| Secondary DB | ❌ | Read-only replicas |
+| Secondary DB | ✅ | `SecondaryDB`; `tryCatchUpWithPrimary`, get, iterator, snapshot, properties |
 
 ## Design Choices
 

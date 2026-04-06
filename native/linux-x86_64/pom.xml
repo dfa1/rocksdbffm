@@ -11,13 +11,11 @@
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
-    <artifactId>rocksdbffm-native-osx-aarch64</artifactId>
+    <artifactId>rocksdbffm-native-linux-x86_64</artifactId>
     <packaging>jar</packaging>
 
-    <!-- No Java sources: this module only packages the native shared library. -->
     <build>
         <plugins>
-            <!-- Skip compilation — nothing to compile. -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -25,7 +23,6 @@
                     <skipMain>true</skipMain>
                 </configuration>
             </plugin>
-            <!-- Skip tests — nothing to test. -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
@@ -33,12 +30,6 @@
                     <skipTests>true</skipTests>
                 </configuration>
             </plugin>
-            <!--
-                Build the RocksDB shared library from the submodule using zig cc/c++.
-                The script is idempotent: it exits early if the library already exists.
-                Output: src/main/resources/native/osx-aarch64/librocksdb.dylib
-                        → bundled into this JAR by the resources plugin automatically.
-            -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
@@ -51,7 +42,7 @@
                             <executable>${maven.multiModuleProjectDirectory}/scripts/build-rocksdb.sh</executable>
                             <arguments>
                                 <argument>${project.basedir}/src/main/resources</argument>
-                                <argument>osx-aarch64</argument>
+                                <argument>linux-x86_64</argument>
                             </arguments>
                         </configuration>
                     </execution>

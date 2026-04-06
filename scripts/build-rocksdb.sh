@@ -2,40 +2,56 @@
 # Build RocksDB shared library using zig cc/c++ and install it into the
 # caller's resources directory so Maven bundles it in the JAR.
 #
-# Usage:
-#   ./scripts/build-rocksdb.sh <output-resources-dir>
+# Supports cross-compilation: runs on any host but can produce a binary
+# for any supported target by passing a TARGET_CLASSIFIER.
 #
-# Example (Maven exec plugin passes ${project.basedir}/src/main/resources):
-#   ./scripts/build-rocksdb.sh /path/to/native/osx-aarch64/src/main/resources
+# Usage:
+#   ./scripts/build-rocksdb.sh <output-resources-dir> <target-classifier>
+#
+# target-classifier: osx-aarch64 | osx-x86_64 | linux-x86_64
+#
+# Example (Maven exec plugin):
+#   ./scripts/build-rocksdb.sh /path/to/native/osx-aarch64/src/main/resources osx-aarch64
 set -euo pipefail
 
-if [ $# -lt 1 ]; then
-    echo "Usage: $0 <output-resources-dir>" >&2
+if [ $# -lt 2 ]; then
+    echo "Usage: $0 <output-resources-dir> <target-classifier>" >&2
     exit 1
 fi
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"   # multi-module root
 ROCKSDB_DIR="$PROJECT_DIR/rocksdb"
-OUTPUT_RESOURCES="$1"
+# Resolve to absolute path before any cd changes the working directory
+mkdir -p "$1"
+OUTPUT_RESOURCES="$(cd "$1" && pwd)"
+CLASSIFIER="$2"
 JOBS="${ROCKSDB_BUILD_JOBS:-$(sysctl -n hw.logicalcpu 2>/dev/null || nproc)}"
 
 # ---------------------------------------------------------------------------
-# Detect platform classifier  (osx-aarch64 | osx-x86_64 | linux-x86_64 …)
+# Map classifier → (zig target triple, library name, RocksDB platform)
 # ---------------------------------------------------------------------------
-OS=$(uname -s)
-ARCH=$(uname -m)
-case "$OS" in
-    Darwin) OS_NAME="osx"   ; LIB_NAME="librocksdb.dylib" ;;
-    Linux)  OS_NAME="linux" ; LIB_NAME="librocksdb.so"    ;;
-    *)      echo "Unsupported OS: $OS"; exit 1             ;;
+case "$CLASSIFIER" in
+    osx-aarch64)
+        ZIG_TARGET="aarch64-macos"
+        LIB_NAME="librocksdb.dylib"
+        ROCKSDB_OS="Darwin"
+        ;;
+    osx-x86_64)
+        ZIG_TARGET="x86_64-macos"
+        LIB_NAME="librocksdb.dylib"
+        ROCKSDB_OS="Darwin"
+        ;;
+    linux-x86_64)
+        ZIG_TARGET="x86_64-linux-gnu"
+        LIB_NAME="librocksdb.so"
+        ROCKSDB_OS="Linux"
+        ;;
+    *)
+        echo "Unsupported classifier: $CLASSIFIER" >&2
+        exit 1
+        ;;
 esac
-case "$ARCH" in
-    arm64|aarch64) ARCH_NAME="aarch64" ;;
-    x86_64)        ARCH_NAME="x86_64"  ;;
-    *)             echo "Unsupported arch: $ARCH"; exit 1  ;;
-esac
-CLASSIFIER="${OS_NAME}-${ARCH_NAME}"
 
 DEST_DIR="$OUTPUT_RESOURCES/native/$CLASSIFIER"
 mkdir -p "$DEST_DIR"
@@ -47,16 +63,47 @@ if [ -f "$DEST_DIR/$LIB_NAME" ]; then
 fi
 
 # ---------------------------------------------------------------------------
+# Detect whether we are cross-compiling
+# ---------------------------------------------------------------------------
+HOST_OS=$(uname -s)
+HOST_ARCH=$(uname -m)
+case "$HOST_OS" in Darwin) HOST_OS_NAME="osx"   ;; Linux) HOST_OS_NAME="linux" ;; esac
+case "$HOST_ARCH" in arm64|aarch64) HOST_ARCH_NAME="aarch64" ;; x86_64) HOST_ARCH_NAME="x86_64" ;; esac
+HOST_CLASSIFIER="${HOST_OS_NAME}-${HOST_ARCH_NAME}"
+
+CROSS=""
+if [ "$CLASSIFIER" != "$HOST_CLASSIFIER" ]; then
+    CROSS=" (cross from $HOST_CLASSIFIER)"
+fi
+
+# ---------------------------------------------------------------------------
 # Build
 # ---------------------------------------------------------------------------
-echo "[build-rocksdb] Building RocksDB $CLASSIFIER with zig cc/c++ (jobs=$JOBS)..."
+echo "[build-rocksdb] Building RocksDB $CLASSIFIER$CROSS with zig cc/c++ (jobs=$JOBS)..."
 
-export CC="zig cc"
-export CXX="zig c++"
+export CC="zig cc -target $ZIG_TARGET"
+export CXX="zig c++ -target $ZIG_TARGET"
 export PORTABLE=1
 
 cd "$ROCKSDB_DIR"
-make shared_lib -j"$JOBS"
+
+if [ -n "$CROSS" ]; then
+    # Cross-compilation: existing .o files and make_config.mk are for the host
+    # architecture. Remove them so RocksDB's build_detect_platform regenerates
+    # the config and Make recompiles everything with the cross target.
+    rm -f make_config.mk
+    make clean -j"$JOBS" 2>/dev/null || true
+
+    # build_detect_platform reads TARGET_OS from the environment (falls back to
+    # uname -s). Export it so platform detection targets the right OS.
+    export TARGET_OS="$ROCKSDB_OS"
+
+    # Suppress warnings-as-errors that fire only during cross-compilation
+    # (e.g. -Wunused-parameter in RocksDB code built with a stricter zig cc).
+    make shared_lib EXTRA_CXXFLAGS="-Wno-error" EXTRA_CFLAGS="-Wno-error" -j"$JOBS"
+else
+    make shared_lib -j"$JOBS"
+fi
 
 # ---------------------------------------------------------------------------
 # Install

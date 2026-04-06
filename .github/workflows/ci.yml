@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    runs-on: macos-latest   # Apple Silicon (arm64)
+    runs-on: macos-latest   # Apple Silicon (arm64); Zig cross-compiles linux targets
 
     steps:
       - uses: actions/checkout@v4
@@ -26,10 +26,12 @@ jobs:
         with:
           version: 0.15.2
 
-      - name: Cache RocksDB native build
+      - name: Cache RocksDB native builds
         uses: actions/cache@v4
         with:
-          path: native/osx-aarch64/src/main/resources/native
+          path: |
+            native/osx-aarch64/src/main/resources/native
+            native/linux-x86_64/src/main/resources/native
           key: rocksdb-v10.10.1-${{ runner.os }}-${{ runner.arch }}
 
       - name: Build and test

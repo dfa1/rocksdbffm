@@ -1,0 +1,270 @@
+package io.github.dfa1.rocksdbffm;
+
+import java.lang.foreign.Arena;
+import java.lang.foreign.FunctionDescriptor;
+import java.lang.foreign.MemorySegment;
+import java.lang.foreign.ValueLayout;
+import java.lang.invoke.MethodHandle;
+import java.nio.file.Path;
+
+/**
+ * FFM wrapper for rocksdb_sstfilewriter_t.
+ *
+ * <p>Writes key-value pairs in sorted order into an SST file on disk, which can
+ * then be ingested into a live database via {@link RocksDB#ingestExternalFile}.
+ *
+ * <p>Keys must be written in strictly ascending order (bytewise by default).
+ *
+ * <pre>{@code
+ * Path sstPath = dir.resolve("data.sst");
+ * try (var opts = new Options();
+ *      var writer = new SstFileWriter(opts)) {
+ *     writer.open(sstPath);
+ *     writer.put("aaa".getBytes(), "val1".getBytes());
+ *     writer.put("bbb".getBytes(), "val2".getBytes());
+ *     writer.finish();
+ * }
+ * db.ingestExternalFile(List.of(sstPath));
+ * }</pre>
+ */
+public final class SstFileWriter implements AutoCloseable {
+
+    private static final MethodHandle MH_ENVOPTIONS_CREATE;
+    private static final MethodHandle MH_ENVOPTIONS_DESTROY;
+    private static final MethodHandle MH_CREATE;
+    private static final MethodHandle MH_DESTROY;
+    private static final MethodHandle MH_OPEN;
+    private static final MethodHandle MH_PUT;
+    private static final MethodHandle MH_DELETE;
+    private static final MethodHandle MH_DELETE_RANGE;
+    private static final MethodHandle MH_MERGE;
+    private static final MethodHandle MH_FINISH;
+    private static final MethodHandle MH_FILE_SIZE;
+
+    static {
+        MH_ENVOPTIONS_CREATE = RocksDB.lookup("rocksdb_envoptions_create",
+            FunctionDescriptor.of(ValueLayout.ADDRESS));
+
+        MH_ENVOPTIONS_DESTROY = RocksDB.lookup("rocksdb_envoptions_destroy",
+            FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+
+        // rocksdb_sstfilewriter_t* rocksdb_sstfilewriter_create(envoptions*, options*)
+        MH_CREATE = RocksDB.lookup("rocksdb_sstfilewriter_create",
+            FunctionDescriptor.of(ValueLayout.ADDRESS,
+                ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+        MH_DESTROY = RocksDB.lookup("rocksdb_sstfilewriter_destroy",
+            FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+
+        // void rocksdb_sstfilewriter_open(writer*, name*, errptr**)
+        MH_OPEN = RocksDB.lookup("rocksdb_sstfilewriter_open",
+            FunctionDescriptor.ofVoid(
+                ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+        // void rocksdb_sstfilewriter_put(writer*, key*, keylen, val*, vallen, errptr**)
+        MH_PUT = RocksDB.lookup("rocksdb_sstfilewriter_put",
+            FunctionDescriptor.ofVoid(
+                ValueLayout.ADDRESS,
+                ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
+                ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
+                ValueLayout.ADDRESS));
+
+        // void rocksdb_sstfilewriter_delete(writer*, key*, keylen, errptr**)
+        MH_DELETE = RocksDB.lookup("rocksdb_sstfilewriter_delete",
+            FunctionDescriptor.ofVoid(
+                ValueLayout.ADDRESS,
+                ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
+                ValueLayout.ADDRESS));
+
+        // void rocksdb_sstfilewriter_delete_range(writer*, begin_key*, begin_keylen, end_key*, end_keylen, errptr**)
+        MH_DELETE_RANGE = RocksDB.lookup("rocksdb_sstfilewriter_delete_range",
+            FunctionDescriptor.ofVoid(
+                ValueLayout.ADDRESS,
+                ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
+                ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
+                ValueLayout.ADDRESS));
+
+        // void rocksdb_sstfilewriter_merge(writer*, key*, keylen, val*, vallen, errptr**)
+        MH_MERGE = RocksDB.lookup("rocksdb_sstfilewriter_merge",
+            FunctionDescriptor.ofVoid(
+                ValueLayout.ADDRESS,
+                ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
+                ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
+                ValueLayout.ADDRESS));
+
+        // void rocksdb_sstfilewriter_finish(writer*, errptr**)
+        MH_FINISH = RocksDB.lookup("rocksdb_sstfilewriter_finish",
+            FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+        // void rocksdb_sstfilewriter_file_size(writer*, uint64_t* file_size)
+        MH_FILE_SIZE = RocksDB.lookup("rocksdb_sstfilewriter_file_size",
+            FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+    }
+
+    private final MemorySegment ptr;
+
+    /**
+     * Creates an SST file writer using the given DB options (comparator, compression, etc.).
+     */
+    public SstFileWriter(Options options) {
+        try {
+            MemorySegment envOpts = (MemorySegment) MH_ENVOPTIONS_CREATE.invokeExact();
+            try {
+                this.ptr = (MemorySegment) MH_CREATE.invokeExact(envOpts, options.ptr);
+            } finally {
+                MH_ENVOPTIONS_DESTROY.invokeExact(envOpts);
+            }
+        } catch (Throwable t) {
+            throw new RocksDBException("sstfilewriter create failed", t);
+        }
+    }
+
+    /**
+     * Opens a new SST file at the given path for writing.
+     * Call {@link #finish()} to finalize the file before ingesting.
+     */
+    public void open(Path path) {
+        try (Arena arena = Arena.ofConfined()) {
+            MemorySegment err = Native.errHolder(arena);
+            MemorySegment pathSeg = arena.allocateFrom(path.toString());
+            MH_OPEN.invokeExact(ptr, pathSeg, err);
+            Native.checkError(err);
+        } catch (Throwable t) {
+            throw RocksDBException.wrap("sstfilewriter open failed", t);
+        }
+    }
+
+    /**
+     * Appends a put entry. Keys must be added in strictly ascending order.
+     */
+    public void put(byte[] key, byte[] value) {
+        try (Arena arena = Arena.ofConfined()) {
+            MemorySegment err = Native.errHolder(arena);
+            MemorySegment keyNative = Native.toNative(arena, key);
+            MemorySegment valNative = Native.toNative(arena, value);
+            MH_PUT.invokeExact(ptr,
+                keyNative, (long) key.length,
+                valNative, (long) value.length,
+                err);
+            Native.checkError(err);
+        } catch (Throwable t) {
+            throw RocksDBException.wrap("sstfilewriter put failed", t);
+        }
+    }
+
+    /**
+     * Zero-copy {@link MemorySegment} overload of {@link #put(byte[], byte[])}.
+     */
+    public void put(MemorySegment key, MemorySegment value) {
+        try (Arena arena = Arena.ofConfined()) {
+            MemorySegment err = Native.errHolder(arena);
+            MH_PUT.invokeExact(ptr,
+                key, key.byteSize(),
+                value, value.byteSize(),
+                err);
+            Native.checkError(err);
+        } catch (Throwable t) {
+            throw RocksDBException.wrap("sstfilewriter put failed", t);
+        }
+    }
+
+    /**
+     * Appends a delete tombstone entry. Keys must be added in strictly ascending order.
+     */
+    public void delete(byte[] key) {
+        try (Arena arena = Arena.ofConfined()) {
+            MemorySegment err = Native.errHolder(arena);
+            MemorySegment keyNative = Native.toNative(arena, key);
+            MH_DELETE.invokeExact(ptr, keyNative, (long) key.length, err);
+            Native.checkError(err);
+        } catch (Throwable t) {
+            throw RocksDBException.wrap("sstfilewriter delete failed", t);
+        }
+    }
+
+    /**
+     * Zero-copy {@link MemorySegment} overload of {@link #delete(byte[])}.
+     */
+    public void delete(MemorySegment key) {
+        try (Arena arena = Arena.ofConfined()) {
+            MemorySegment err = Native.errHolder(arena);
+            MH_DELETE.invokeExact(ptr, key, key.byteSize(), err);
+            Native.checkError(err);
+        } catch (Throwable t) {
+            throw RocksDBException.wrap("sstfilewriter delete failed", t);
+        }
+    }
+
+    /**
+     * Appends a delete-range tombstone covering {@code [beginKey, endKey)}.
+     * Keys must be added in strictly ascending order.
+     */
+    public void deleteRange(byte[] beginKey, byte[] endKey) {
+        try (Arena arena = Arena.ofConfined()) {
+            MemorySegment err = Native.errHolder(arena);
+            MemorySegment beginNative = Native.toNative(arena, beginKey);
+            MemorySegment endNative = Native.toNative(arena, endKey);
+            MH_DELETE_RANGE.invokeExact(ptr,
+                beginNative, (long) beginKey.length,
+                endNative, (long) endKey.length,
+                err);
+            Native.checkError(err);
+        } catch (Throwable t) {
+            throw RocksDBException.wrap("sstfilewriter deleteRange failed", t);
+        }
+    }
+
+    /**
+     * Appends a merge entry. Keys must be added in strictly ascending order.
+     */
+    public void merge(byte[] key, byte[] value) {
+        try (Arena arena = Arena.ofConfined()) {
+            MemorySegment err = Native.errHolder(arena);
+            MemorySegment keyNative = Native.toNative(arena, key);
+            MemorySegment valNative = Native.toNative(arena, value);
+            MH_MERGE.invokeExact(ptr,
+                keyNative, (long) key.length,
+                valNative, (long) value.length,
+                err);
+            Native.checkError(err);
+        } catch (Throwable t) {
+            throw RocksDBException.wrap("sstfilewriter merge failed", t);
+        }
+    }
+
+    /**
+     * Finalizes the SST file. Must be called after all entries have been written.
+     * The file is now ready for ingestion via {@link RocksDB#ingestExternalFile}.
+     */
+    public void finish() {
+        try (Arena arena = Arena.ofConfined()) {
+            MemorySegment err = Native.errHolder(arena);
+            MH_FINISH.invokeExact(ptr, err);
+            Native.checkError(err);
+        } catch (Throwable t) {
+            throw RocksDBException.wrap("sstfilewriter finish failed", t);
+        }
+    }
+
+    /**
+     * Returns the size of the current (or most recently finished) SST file in bytes.
+     */
+    public long fileSize() {
+        try (Arena arena = Arena.ofConfined()) {
+            MemorySegment sizeSeg = arena.allocate(ValueLayout.JAVA_LONG);
+            MH_FILE_SIZE.invokeExact(ptr, sizeSeg);
+            return sizeSeg.get(ValueLayout.JAVA_LONG, 0);
+        } catch (Throwable t) {
+            throw RocksDBException.wrap("sstfilewriter fileSize failed", t);
+        }
+    }
+
+    @Override
+    public void close() {
+        try {
+            MH_DESTROY.invokeExact(ptr);
+        } catch (Throwable t) {
+            throw new RocksDBException("sstfilewriter destroy failed", t);
+        }
+    }
+}

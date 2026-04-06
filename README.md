@@ -76,7 +76,7 @@ This project is currently experimental. The table below tracks parity with `rock
 | MultiGet | ❌ | Bulk reads |
 | DeleteRange | ✅ | Range tombstones; `deleteRange` on `RocksDB` and `WriteBatch`; all three access tiers |
 | Compaction control | ✅ | `compactRange` (all three tiers + `CompactOptions`), `suggestCompactRange`, `disableFileDeletions`, `enableFileDeletions` |
-| SST File Ingest | ❌ | High-speed bulk loading |
+| SST File Ingest | ✅ | `SstFileWriter` (put/delete/deleteRange/merge), `RocksDB.ingestExternalFile`; `IngestExternalFileOptions` |
 | Backup Engine | ❌ | Incremental backups |
 | TTL DB | ✅ | `openWithTtl(path, Duration)`; lazy expiry via compaction; full API available |
 | Optimistic Transactions | ✅ | `OptimisticTransactionDB`; conflict detection at commit; `OptimisticTransactionOptions` |

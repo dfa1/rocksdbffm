@@ -14,6 +14,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.Duration;
+import java.util.List;
 import java.util.Optional;
 import java.util.OptionalLong;
 
@@ -63,6 +64,7 @@ public final class RocksDB implements AutoCloseable {
     private static final MethodHandle MH_SUGGEST_COMPACT_RANGE;
     private static final MethodHandle MH_DISABLE_FILE_DELETIONS;
     private static final MethodHandle MH_ENABLE_FILE_DELETIONS;
+    private static final MethodHandle MH_INGEST_EXTERNAL_FILE;
 
     static {
         LIB = SymbolLookup.libraryLookup(resolveLibPath(), Arena.ofAuto());
@@ -203,6 +205,12 @@ public final class RocksDB implements AutoCloseable {
         // void rocksdb_enable_file_deletions(db*, errptr**)
         MH_ENABLE_FILE_DELETIONS = lookup("rocksdb_enable_file_deletions",
             FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+        // void rocksdb_ingest_external_file(db*, file_list**, list_len, opts*, errptr**)
+        MH_INGEST_EXTERNAL_FILE = lookup("rocksdb_ingest_external_file",
+            FunctionDescriptor.ofVoid(
+                ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
+                ValueLayout.ADDRESS, ValueLayout.ADDRESS));
     }
 
     private final MemorySegment dbPtr;
@@ -879,6 +887,59 @@ public final class RocksDB implements AutoCloseable {
         } catch (Throwable t) {
             throw RocksDBException.wrap("enableFileDeletions failed", t);
         }
+    }
+
+    // -----------------------------------------------------------------------
+    // SST File Ingest
+    // -----------------------------------------------------------------------
+
+    /**
+     * Ingests a list of SST files produced by {@link SstFileWriter} into the database.
+     *
+     * <p>The files must contain non-overlapping key ranges and their keys must not
+     * overlap with any existing keys in the DB unless {@code allowGlobalSeqno} is set.
+     *
+     * @param files   paths to the SST files to ingest (must be non-empty)
+     * @param options ingest options controlling move vs copy, seqno assignment, etc.
+     */
+    public void ingestExternalFile(List<Path> files, IngestExternalFileOptions options) {
+        if (files.isEmpty()) return;
+        try (Arena arena = Arena.ofConfined()) {
+            MemorySegment err = Native.errHolder(arena);
+            // Allocate an array of pointers (one per file path)
+            MemorySegment fileArray = arena.allocate(ValueLayout.ADDRESS, files.size());
+            for (int i = 0; i < files.size(); i++) {
+                MemorySegment pathSeg = arena.allocateFrom(files.get(i).toString());
+                fileArray.setAtIndex(ValueLayout.ADDRESS, i, pathSeg);
+            }
+            MH_INGEST_EXTERNAL_FILE.invokeExact(dbPtr, fileArray, (long) files.size(), options.ptr, err);
+            Native.checkError(err);
+        } catch (Throwable t) {
+            throw RocksDBException.wrap("ingestExternalFile failed", t);
+        }
+    }
+
+    /**
+     * Ingests a list of SST files using default {@link IngestExternalFileOptions}.
+     */
+    public void ingestExternalFile(List<Path> files) {
+        try (IngestExternalFileOptions opts = new IngestExternalFileOptions()) {
+            ingestExternalFile(files, opts);
+        }
+    }
+
+    /**
+     * Ingests a single SST file using the given options.
+     */
+    public void ingestExternalFile(Path file, IngestExternalFileOptions options) {
+        ingestExternalFile(List.of(file), options);
+    }
+
+    /**
+     * Ingests a single SST file using default {@link IngestExternalFileOptions}.
+     */
+    public void ingestExternalFile(Path file) {
+        ingestExternalFile(List.of(file));
     }
 
     // -----------------------------------------------------------------------

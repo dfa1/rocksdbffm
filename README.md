@@ -46,15 +46,10 @@ Benchmarks performed on JDK 25 (Apple M-series), RocksDB v10.10.1, compared to J
 ### Running benchmarks
 
 ```bash
-mvn test-compile -q
-CP="target/test-classes:target/classes:$(mvn dependency:build-classpath -DforceStdout 2>&1 | grep '^/')"
-
-# FFM
-java --enable-native-access=ALL-UNNAMED -cp "$CP" io.github.dfa1.rocksdbffm.benchmark.FfmBenchmark
-
-# JNI (baseline)
-java --enable-native-access=ALL-UNNAMED -cp "$CP" io.github.dfa1.rocksdbffm.benchmark.JniBenchmark
+./scripts/benchmark.sh
 ```
+
+Builds everything, runs both FFM and JNI suites, and prints a side-by-side comparison table.
 
 ## Roadmap
 

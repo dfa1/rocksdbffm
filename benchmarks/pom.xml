@@ -60,6 +60,18 @@
                     <skipTests>true</skipTests>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.4.1</version>
+                <configuration>
+                    <mainClass>io.github.dfa1.rocksdbffm.benchmark.BenchmarkRunner</mainClass>
+                    <classpathScope>test</classpathScope>
+                    <jvmArgs>
+                        <jvmArg>--enable-native-access=ALL-UNNAMED</jvmArg>
+                    </jvmArgs>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 

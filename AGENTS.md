@@ -79,10 +79,9 @@ Performance gains are a primary goal. Use `JMH` to validate changes.
 - **Run benchmarks:**
   ```bash
   mvn test-compile -q
-  CP="target/test-classes:target/classes:$(mvn dependency:build-classpath -DforceStdout 2>&1 | grep '^/')"
-  java --enable-native-access=ALL-UNNAMED -cp "$CP" io.github.dfa1.rocksdbffm.benchmark.FfmBenchmark
-  java --enable-native-access=ALL-UNNAMED -cp "$CP" io.github.dfa1.rocksdbffm.benchmark.JniBenchmark
+  ./scripts/benchmark.sh
   ```
+  This builds everything, runs both FFM and JNI suites, and prints a side-by-side comparison table.
 
 ---
 

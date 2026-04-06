@@ -15,6 +15,14 @@
     <packaging>jar</packaging>
 
     <dependencies>
+        <!-- modules -->
+        <dependency>
+            <groupId>io.github.dfa1</groupId>
+            <artifactId>rocksdbffm-native-osx-aarch64</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- test -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
@@ -39,44 +47,4 @@
             </plugin>
         </plugins>
     </build>
-
-    <!--
-        Select the native library for the current platform.
-        The native jar lands on the test classpath so RocksDB.java can
-        extract it at runtime via Class.getResourceAsStream.
-    -->
-    <profiles>
-        <profile>
-            <id>native-osx-aarch64</id>
-            <activation>
-                <os>
-                    <family>mac</family>
-                    <arch>aarch64</arch>
-                </os>
-            </activation>
-            <dependencies>
-                <dependency>
-                    <groupId>io.github.dfa1</groupId>
-                    <artifactId>rocksdbffm-native-osx-aarch64</artifactId>
-                    <scope>test</scope>
-                </dependency>
-            </dependencies>
-        </profile>
-        <profile>
-            <id>native-linux-x86_64</id>
-            <activation>
-                <os>
-                    <family>unix</family>
-                    <arch>x86_64</arch>
-                </os>
-            </activation>
-            <dependencies>
-                <dependency>
-                    <groupId>io.github.dfa1</groupId>
-                    <artifactId>rocksdbffm-native-linux-x86_64</artifactId>
-                    <scope>test</scope>
-                </dependency>
-            </dependencies>
-        </profile>
-    </profiles>
 </project>

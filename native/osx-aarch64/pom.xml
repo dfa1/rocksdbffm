@@ -17,22 +17,6 @@
     <!-- No Java sources: this module only packages the native shared library. -->
     <build>
         <plugins>
-            <!-- Skip compilation — nothing to compile. -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <skipMain>true</skipMain>
-                </configuration>
-            </plugin>
-            <!-- Skip tests — nothing to test. -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <configuration>
-                    <skipTests>true</skipTests>
-                </configuration>
-            </plugin>
             <!--
                 Build the RocksDB shared library from the submodule using zig cc/c++.
                 The script is idempotent: it exits early if the library already exists.

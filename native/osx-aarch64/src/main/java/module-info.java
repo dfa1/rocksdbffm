@@ -9,9 +9,8 @@
  *   --enable-native-access=io.github.dfa1.rocksdbffm
  * }</pre>
  */
-module io.github.dfa1.rocksdbffm {
-    exports io.github.dfa1.rocksdbffm;
+module io.github.dfa1.rocksdbffm.osx {
 
-    // TODO: clarifies why static is needed here
-    requires static io.github.dfa1.rocksdbffm.osx;
+	exports io.github.dfa1.rocksdbffm.osx;
+
 }

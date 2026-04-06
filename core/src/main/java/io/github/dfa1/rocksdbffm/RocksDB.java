@@ -1092,10 +1092,14 @@ public final class RocksDB implements AutoCloseable {
 		if (explicit != null) return explicit;
 
 		// 2. Bundled in JAR / classpath
+
 		String classifier = classifier();
 		String ext = classifier.startsWith("osx") ? "dylib" : "so";
 		String resource = "/native/" + classifier + "/librocksdb." + ext;
-		try (InputStream in = RocksDB.class.getResourceAsStream(resource)) {
+
+		// TODO: this is an hack to let the module path load resources in this module
+		// later this should be selected dynamically (maybe via service provider?)
+		try (InputStream in = io.github.dfa1.rocksdbffm.osx.Loader.class.getResourceAsStream(resource)) {
 			if (in == null) {
 				throw new UnsatisfiedLinkError("No bundled RocksDB library found for platform " + classifier);
 			}

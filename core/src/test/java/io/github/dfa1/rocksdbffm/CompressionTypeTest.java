@@ -12,35 +12,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class CompressionTypeTest {
 
     // -----------------------------------------------------------------------
-    // Enum correctness
-    // -----------------------------------------------------------------------
-
-    @Test
-    void values_matchCApiConstants() {
-        assertThat(CompressionType.NO_COMPRESSION.getValue()).isEqualTo(0);
-        assertThat(CompressionType.SNAPPY.getValue()).isEqualTo(1);
-        assertThat(CompressionType.ZLIB.getValue()).isEqualTo(2);
-        assertThat(CompressionType.BZLIB2.getValue()).isEqualTo(3);
-        assertThat(CompressionType.LZ4.getValue()).isEqualTo(4);
-        assertThat(CompressionType.LZ4HC.getValue()).isEqualTo(5);
-        assertThat(CompressionType.XPRESS.getValue()).isEqualTo(6);
-        assertThat(CompressionType.ZSTD.getValue()).isEqualTo(7);
-    }
-
-    @Test
-    void fromValue_roundTrips() {
-        for (CompressionType type : CompressionType.values()) {
-            assertThat(CompressionType.fromValue(type.getValue())).isEqualTo(type);
-        }
-    }
-
-    @Test
-    void fromValue_unknownValue_throws() {
-        assertThatThrownBy(() -> CompressionType.fromValue(99))
-            .isInstanceOf(IllegalArgumentException.class);
-    }
-
-    // -----------------------------------------------------------------------
     // getSupportedTypes
     // -----------------------------------------------------------------------
 

@@ -49,19 +49,14 @@ public enum CompressionType {
     /** Zstandard compression. */
     ZSTD(7);
 
-    private final int value;
+    /** C API integer constant — package-private for use by {@link Options}. */
+    final int value;
 
     CompressionType(int value) {
         this.value = value;
     }
 
-    /** Returns the integer constant used by the RocksDB C API. */
-    public int getValue() {
-        return value;
-    }
-
-    /** Returns the {@code CompressionType} matching the given C API integer value. */
-    public static CompressionType fromValue(int value) {
+    static CompressionType fromValue(int value) {
         for (CompressionType t : values()) {
             if (t.value == value) return t;
         }

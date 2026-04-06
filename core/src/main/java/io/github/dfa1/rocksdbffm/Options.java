@@ -219,7 +219,7 @@ public final class Options implements AutoCloseable {
      */
     public Options setCompression(CompressionType type) {
         try {
-            MH_SET_COMPRESSION.invokeExact(ptr, type.getValue());
+            MH_SET_COMPRESSION.invokeExact(ptr, type.value);
             return this;
         } catch (Throwable t) {
             throw new RocksDBException("setCompression failed", t);

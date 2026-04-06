@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    runs-on: macos-latest   # Apple Silicon (arm64); Zig cross-compiles linux targets
+    runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4

@@ -9,7 +9,7 @@ import java.util.OptionalLong;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class DBPropertiesTest {
+class PropertyTest {
 
     // -----------------------------------------------------------------------
     // getProperty — string properties
@@ -93,7 +93,7 @@ class DBPropertiesTest {
             long before = db.getLongProperty(Property.NUM_SNAPSHOTS).orElseThrow();
 
             // When
-            try (Snapshot snap = db.getSnapshot()) {
+            try (Snapshot _ = db.getSnapshot()) {
                 long during = db.getLongProperty(Property.NUM_SNAPSHOTS).orElseThrow();
 
                 // Then

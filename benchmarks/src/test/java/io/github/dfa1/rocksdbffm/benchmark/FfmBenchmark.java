@@ -43,7 +43,7 @@ public class FfmBenchmark {
     private ByteBuffer readKeyBuf;
     private ByteBuffer readValBuf;
 
-    // MemorySegment tier — backed by an auto arena for the benchmark lifetime
+    // MemorySegment tier — confined arena held open for the full trial lifetime
     private Arena msArena;
     private MemorySegment writeKeyMs;
     private MemorySegment writeValMs;
@@ -73,7 +73,7 @@ public class FfmBenchmark {
         readValBuf = ByteBuffer.allocateDirect(64);
 
         // --- MemorySegment tier ---
-        msArena = Arena.ofAuto();
+        msArena = Arena.ofConfined();
         writeKeyMs = msArena.allocateFrom(ValueLayout.JAVA_BYTE, WRITE_KEY_BYTES);
         writeValMs = msArena.allocateFrom(ValueLayout.JAVA_BYTE, WRITE_VALUE_BYTES);
         readKeyMs = msArena.allocateFrom(ValueLayout.JAVA_BYTE, READ_KEY_BYTES);
@@ -94,6 +94,7 @@ public class FfmBenchmark {
     public void teardown() throws IOException {
         batch.close();
         db.close();
+        msArena.close();
         deleteDir(dbPath);
     }
 

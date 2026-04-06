@@ -37,15 +37,15 @@ Benchmarks performed on JDK 25 (Apple M-series), RocksDB v10.10.1. Each tier use
 
 | Operation | API tier | FFM (ops/s) | JNI (ops/s) | Gain |
 | :--- | :--- | :---: | :---: | :---: |
-| Reads | `byte[]` | 7,135,339 | 3,650,076 | **+96%** |
-| Reads | `DirectByteBuffer` | 7,208,352 | 3,648,803 | **+98%** |
-| Reads | `MemorySegment` | 6,660,448 | — | — |
-| Writes | `byte[]` | 660,808 | 593,081 | **+11%** |
-| Writes | `DirectByteBuffer` | 692,222 | 594,497 | **+16%** |
-| Writes | `MemorySegment` | 682,567 | — | — |
-| Batch writes (100 ops) | `byte[]` | 24,265 | 17,015 | **+43%** |
+| Reads | `byte[]` | 7,196,554 | 3,619,125 | **+99%** |
+| Reads | `DirectByteBuffer` | 8,077,135 | 3,656,113 | **+121%** |
+| Reads | `MemorySegment` | 8,149,510 | — | — |
+| Writes | `byte[]` | 671,213 | 608,496 | **+10%** |
+| Writes | `DirectByteBuffer` | 694,166 | 590,923 | **+17%** |
+| Writes | `MemorySegment` | 686,889 | — | — |
+| Batch writes (100 ops) | `byte[]` | 23,936 | 16,813 | **+42%** |
 
-*Both libraries use `PinnableSlice` for reads. Read gains (~2×) come from the absence of JNI frame setup and thread-state transitions — FFM downcall stubs are JIT-compiled directly. Write gains are smaller because WAL/memtable I/O dominates. Batch write gains multiply because per-call overhead is paid 100× per iteration.*
+*Both libraries use `PinnableSlice` for reads. Read gains (~2×) come from the absence of JNI frame setup and thread-state transitions — FFM downcall stubs are JIT-compiled directly. `MemorySegment` is the fastest read tier because segments backed by a confined arena carry no GC scope-check overhead on the hot path. Write gains are smaller because WAL/memtable I/O dominates. Batch write gains multiply because per-call overhead is paid 100× per iteration.*
 
 ### Running benchmarks
 

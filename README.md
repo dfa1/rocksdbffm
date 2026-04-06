@@ -1,9 +1,11 @@
 # rocksdbffm
 
-**rocksdbffm** is a Java wrapper for [RocksDB](https://rocksdb.org/) using the **Foreign Function & Memory (FFM) API** (Project Panama).
+**rocksdbffm** is a Java wrapper for [RocksDB](https://rocksdb.org/) **v10.10.1** using the **Foreign Function & Memory (FFM) API** (Project Panama).
 
 The project aims to provide a more maintainable alternative to the traditional JNI-based `rocksdbjni`.
 The target is JDK 25+ because of `java.lang.foreign`.
+
+The native library is built from the RocksDB source via **`zig cc` / `zig c++`** as a drop-in C/C++ compiler (`PORTABLE=1 make shared_lib`). Zig bundles clang and libc++ for every target, enabling hermetic cross-compilation without a separate sysroot or system toolchain.
 
 ## Why This Project Exists
 
@@ -31,13 +33,13 @@ Exposing `MemorySegment` methods:
 
 ## Performance Results
 
-Benchmarks performed on JDK 25 (Apple M-series) compared to JNI (`DirectByteBuffer` tier):
+Benchmarks performed on JDK 25 (Apple M-series), RocksDB v10.10.1, compared to JNI (`DirectByteBuffer` tier):
 
 | Operation | FFM (ops/s) | JNI (ops/s) | Gain |
 | :--- | :---: | :---: | :---: |
-| Reads | 3,113,367 | 2,070,836 | **+50%** |
-| Writes | 686,200 | 608,558 | **+13%** |
-| Batch writes (100 ops) | 23,048 | 16,712 | **+38%** |
+| Reads | 2,905,778 | 1,905,202 | **+52%** |
+| Writes | 688,503 | 590,209 | **+17%** |
+| Batch writes (100 ops) | 23,982 | 16,532 | **+45%** |
 
 *Reads benefit from `PinnableSlice` (zero intermediate copy from block cache). Writes are bound by WAL/memtable throughput.*
 

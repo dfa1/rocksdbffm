@@ -20,5 +20,7 @@ DEPS=$(mvn -pl benchmarks dependency:build-classpath \
 CP="benchmarks/target/test-classes:benchmarks/target/classes:core/target/classes:$DEPS"
 
 echo ">>> Running benchmarks..."
-java --enable-native-access=ALL-UNNAMED -cp "$CP" \
+java --enable-native-access=ALL-UNNAMED \
+    --sun-misc-unsafe-memory-access=allow \
+    -cp "$CP" \
     io.github.dfa1.rocksdbffm.benchmark.BenchmarkRunner

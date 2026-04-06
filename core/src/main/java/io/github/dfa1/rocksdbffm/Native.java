@@ -1,5 +1,8 @@
 package io.github.dfa1.rocksdbffm;
 
+import io.github.dfa1.rocksdbffm.pool.BlockingPool;
+import io.github.dfa1.rocksdbffm.pool.Pool;
+
 import java.lang.foreign.Arena;
 import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.MemorySegment;
@@ -54,4 +57,15 @@ final class Native {
             throw new RocksDBException(msg);
         }
     }
+
+    // new stuff, human-generated
+    private static final Arena ARENA_ERROR = Arena.ofAuto();
+
+    // this is needed to allocate a char** to let rocksdb fill up the error
+    public static final Pool<MemorySegment> ERROR = new BlockingPool<>(100, () -> {
+        MemorySegment error = ARENA_ERROR.allocate(ValueLayout.ADDRESS);
+        error.set(ValueLayout.ADDRESS, 0, MemorySegment.NULL);
+        return error;
+    });
+
 }

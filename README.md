@@ -13,6 +13,9 @@ The native library is built from the RocksDB source via **`zig cc` / `zig c++`**
 
 Especially this post [Expanding RocksDB’s Java FFI](https://rocksdb.org/blog/2024/02/20/foreign-function-interface.html).
 
+And this:
+[Rocksjava-presentation](https://evolvedbinary.slides.com/adamretter/rocksjava-present-and-future#/1)
+
 ### 2. Reducing JNI Maintenance Lag
 There is often a significant delay between new features appearing in the RocksDB C++ core and their availability in
 the Java JNI wrappers. This is largely due to the complexity of maintaining C++ glue code. By using FFM, we can map

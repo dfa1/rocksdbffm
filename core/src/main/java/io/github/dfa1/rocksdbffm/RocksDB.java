@@ -947,70 +947,48 @@ public final class RocksDB implements AutoCloseable {
     // Compression support probe
     // -----------------------------------------------------------------------
 
-    private static volatile Set<CompressionType> supportedCompressions;
-
     /**
      * Returns the set of compression types compiled into the loaded RocksDB library.
      *
      * <p>{@link CompressionType#NO_COMPRESSION} is always included. The result is
-     * cached after the first call.
+     * determined by writing a small SST file with each compression type via
+     * {@link SstFileWriter}; no additional database is opened.
      *
      * <pre>{@code
-     * Set<CompressionType> supported = RocksDB.getSupportedCompressions();
+     * Set<CompressionType> supported = db.getSupportedCompressions();
      * }</pre>
      */
-    public static Set<CompressionType> getSupportedCompressions() {
-        if (supportedCompressions == null) {
-            synchronized (RocksDB.class) {
-                if (supportedCompressions == null) {
-                    supportedCompressions = probeCompressions();
-                }
-            }
-        }
-        return supportedCompressions;
-    }
-
-    private static Set<CompressionType> probeCompressions() {
+    public Set<CompressionType> getSupportedCompressions() {
         Set<CompressionType> result = java.util.EnumSet.of(CompressionType.NO_COMPRESSION);
         Path tmpDir = null;
         try {
             tmpDir = java.nio.file.Files.createTempDirectory("rocksdbffm-compress-probe-");
+            boolean isWindows = System.getProperty("os.name", "").toLowerCase().contains("win");
             for (CompressionType type : CompressionType.values()) {
                 if (type == CompressionType.NO_COMPRESSION) continue;
-                if (probeCompression(type, tmpDir)) result.add(type);
-            }
-        } catch (java.io.IOException ignored) {
-        } finally {
-            if (tmpDir != null) deleteQuietly(tmpDir);
-        }
-        return java.util.Collections.unmodifiableSet(result);
-    }
-
-    private static boolean probeCompression(CompressionType type, Path tmpDir) {
-        Path dbPath = tmpDir.resolve(type.name().toLowerCase());
-        try (Options opts = new Options().setCreateIfMissing(true).setCompression(type);
-             RocksDB db = open(opts, dbPath);
-             FlushOptions fo = new FlushOptions().setWait(true)) {
-            db.put(new byte[]{0}, new byte[]{0});
-            db.flush(fo);
-            return true;
-        } catch (RocksDBException ignored) {
-            return false;
-        } finally {
-            deleteQuietly(dbPath);
-        }
-    }
-
-    private static void deleteQuietly(Path path) {
-        try {
-            if (java.nio.file.Files.isDirectory(path)) {
-                try (var stream = java.nio.file.Files.list(path)) {
-                    stream.forEach(RocksDB::deleteQuietly);
+                // Xpress is Windows-only; SstFileWriter does not validate it at the
+                // platform level, so we exclude it on non-Windows explicitly.
+                if (type == CompressionType.XPRESS && !isWindows) continue;
+                Path sstFile = tmpDir.resolve(type.name().toLowerCase() + ".sst");
+                try (Options opts = new Options().setCompression(type);
+                     SstFileWriter writer = new SstFileWriter(opts)) {
+                    writer.open(sstFile);
+                    writer.put(new byte[]{0}, new byte[]{0});
+                    writer.finish();
+                    result.add(type);
+                } catch (RocksDBException ignored) {
+                } finally {
+                    java.nio.file.Files.deleteIfExists(sstFile);
                 }
             }
-            java.nio.file.Files.deleteIfExists(path);
         } catch (java.io.IOException ignored) {
+        } finally {
+            if (tmpDir != null) {
+                try { java.nio.file.Files.deleteIfExists(tmpDir); }
+                catch (java.io.IOException ignored) {}
+            }
         }
+        return java.util.Collections.unmodifiableSet(result);
     }
 
     // -----------------------------------------------------------------------

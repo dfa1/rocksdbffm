@@ -16,26 +16,26 @@ class CompressionTypeTest {
     // -----------------------------------------------------------------------
 
     @Test
-    void getSupportedCompressions_alwaysContainsNoCompression() {
-        assertThat(RocksDB.getSupportedCompressions()).contains(CompressionType.NO_COMPRESSION);
+    void getSupportedCompressions_alwaysContainsNoCompression(@TempDir Path dir) {
+        try (RocksDB db = RocksDB.open(dir)) {
+            assertThat(db.getSupportedCompressions()).contains(CompressionType.NO_COMPRESSION);
+        }
     }
 
     @Test
-    void getSupportedCompressions_isNonEmpty() {
-        assertThat(RocksDB.getSupportedCompressions()).isNotEmpty();
+    void getSupportedCompressions_isNonEmpty(@TempDir Path dir) {
+        try (RocksDB db = RocksDB.open(dir)) {
+            assertThat(db.getSupportedCompressions()).isNotEmpty();
+        }
     }
 
     @Test
-    void getSupportedCompressions_isStable() {
-        assertThat(RocksDB.getSupportedCompressions())
-            .isEqualTo(RocksDB.getSupportedCompressions());
-    }
-
-    @Test
-    void getSupportedCompressions_isUnmodifiable() {
-        Set<CompressionType> supported = RocksDB.getSupportedCompressions();
-        assertThatThrownBy(() -> supported.add(CompressionType.SNAPPY))
-            .isInstanceOf(UnsupportedOperationException.class);
+    void getSupportedCompressions_isUnmodifiable(@TempDir Path dir) {
+        try (RocksDB db = RocksDB.open(dir)) {
+            Set<CompressionType> supported = db.getSupportedCompressions();
+            assertThatThrownBy(() -> supported.add(CompressionType.SNAPPY))
+                .isInstanceOf(UnsupportedOperationException.class);
+        }
     }
 
     // -----------------------------------------------------------------------
@@ -61,7 +61,6 @@ class CompressionTypeTest {
 
     @Test
     void openDb_withSupportedCompression_writesAndReadsBack(@TempDir Path dir) {
-        // Given — NO_COMPRESSION is always supported
         try (Options opts = new Options()
                 .setCreateIfMissing(true)
                 .setCompression(CompressionType.NO_COMPRESSION);
@@ -73,8 +72,15 @@ class CompressionTypeTest {
 
     @Test
     void openDb_withEachSupportedCompression_writesAndReadsBack(@TempDir Path dir) {
+        // Given — use a reference DB just to probe support
+        Set<CompressionType> supported;
+        try (RocksDB probe = RocksDB.open(dir.resolve("probe"))) {
+            supported = probe.getSupportedCompressions();
+        }
+
+        // When / Then — open a separate DB per compression type
         int i = 0;
-        for (CompressionType type : RocksDB.getSupportedCompressions()) {
+        for (CompressionType type : supported) {
             Path dbPath = dir.resolve("db-" + i++);
             try (Options opts = new Options()
                     .setCreateIfMissing(true)

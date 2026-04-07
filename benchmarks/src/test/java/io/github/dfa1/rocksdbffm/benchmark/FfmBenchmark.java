@@ -19,12 +19,11 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 import java.io.IOException;
 import java.lang.foreign.Arena;
+import java.nio.file.Files;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
 import java.nio.ByteBuffer;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Comparator;
 import java.util.concurrent.TimeUnit;
 
 @BenchmarkMode(Mode.Throughput)
@@ -35,12 +34,7 @@ import java.util.concurrent.TimeUnit;
 @Fork(value = 1, jvmArgsPrepend = {"--enable-native-access=ALL-UNNAMED", "--sun-misc-unsafe-memory-access=allow"})
 public class FfmBenchmark {
 
-	private static final int BATCH_SIZE = 100;
-	private static final byte[] READ_KEY_BYTES = "read-key".getBytes();
-	private static final byte[] READ_VALUE_BYTES = "read-value-data-0123456789".getBytes();
-	private static final byte[] WRITE_KEY_BYTES = "bench-key".getBytes();
-	private static final byte[] WRITE_VALUE_BYTES = "bench-value-data-0123456789".getBytes();
-	private static final byte[] BATCH_VALUE = "batch-value-data-0123456789".getBytes();
+	private static final int BATCH_SIZE = TestData.BATCH_SIZE;
 
 	private RocksDB db;
 	private Path dbPath;
@@ -72,34 +66,31 @@ public class FfmBenchmark {
 		db = RocksDB.open(dbPath);
 
 		// --- byte[] tier ---
-		writeKeyBytes = WRITE_KEY_BYTES.clone();
-		writeValueBytes = WRITE_VALUE_BYTES.clone();
-		readKeyBytes = READ_KEY_BYTES.clone();
+		writeKeyBytes = TestData.WRITE_KEY_BYTES.clone();
+		writeValueBytes = TestData.WRITE_VALUE_BYTES.clone();
+		readKeyBytes = TestData.READ_KEY_BYTES.clone();
 
 		// --- ByteBuffer tier ---
-		writeKeyByteBuffer = ByteBuffer.allocateDirect(WRITE_KEY_BYTES.length);
-		writeKeyByteBuffer.put(WRITE_KEY_BYTES).flip();
-		writeValByteBuffer = ByteBuffer.allocateDirect(WRITE_VALUE_BYTES.length);
-		writeValByteBuffer.put(WRITE_VALUE_BYTES).flip();
-		readKeyByteBuffer = ByteBuffer.allocateDirect(READ_KEY_BYTES.length);
-		readKeyByteBuffer.put(READ_KEY_BYTES).flip();
+		writeKeyByteBuffer = ByteBuffer.allocateDirect(TestData.WRITE_KEY_BYTES.length);
+		writeKeyByteBuffer.put(TestData.WRITE_KEY_BYTES).flip();
+		writeValByteBuffer = ByteBuffer.allocateDirect(TestData.WRITE_VALUE_BYTES.length);
+		writeValByteBuffer.put(TestData.WRITE_VALUE_BYTES).flip();
+		readKeyByteBuffer = ByteBuffer.allocateDirect(TestData.READ_KEY_BYTES.length);
+		readKeyByteBuffer.put(TestData.READ_KEY_BYTES).flip();
 		readValByteBuffer = ByteBuffer.allocateDirect(64);
 
 		// --- MemorySegment tier ---
 		arenaMemorySegment = Arena.ofConfined();
-		writeKeyMemorySegment = arenaMemorySegment.allocateFrom(ValueLayout.JAVA_BYTE, WRITE_KEY_BYTES);
-		writeValueMemorySegment = arenaMemorySegment.allocateFrom(ValueLayout.JAVA_BYTE, WRITE_VALUE_BYTES);
-		readKeyMemorySegment = arenaMemorySegment.allocateFrom(ValueLayout.JAVA_BYTE, READ_KEY_BYTES);
+		writeKeyMemorySegment = arenaMemorySegment.allocateFrom(ValueLayout.JAVA_BYTE, TestData.WRITE_KEY_BYTES);
+		writeValueMemorySegment = arenaMemorySegment.allocateFrom(ValueLayout.JAVA_BYTE, TestData.WRITE_VALUE_BYTES);
+		readKeyMemorySegment = arenaMemorySegment.allocateFrom(ValueLayout.JAVA_BYTE, TestData.READ_KEY_BYTES);
 		readValMemorySegment = arenaMemorySegment.allocate(64);
 
 		// Seed the read key
-		db.put(READ_KEY_BYTES, READ_VALUE_BYTES);
+		db.put(TestData.READ_KEY_BYTES, TestData.READ_VALUE_BYTES);
 
 		// --- batch ---
-		batchKeys = new byte[BATCH_SIZE][];
-		for (int i = 0; i < BATCH_SIZE; i++) {
-			batchKeys[i] = ("batch-key-" + i).getBytes();
-		}
+		batchKeys = TestData.batchKeys();
 		batch = WriteBatch.create();
 	}
 
@@ -108,7 +99,7 @@ public class FfmBenchmark {
 		batch.close();
 		db.close();
 		arenaMemorySegment.close();
-		deleteDir(dbPath);
+		TestData.deleteDir(dbPath);
 	}
 
 	// ---- byte[] tier -------------------------------------------------------
@@ -173,7 +164,7 @@ public class FfmBenchmark {
 	public void batchWrites() {
 		batch.clear();
 		for (int i = 0; i < BATCH_SIZE; i++) {
-			batch.put(batchKeys[i], BATCH_VALUE);
+			batch.put(batchKeys[i], TestData.BATCH_VALUE);
 		}
 		db.write(batch);
 	}
@@ -183,16 +174,10 @@ public class FfmBenchmark {
 		batch.clear();
 		try (Arena arena = Arena.ofConfined()) {
 			for (int i = 0; i < BATCH_SIZE; i++) {
-				batch.put(arena, batchKeys[i], BATCH_VALUE);
+				batch.put(arena, batchKeys[i], TestData.BATCH_VALUE);
 			}
 			db.write(arena, batch);
 		}
-	}
-
-	private static void deleteDir(Path dir) throws IOException {
-		Files.walk(dir)
-				.sorted(Comparator.reverseOrder())
-				.forEach(p -> p.toFile().delete());
 	}
 
 	static void main() throws Exception {

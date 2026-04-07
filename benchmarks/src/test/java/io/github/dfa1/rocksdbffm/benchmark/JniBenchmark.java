@@ -18,11 +18,9 @@ import org.rocksdb.RocksDB;
 import org.rocksdb.WriteBatch;
 import org.rocksdb.WriteOptions;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Comparator;
 import java.util.concurrent.TimeUnit;
 
 @BenchmarkMode(Mode.Throughput)
@@ -37,12 +35,6 @@ public class JniBenchmark {
 		RocksDB.loadLibrary();
 	}
 
-	private static final int BATCH_SIZE = 100;
-	private static final byte[] READ_KEY_BYTES = "read-key".getBytes();
-	private static final byte[] READ_VALUE_BYTES = "read-value-data-0123456789".getBytes();
-	private static final byte[] WRITE_KEY_BYTES = "bench-key".getBytes();
-	private static final byte[] WRITE_VALUE_BYTES = "bench-value-data-0123456789".getBytes();
-	private static final byte[] BATCH_VALUE = "batch-value-data-0123456789".getBytes();
 
 	private RocksDB db;
 	private Options options;
@@ -73,26 +65,23 @@ public class JniBenchmark {
 		readOptions = new ReadOptions();
 
 		// --- byte[] tier ---
-		writeKey = WRITE_KEY_BYTES.clone();
-		writeValue = WRITE_VALUE_BYTES.clone();
-		readKey = READ_KEY_BYTES.clone();
+		writeKey = TestData.WRITE_KEY_BYTES.clone();
+		writeValue = TestData.WRITE_VALUE_BYTES.clone();
+		readKey = TestData.READ_KEY_BYTES.clone();
 
 		// --- ByteBuffer tier ---
-		writeKeyBuf = ByteBuffer.allocateDirect(WRITE_KEY_BYTES.length);
-		writeKeyBuf.put(WRITE_KEY_BYTES).flip();
-		writeValBuf = ByteBuffer.allocateDirect(WRITE_VALUE_BYTES.length);
-		writeValBuf.put(WRITE_VALUE_BYTES).flip();
-		readKeyBuf = ByteBuffer.allocateDirect(READ_KEY_BYTES.length);
-		readKeyBuf.put(READ_KEY_BYTES).flip();
+		writeKeyBuf = ByteBuffer.allocateDirect(TestData.WRITE_KEY_BYTES.length);
+		writeKeyBuf.put(TestData.WRITE_KEY_BYTES).flip();
+		writeValBuf = ByteBuffer.allocateDirect(TestData.WRITE_VALUE_BYTES.length);
+		writeValBuf.put(TestData.WRITE_VALUE_BYTES).flip();
+		readKeyBuf = ByteBuffer.allocateDirect(TestData.READ_KEY_BYTES.length);
+		readKeyBuf.put(TestData.READ_KEY_BYTES).flip();
 		readValBuf = ByteBuffer.allocateDirect(64);
 
 		// Seed the read key
-		db.put(READ_KEY_BYTES, READ_VALUE_BYTES);
+		db.put(TestData.READ_KEY_BYTES, TestData.READ_VALUE_BYTES);
 
-		batchKeys = new byte[BATCH_SIZE][];
-		for (int i = 0; i < BATCH_SIZE; i++) {
-			batchKeys[i] = ("batch-key-" + i).getBytes();
-		}
+		batchKeys = TestData.batchKeys();
 		batch = new WriteBatch();
 	}
 
@@ -103,7 +92,7 @@ public class JniBenchmark {
 		options.close();
 		writeOptions.close();
 		readOptions.close();
-		deleteDir(dbPath);
+		TestData.deleteDir(dbPath);
 	}
 
 	// ---- byte[] tier -------------------------------------------------------
@@ -139,16 +128,10 @@ public class JniBenchmark {
 	@Benchmark
 	public void batchWrites() throws Exception {
 		batch.clear();
-		for (int i = 0; i < BATCH_SIZE; i++) {
-			batch.put(batchKeys[i], BATCH_VALUE);
+		for (int i = 0; i < TestData.BATCH_SIZE; i++) {
+			batch.put(batchKeys[i], TestData.BATCH_VALUE);
 		}
 		db.write(writeOptions, batch);
-	}
-
-	private static void deleteDir(Path dir) throws IOException {
-		Files.walk(dir)
-				.sorted(Comparator.reverseOrder())
-				.forEach(p -> p.toFile().delete());
 	}
 
 	static void main() throws Exception {

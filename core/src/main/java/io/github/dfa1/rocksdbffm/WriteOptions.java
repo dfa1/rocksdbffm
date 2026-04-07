@@ -8,7 +8,7 @@ import java.lang.invoke.MethodHandle;
 /**
  * FFM wrapper for rocksdb_writeoptions_t.
  */
-public final class WriteOptions implements AutoCloseable {
+public final class WriteOptions extends NativeObject {
 
 	private static final MethodHandle MH_CREATE;
 	private static final MethodHandle MH_DESTROY;
@@ -21,21 +21,20 @@ public final class WriteOptions implements AutoCloseable {
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 	}
 
-	/**
-	 * Package-private: accessed by TransactionDB.beginTransaction().
-	 */
-	final MemorySegment ptr;
+	private WriteOptions(MemorySegment ptr) {
+		super(ptr);
+	}
 
-	public WriteOptions() {
+	public static WriteOptions newWriteOptions() {
 		try {
-			this.ptr = (MemorySegment) MH_CREATE.invokeExact();
+			return new WriteOptions((MemorySegment) MH_CREATE.invokeExact());
 		} catch (Throwable t) {
 			throw new RocksDBException("writeoptions create failed", t);
 		}
 	}
 
 	@Override
-	public void close() {
-		Native.closeQuietly(MH_DESTROY, ptr);
+	protected void tryClose(MemorySegment ptr) throws Throwable {
+		MH_DESTROY.invokeExact(ptr);
 	}
 }

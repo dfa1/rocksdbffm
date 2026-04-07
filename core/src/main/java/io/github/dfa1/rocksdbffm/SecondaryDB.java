@@ -23,7 +23,7 @@ import java.util.OptionalLong;
  *
  * <pre>{@code
  * // Primary (already open elsewhere)
- * try (Options opts = new Options().setCreateIfMissing(true);
+ * try (Options opts = Options.newOptions().setCreateIfMissing(true);
  *      SecondaryDB secondary = SecondaryDB.open(opts, primaryPath, secondaryPath)) {
  *
  *     // Catch up with whatever the primary has written
@@ -127,7 +127,7 @@ public final class SecondaryDB implements AutoCloseable {
 			MemorySegment secondary = arena.allocateFrom(secondaryPath.toString());
 
 			MemorySegment ptr = (MemorySegment) MH_OPEN.invokeExact(
-					dbOptions.ptr, primary, secondary, err);
+					dbOptions.ptr(), primary, secondary, err);
 			Native.checkError(err);
 
 			return new SecondaryDB(ptr, ReadOptions.newReadOptions());

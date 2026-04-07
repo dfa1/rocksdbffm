@@ -146,7 +146,7 @@ class SnapshotTest {
 	void transactionDB_snapshot_isolation(@TempDir Path dir) {
 		// Given
 		try (var txnDbOpts = new TransactionDBOptions();
-		     var opts = new Options().setCreateIfMissing(true);
+		     var opts = Options.newOptions().setCreateIfMissing(true);
 		     var db = TransactionDB.open(opts, txnDbOpts, dir)) {
 
 			db.put("key".getBytes(), "before".getBytes());
@@ -154,7 +154,7 @@ class SnapshotTest {
 			// When
 			try (Snapshot snap = db.getSnapshot();
 			     ReadOptions ro = ReadOptions.newReadOptions().setSnapshot(snap);
-			     WriteOptions wo = new WriteOptions();
+			     WriteOptions wo = WriteOptions.newWriteOptions();
 			     Transaction txn = db.beginTransaction(wo)) {
 
 				txn.put("key".getBytes(), "after".getBytes());

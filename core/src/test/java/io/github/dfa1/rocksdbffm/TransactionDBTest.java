@@ -10,7 +10,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class TransactionDBTest {
 
 	private static TransactionDB openDb(Path path) {
-		try (var opts = new Options().setCreateIfMissing(true);
+		try (var opts = Options.newOptions().setCreateIfMissing(true);
 		     var txnDbOpts = new TransactionDBOptions()) {
 			return TransactionDB.open(opts, txnDbOpts, path);
 		}
@@ -24,7 +24,7 @@ class TransactionDBTest {
 	void commit_makesChangesVisible(@TempDir Path dir) {
 		// Given
 		try (var db = openDb(dir);
-		     var wo = new WriteOptions();
+		     var wo = WriteOptions.newWriteOptions();
 		     var txn = db.beginTransaction(wo)) {
 
 			txn.put("k".getBytes(), "v".getBytes());
@@ -41,7 +41,7 @@ class TransactionDBTest {
 	void rollback_discardsChanges(@TempDir Path dir) {
 		// Given
 		try (var db = openDb(dir);
-		     var wo = new WriteOptions();
+		     var wo = WriteOptions.newWriteOptions();
 		     var txn = db.beginTransaction(wo)) {
 
 			txn.put("k".getBytes(), "v".getBytes());
@@ -62,7 +62,7 @@ class TransactionDBTest {
 	void get_readsUncommittedWritesWithinSameTransaction(@TempDir Path dir) {
 		// Given
 		try (var db = openDb(dir);
-		     var wo = new WriteOptions();
+		     var wo = WriteOptions.newWriteOptions();
 		     var ro = ReadOptions.newReadOptions();
 		     var txn = db.beginTransaction(wo)) {
 
@@ -81,7 +81,7 @@ class TransactionDBTest {
 	void get_returnsNull_forAbsentKey(@TempDir Path dir) {
 		// Given
 		try (var db = openDb(dir);
-		     var wo = new WriteOptions();
+		     var wo = WriteOptions.newWriteOptions();
 		     var ro = ReadOptions.newReadOptions();
 		     var txn = db.beginTransaction(wo)) {
 
@@ -100,7 +100,7 @@ class TransactionDBTest {
 		seed(dir, "k", "original");
 
 		try (var db = openDb(dir);
-		     var wo = new WriteOptions();
+		     var wo = WriteOptions.newWriteOptions();
 		     var ro = ReadOptions.newReadOptions();
 		     var txn = db.beginTransaction(wo)) {
 
@@ -129,7 +129,7 @@ class TransactionDBTest {
 		seed(dir, "k", "v");
 
 		try (var db = openDb(dir);
-		     var wo = new WriteOptions();
+		     var wo = WriteOptions.newWriteOptions();
 		     var ro = ReadOptions.newReadOptions();
 		     var txn = db.beginTransaction(wo)) {
 
@@ -154,7 +154,7 @@ class TransactionDBTest {
 	void rollbackToSavePoint_restoresPartialState(@TempDir Path dir) {
 		// Given
 		try (var db = openDb(dir);
-		     var wo = new WriteOptions();
+		     var wo = WriteOptions.newWriteOptions();
 		     var ro = ReadOptions.newReadOptions();
 		     var txn = db.beginTransaction(wo)) {
 
@@ -216,7 +216,7 @@ class TransactionDBTest {
 	void transactionOptions_setSnapshot_doesNotBreakNormalFlow(@TempDir Path dir) {
 		// Given
 		try (var db = openDb(dir);
-		     var wo = new WriteOptions();
+		     var wo = WriteOptions.newWriteOptions();
 		     var txnOpts = new TransactionOptions().setSetSnapshot(true);
 		     var txn = db.beginTransaction(wo, txnOpts)) {
 
@@ -236,7 +236,7 @@ class TransactionDBTest {
 
 	private void seed(Path dir, String key, String value) {
 		try (var db = openDb(dir);
-		     var wo = new WriteOptions();
+		     var wo = WriteOptions.newWriteOptions();
 		     var txn = db.beginTransaction(wo)) {
 			txn.put(key.getBytes(), value.getBytes());
 			txn.commit();

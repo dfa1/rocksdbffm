@@ -21,7 +21,7 @@ class SstFileWriterTest {
 		Path sstPath = dir.resolve("data.sst");
 		Path dbPath = dir.resolve("db");
 
-		try (var opts = new Options().setCreateIfMissing(true);
+		try (var opts = Options.newOptions().setCreateIfMissing(true);
 		     var writer = new SstFileWriter(opts)) {
 			writer.open(sstPath);
 			writer.put("aaa".getBytes(), "val1".getBytes());
@@ -48,7 +48,7 @@ class SstFileWriterTest {
 		Path sst2 = dir.resolve("file2.sst");
 		Path dbPath = dir.resolve("db");
 
-		try (var opts = new Options().setCreateIfMissing(true);
+		try (var opts = Options.newOptions().setCreateIfMissing(true);
 		     var writer = new SstFileWriter(opts)) {
 			writer.open(sst1);
 			writer.put("aaa".getBytes(), "v1".getBytes());
@@ -79,7 +79,7 @@ class SstFileWriterTest {
 		Path sstPath = dir.resolve("data.sst");
 		Path dbPath = dir.resolve("db");
 
-		try (var opts = new Options().setCreateIfMissing(true);
+		try (var opts = Options.newOptions().setCreateIfMissing(true);
 		     var writer = new SstFileWriter(opts)) {
 			writer.open(sstPath);
 			writer.put("key".getBytes(), "value".getBytes());
@@ -102,7 +102,7 @@ class SstFileWriterTest {
 		Path sstPath = dir.resolve("data.sst");
 		Path dbPath = dir.resolve("db");
 
-		try (var opts = new Options().setCreateIfMissing(true);
+		try (var opts = Options.newOptions().setCreateIfMissing(true);
 		     var writer = new SstFileWriter(opts)) {
 			writer.open(sstPath);
 			writer.put("sst-key".getBytes(), "sst-val".getBytes());
@@ -125,7 +125,7 @@ class SstFileWriterTest {
 		// Given
 		Path sstPath = dir.resolve("data.sst");
 
-		try (var opts = new Options().setCreateIfMissing(true);
+		try (var opts = Options.newOptions().setCreateIfMissing(true);
 		     var writer = new SstFileWriter(opts)) {
 			// When
 			writer.open(sstPath);
@@ -183,7 +183,7 @@ class SstFileWriterTest {
 		// Given
 		Path sstPath = dir.resolve("nonexistent").resolve("data.sst");
 
-		try (var opts = new Options().setCreateIfMissing(true);
+		try (var opts = Options.newOptions().setCreateIfMissing(true);
 		     var writer = new SstFileWriter(opts)) {
 			// When / Then
 			assertThatThrownBy(() -> writer.open(sstPath))
@@ -196,7 +196,7 @@ class SstFileWriterTest {
 		// Given — keys must be in ascending order
 		Path sstPath = dir.resolve("data.sst");
 
-		try (var opts = new Options().setCreateIfMissing(true);
+		try (var opts = Options.newOptions().setCreateIfMissing(true);
 		     var writer = new SstFileWriter(opts)) {
 			writer.open(sstPath);
 			writer.put("zzz".getBytes(), "v1".getBytes());

@@ -10,7 +10,7 @@ import java.lang.invoke.MethodHandle;
  *
  * <p>Usage:
  * <pre>{@code
- * try (Options opts = new Options().setCreateIfMissing(true)) {
+ * try (Options opts = Options.newOptions().setCreateIfMissing(true)) {
  *     RocksDB db = RocksDB.open(opts, path);
  * }
  * }</pre>
@@ -18,7 +18,7 @@ import java.lang.invoke.MethodHandle;
  * <p>Note: the Options object must remain open until after RocksDB.open() returns;
  * it can be closed immediately after that call.
  */
-public final class Options implements AutoCloseable {
+public final class Options extends NativeObject {
 
 	private static final MethodHandle MH_CREATE;
 	private static final MethodHandle MH_DESTROY;
@@ -83,14 +83,13 @@ public final class Options implements AutoCloseable {
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 	}
 
-	/**
-	 * Package-private: accessed by RocksDB.open().
-	 */
-	final MemorySegment ptr;
+	private Options(MemorySegment ptr) {
+		super(ptr);
+	}
 
-	public Options() {
+	public static Options newOptions() {
 		try {
-			this.ptr = (MemorySegment) MH_CREATE.invokeExact();
+			return new Options((MemorySegment) MH_CREATE.invokeExact());
 		} catch (Throwable t) {
 			throw new RocksDBException("options create failed", t);
 		}
@@ -102,7 +101,7 @@ public final class Options implements AutoCloseable {
 	 */
 	public Options setCreateIfMissing(boolean value) {
 		try {
-			MH_SET_CREATE_IF_MISSING.invokeExact(ptr, value ? (byte) 1 : (byte) 0);
+			MH_SET_CREATE_IF_MISSING.invokeExact(ptr(), value ? (byte) 1 : (byte) 0);
 		} catch (Throwable t) {
 			throw new RocksDBException("setCreateIfMissing failed", t);
 		}
@@ -111,7 +110,7 @@ public final class Options implements AutoCloseable {
 
 	public boolean getCreateIfMissing() {
 		try {
-			return ((byte) MH_GET_CREATE_IF_MISSING.invokeExact(ptr)) != 0;
+			return ((byte) MH_GET_CREATE_IF_MISSING.invokeExact(ptr())) != 0;
 		} catch (Throwable t) {
 			throw new RocksDBException("getCreateIfMissing failed", t);
 		}
@@ -122,7 +121,7 @@ public final class Options implements AutoCloseable {
 	 */
 	public Options enableStatistics() {
 		try {
-			MH_ENABLE_STATISTICS.invokeExact(ptr);
+			MH_ENABLE_STATISTICS.invokeExact(ptr());
 		} catch (Throwable t) {
 			throw new RocksDBException("enableStatistics failed", t);
 		}
@@ -131,7 +130,7 @@ public final class Options implements AutoCloseable {
 
 	public Options setStatisticsLevel(StatsLevel level) {
 		try {
-			MH_SET_STATISTICS_LEVEL.invokeExact(ptr, level.getValue());
+			MH_SET_STATISTICS_LEVEL.invokeExact(ptr(), level.getValue());
 		} catch (Throwable t) {
 			throw new RocksDBException("setStatisticsLevel failed", t);
 		}
@@ -140,7 +139,7 @@ public final class Options implements AutoCloseable {
 
 	public StatsLevel getStatisticsLevel() {
 		try {
-			int level = (int) MH_GET_STATISTICS_LEVEL.invokeExact(ptr);
+			int level = (int) MH_GET_STATISTICS_LEVEL.invokeExact(ptr());
 			for (StatsLevel l : StatsLevel.values()) {
 				if (l.getValue() == level) return l;
 			}
@@ -152,7 +151,7 @@ public final class Options implements AutoCloseable {
 
 	public String getStatisticsString() {
 		try {
-			MemorySegment strPtr = (MemorySegment) MH_STATISTICS_GET_STRING.invokeExact(ptr);
+			MemorySegment strPtr = (MemorySegment) MH_STATISTICS_GET_STRING.invokeExact(ptr());
 			if (MemorySegment.NULL.equals(strPtr)) return null;
 			String result = strPtr.reinterpret(Long.MAX_VALUE).getString(0);
 			MH_FREE.invokeExact(strPtr);
@@ -164,7 +163,7 @@ public final class Options implements AutoCloseable {
 
 	public long getTickerCount(TickerType ticker) {
 		try {
-			return (long) MH_STATISTICS_GET_TICKER_COUNT.invokeExact(ptr, ticker.getValue());
+			return (long) MH_STATISTICS_GET_TICKER_COUNT.invokeExact(ptr(), ticker.getValue());
 		} catch (Throwable t) {
 			throw new RocksDBException("getTickerCount failed", t);
 		}
@@ -172,7 +171,7 @@ public final class Options implements AutoCloseable {
 
 	public void getHistogramData(HistogramType histogram, StatisticsHistogramData data) {
 		try {
-			MH_STATISTICS_GET_HISTOGRAM_DATA.invokeExact(ptr, histogram.getValue(), data.ptr);
+			MH_STATISTICS_GET_HISTOGRAM_DATA.invokeExact(ptr(), histogram.getValue(), data.ptr);
 		} catch (Throwable t) {
 			throw new RocksDBException("getHistogramData failed", t);
 		}
@@ -187,7 +186,7 @@ public final class Options implements AutoCloseable {
 	 */
 	public Options setCompression(CompressionType type) {
 		try {
-			MH_SET_COMPRESSION.invokeExact(ptr, type.value);
+			MH_SET_COMPRESSION.invokeExact(ptr(), type.value);
 			return this;
 		} catch (Throwable t) {
 			throw new RocksDBException("setCompression failed", t);
@@ -199,7 +198,7 @@ public final class Options implements AutoCloseable {
 	 */
 	public CompressionType getCompression() {
 		try {
-			return CompressionType.fromValue((int) MH_GET_COMPRESSION.invokeExact(ptr));
+			return CompressionType.fromValue((int) MH_GET_COMPRESSION.invokeExact(ptr()));
 		} catch (Throwable t) {
 			throw new RocksDBException("getCompression failed", t);
 		}
@@ -211,7 +210,7 @@ public final class Options implements AutoCloseable {
 	 */
 	public Options setTableFormatConfig(BlockBasedTableOptions tableConfig) {
 		try {
-			MH_SET_BLOCK_BASED_TABLE_FACTORY.invokeExact(ptr, tableConfig.ptr());
+			MH_SET_BLOCK_BASED_TABLE_FACTORY.invokeExact(ptr(), tableConfig.ptr());
 		} catch (Throwable t) {
 			throw new RocksDBException("setTableFormatConfig failed", t);
 		}
@@ -219,7 +218,7 @@ public final class Options implements AutoCloseable {
 	}
 
 	@Override
-	public void close() {
-		Native.closeQuietly(MH_DESTROY, ptr);
+	protected void tryClose(MemorySegment ptr) throws Throwable {
+		MH_DESTROY.invokeExact(ptr);
 	}
 }

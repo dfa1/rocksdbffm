@@ -114,7 +114,7 @@ class PropertyTest {
 	void transactionDB_getProperty_stats_isPresent(@TempDir Path dir) {
 		// Given
 		try (var txnDbOpts = new TransactionDBOptions();
-		     var opts = new Options().setCreateIfMissing(true);
+		     var opts = Options.newOptions().setCreateIfMissing(true);
 		     var db = TransactionDB.open(opts, txnDbOpts, dir)) {
 
 			// When
@@ -130,7 +130,7 @@ class PropertyTest {
 	void transactionDB_getLongProperty_estimateNumKeys(@TempDir Path dir) {
 		// Given
 		try (var txnDbOpts = new TransactionDBOptions();
-		     var opts = new Options().setCreateIfMissing(true);
+		     var opts = Options.newOptions().setCreateIfMissing(true);
 		     var db = TransactionDB.open(opts, txnDbOpts, dir)) {
 
 			db.put("k".getBytes(), "v".getBytes());

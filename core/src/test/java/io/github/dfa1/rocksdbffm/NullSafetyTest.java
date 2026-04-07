@@ -30,7 +30,7 @@ class NullSafetyTest {
 
 	@Test
 	void open_nullPath() {
-		try (var opts = new Options()) {
+		try (var opts = Options.newOptions()) {
 			assertThatThrownBy(() -> RocksDB.open(opts, null))
 					.isInstanceOf(RuntimeException.class);
 		}
@@ -44,7 +44,7 @@ class NullSafetyTest {
 
 	@Test
 	void openReadOnly_nullPath() {
-		try (var opts = new Options()) {
+		try (var opts = Options.newOptions()) {
 			assertThatThrownBy(() -> RocksDB.openReadOnly(opts, null))
 					.isInstanceOf(RuntimeException.class);
 		}

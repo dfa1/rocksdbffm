@@ -17,7 +17,7 @@ import java.lang.invoke.MethodHandle;
  * <pre>{@code
  * try (var filter = FilterPolicy.newBloom(10);
  *      var tbl = new BlockBasedTableConfig().setFilterPolicy(filter);
- *      var opts = new Options().setCreateIfMissing(true).setTableFormatConfig(tbl)) {
+ *      var opts = Options.newOptions().setCreateIfMissing(true).setTableFormatConfig(tbl)) {
  *     // filter.close() called automatically — no-op because ownership transferred
  * }
  * }</pre>

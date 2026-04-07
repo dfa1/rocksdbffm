@@ -17,7 +17,7 @@ import java.nio.file.Path;
  *
  * <pre>{@code
  * Path sstPath = dir.resolve("data.sst");
- * try (var opts = new Options();
+ * try (var opts = Options.newOptions();
  *      var writer = new SstFileWriter(opts)) {
  *     writer.open(sstPath);
  *     writer.put("aaa".getBytes(), "val1".getBytes());
@@ -110,7 +110,7 @@ public final class SstFileWriter implements AutoCloseable {
 		try {
 			MemorySegment envOpts = (MemorySegment) MH_ENVOPTIONS_CREATE.invokeExact();
 			try {
-				this.ptr = (MemorySegment) MH_CREATE.invokeExact(envOpts, options.ptr);
+				this.ptr = (MemorySegment) MH_CREATE.invokeExact(envOpts, options.ptr());
 			} finally {
 				MH_ENVOPTIONS_DESTROY.invokeExact(envOpts);
 			}

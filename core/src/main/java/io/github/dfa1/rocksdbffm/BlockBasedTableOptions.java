@@ -19,7 +19,7 @@ import java.lang.invoke.MethodHandle;
  *          .setFilterPolicy(FilterPolicy.newBloom(10))
  *          .setBlockCache(cache)
  *          .setCacheIndexAndFilterBlocks(true);
- *      Options opts = new Options()
+ *      Options opts = Options.newOptions()
  *          .setCreateIfMissing(true)
  *          .setTableFormatConfig(tbl)) {
  *     ...

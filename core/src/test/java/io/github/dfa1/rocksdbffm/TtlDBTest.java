@@ -28,7 +28,7 @@ class TtlDBTest {
 	@Test
 	void openWithTtl_withExplicitOptions(@TempDir Path dir) {
 		// Given
-		try (var opts = new Options().setCreateIfMissing(true);
+		try (var opts = Options.newOptions().setCreateIfMissing(true);
 		     var db = RocksDB.openWithTtl(opts, dir, Duration.ofMinutes(1))) {
 
 			db.put("key".getBytes(), "value".getBytes());

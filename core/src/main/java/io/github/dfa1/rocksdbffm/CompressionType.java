@@ -9,7 +9,7 @@ package io.github.dfa1.rocksdbffm;
  * {@link RocksDB#getSupportedCompressions()} to query which types are compiled in at runtime.
  *
  * <pre>{@code
- * try (Options opts = new Options().setCompression(CompressionType.LZ4)) { ... }
+ * try (Options opts = Options.newOptions().setCompression(CompressionType.LZ4)) { ... }
  * }</pre>
  */
 public enum CompressionType {

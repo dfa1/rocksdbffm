@@ -17,7 +17,7 @@ class OptimisticTransactionDBTest {
 	@Test
 	void open_createsDb(@TempDir Path dir) {
 		// Given / When / Then — no exception means success
-		try (var opts = new Options().setCreateIfMissing(true);
+		try (var opts = Options.newOptions().setCreateIfMissing(true);
 		     var db = OptimisticTransactionDB.open(opts, dir)) {
 			assertThat(db).isNotNull();
 		}
@@ -30,7 +30,7 @@ class OptimisticTransactionDBTest {
 	@Test
 	void put_and_get_roundtrip(@TempDir Path dir) {
 		// Given
-		try (var opts = new Options().setCreateIfMissing(true);
+		try (var opts = Options.newOptions().setCreateIfMissing(true);
 		     var db = OptimisticTransactionDB.open(opts, dir)) {
 
 			// When
@@ -44,7 +44,7 @@ class OptimisticTransactionDBTest {
 	@Test
 	void delete_removesKey(@TempDir Path dir) {
 		// Given
-		try (var opts = new Options().setCreateIfMissing(true);
+		try (var opts = Options.newOptions().setCreateIfMissing(true);
 		     var db = OptimisticTransactionDB.open(opts, dir)) {
 			db.put("k".getBytes(), "v".getBytes());
 
@@ -59,7 +59,7 @@ class OptimisticTransactionDBTest {
 	@Test
 	void get_returnsNull_whenKeyMissing(@TempDir Path dir) {
 		// Given
-		try (var opts = new Options().setCreateIfMissing(true);
+		try (var opts = Options.newOptions().setCreateIfMissing(true);
 		     var db = OptimisticTransactionDB.open(opts, dir)) {
 
 			// When / Then
@@ -74,9 +74,9 @@ class OptimisticTransactionDBTest {
 	@Test
 	void transaction_commit_persists(@TempDir Path dir) {
 		// Given
-		try (var opts = new Options().setCreateIfMissing(true);
+		try (var opts = Options.newOptions().setCreateIfMissing(true);
 		     var db = OptimisticTransactionDB.open(opts, dir);
-		     var wo = new WriteOptions()) {
+		     var wo = WriteOptions.newWriteOptions()) {
 
 			// When
 			try (var txn = db.beginTransaction(wo)) {
@@ -92,9 +92,9 @@ class OptimisticTransactionDBTest {
 	@Test
 	void transaction_rollback_discardsChanges(@TempDir Path dir) {
 		// Given
-		try (var opts = new Options().setCreateIfMissing(true);
+		try (var opts = Options.newOptions().setCreateIfMissing(true);
 		     var db = OptimisticTransactionDB.open(opts, dir);
-		     var wo = new WriteOptions()) {
+		     var wo = WriteOptions.newWriteOptions()) {
 
 			// When
 			try (var txn = db.beginTransaction(wo)) {
@@ -110,9 +110,9 @@ class OptimisticTransactionDBTest {
 	@Test
 	void transaction_get_seesUncommittedWrites(@TempDir Path dir) {
 		// Given
-		try (var opts = new Options().setCreateIfMissing(true);
+		try (var opts = Options.newOptions().setCreateIfMissing(true);
 		     var db = OptimisticTransactionDB.open(opts, dir);
-		     var wo = new WriteOptions()) {
+		     var wo = WriteOptions.newWriteOptions()) {
 
 			// When — transaction can read its own uncommitted writes
 			try (var txn = db.beginTransaction(wo)) {
@@ -130,9 +130,9 @@ class OptimisticTransactionDBTest {
 	@Test
 	void transaction_conflict_throwsOnCommit(@TempDir Path dir) {
 		// Given — two transactions read the same key; the first committer wins
-		try (var opts = new Options().setCreateIfMissing(true);
+		try (var opts = Options.newOptions().setCreateIfMissing(true);
 		     var db = OptimisticTransactionDB.open(opts, dir);
-		     var wo = new WriteOptions()) {
+		     var wo = WriteOptions.newWriteOptions()) {
 
 			db.put("k".getBytes(), "original".getBytes());
 
@@ -169,9 +169,9 @@ class OptimisticTransactionDBTest {
 	@Test
 	void beginTransaction_withOptions_setSnapshot(@TempDir Path dir) {
 		// Given
-		try (var opts = new Options().setCreateIfMissing(true);
+		try (var opts = Options.newOptions().setCreateIfMissing(true);
 		     var db = OptimisticTransactionDB.open(opts, dir);
-		     var wo = new WriteOptions();
+		     var wo = WriteOptions.newWriteOptions();
 		     var txnOpts = new OptimisticTransactionOptions().setSetSnapshot(true)) {
 
 			db.put("before".getBytes(), "yes".getBytes());
@@ -195,7 +195,7 @@ class OptimisticTransactionDBTest {
 	@Test
 	void getSnapshot_isolatesReads(@TempDir Path dir) {
 		// Given
-		try (var opts = new Options().setCreateIfMissing(true);
+		try (var opts = Options.newOptions().setCreateIfMissing(true);
 		     var db = OptimisticTransactionDB.open(opts, dir)) {
 
 			db.put("k".getBytes(), "v1".getBytes());
@@ -222,7 +222,7 @@ class OptimisticTransactionDBTest {
 	@Test
 	void flush_doesNotThrow(@TempDir Path dir) {
 		// Given
-		try (var opts = new Options().setCreateIfMissing(true);
+		try (var opts = Options.newOptions().setCreateIfMissing(true);
 		     var db = OptimisticTransactionDB.open(opts, dir);
 		     var fo = FlushOptions.newFlushOptions()) {
 
@@ -240,7 +240,7 @@ class OptimisticTransactionDBTest {
 	@Test
 	void getLongProperty_returnsValue(@TempDir Path dir) {
 		// Given
-		try (var opts = new Options().setCreateIfMissing(true);
+		try (var opts = Options.newOptions().setCreateIfMissing(true);
 		     var db = OptimisticTransactionDB.open(opts, dir)) {
 
 			db.put("k".getBytes(), "v".getBytes());

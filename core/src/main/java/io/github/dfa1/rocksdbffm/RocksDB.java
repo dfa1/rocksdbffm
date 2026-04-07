@@ -241,7 +241,7 @@ public final class RocksDB implements AutoCloseable {
 			MemorySegment err = Native.errHolder(arena);
 			MemorySegment pathSeg = arena.allocateFrom(path.toString());
 			MemorySegment dbPtr = (MemorySegment) MH_OPEN.invokeExact(
-					options.ptr, pathSeg, err);
+					options.ptr(), pathSeg, err);
 
 			Native.checkError(err);
 
@@ -257,7 +257,7 @@ public final class RocksDB implements AutoCloseable {
 	 * Equivalent to {@code open(options, path)} with default options.
 	 */
 	public static RocksDB open(Path path) {
-		try (Options opts = new Options().setCreateIfMissing(true)) {
+		try (Options opts = Options.newOptions().setCreateIfMissing(true)) {
 			return open(opts, path);
 		}
 	}
@@ -273,7 +273,7 @@ public final class RocksDB implements AutoCloseable {
 			MemorySegment err = Native.errHolder(arena);
 			MemorySegment pathSeg = arena.allocateFrom(path.toString());
 			MemorySegment dbPtr = (MemorySegment) MH_OPEN_FOR_READ_ONLY.invokeExact(
-					options.ptr, pathSeg, errorIfWalFileExists ? (byte) 1 : (byte) 0, err);
+					options.ptr(), pathSeg, errorIfWalFileExists ? (byte) 1 : (byte) 0, err);
 
 			Native.checkError(err);
 
@@ -297,7 +297,7 @@ public final class RocksDB implements AutoCloseable {
 	 * Opens the database at {@code path} in read-only mode with default options.
 	 */
 	public static RocksDB openReadOnly(Path path) {
-		try (Options opts = new Options()) {
+		try (Options opts = Options.newOptions()) {
 			return openReadOnly(opts, path, false);
 		}
 	}
@@ -326,7 +326,7 @@ public final class RocksDB implements AutoCloseable {
 			MemorySegment pathSeg = arena.allocateFrom(path.toString());
 			int ttlSeconds = (int) ttl.toSeconds();
 			MemorySegment dbPtr = (MemorySegment) MH_OPEN_WITH_TTL.invokeExact(
-					options.ptr, pathSeg, ttlSeconds, err);
+					options.ptr(), pathSeg, ttlSeconds, err);
 			Native.checkError(err);
 			MemorySegment writeOptions = (MemorySegment) MH_WRITEOPTIONS_CREATE.invokeExact();
 			MemorySegment readOptions = (MemorySegment) MH_READOPTIONS_CREATE.invokeExact();
@@ -340,7 +340,7 @@ public final class RocksDB implements AutoCloseable {
 	 * Opens (or creates) a TTL-aware database at {@code path} with default options.
 	 */
 	public static RocksDB openWithTtl(Path path, Duration ttl) {
-		try (Options opts = new Options().setCreateIfMissing(true)) {
+		try (Options opts = Options.newOptions().setCreateIfMissing(true)) {
 			return openWithTtl(opts, path, ttl);
 		}
 	}
@@ -1089,7 +1089,7 @@ public final class RocksDB implements AutoCloseable {
 				// platform level, so we exclude it on non-Windows explicitly.
 				if (type == CompressionType.XPRESS && !isWindows) continue;
 				Path sstFile = tmpDir.resolve(type.name().toLowerCase() + ".sst");
-				try (Options opts = new Options().setCompression(type);
+				try (Options opts = Options.newOptions().setCompression(type);
 				     SstFileWriter writer = new SstFileWriter(opts)) {
 					writer.open(sstFile);
 					writer.put(new byte[]{0}, new byte[]{0});

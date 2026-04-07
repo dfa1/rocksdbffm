@@ -45,7 +45,7 @@ class CompressionTypeTest {
 
 	@Test
 	void options_setCompression_roundTrips() {
-		try (Options opts = new Options()) {
+		try (Options opts = Options.newOptions()) {
 			opts.setCompression(CompressionType.NO_COMPRESSION);
 			assertThat(opts.getCompression()).isEqualTo(CompressionType.NO_COMPRESSION);
 		}
@@ -53,7 +53,7 @@ class CompressionTypeTest {
 
 	@Test
 	void options_setCompression_chaining() {
-		try (Options opts = new Options()
+		try (Options opts = Options.newOptions()
 				.setCreateIfMissing(true)
 				.setCompression(CompressionType.NO_COMPRESSION)) {
 			assertThat(opts.getCompression()).isEqualTo(CompressionType.NO_COMPRESSION);
@@ -62,7 +62,7 @@ class CompressionTypeTest {
 
 	@Test
 	void openDb_withSupportedCompression_writesAndReadsBack(@TempDir Path dir) {
-		try (Options opts = new Options()
+		try (Options opts = Options.newOptions()
 				.setCreateIfMissing(true)
 				.setCompression(CompressionType.NO_COMPRESSION);
 		     RocksDB db = RocksDB.open(opts, dir)) {
@@ -84,7 +84,7 @@ class CompressionTypeTest {
 		int i = 0;
 		for (CompressionType type : supported) {
 			Path dbPath = dir.resolve("db-" + i++);
-			try (Options opts = new Options()
+			try (Options opts = Options.newOptions()
 					.setCreateIfMissing(true)
 					.setCompression(type);
 			     RocksDB db = RocksDB.open(opts, dbPath)) {

@@ -157,7 +157,7 @@ class RocksDBTest {
 		// Given
 		var dbPath = dir.resolve("nonexistent");
 
-		try (var opts = new Options().setCreateIfMissing(false)) {
+		try (var opts = Options.newOptions().setCreateIfMissing(false)) {
 			// When / Then
 			assertThatThrownBy(() -> RocksDB.open(opts, dbPath))
 					.isInstanceOf(RocksDBException.class);
@@ -169,7 +169,7 @@ class RocksDBTest {
 		// Given
 		var dbPath = dir.resolve("newdb");
 
-		try (var opts = new Options().setCreateIfMissing(true);
+		try (var opts = Options.newOptions().setCreateIfMissing(true);
 		     var db = RocksDB.open(opts, dbPath)) {
 
 			// When
@@ -183,7 +183,7 @@ class RocksDBTest {
 	@Test
 	void options_createIfMissing_roundTrips() {
 		// Given
-		try (var opts = new Options()) {
+		try (var opts = Options.newOptions()) {
 			assertThat(opts.getCreateIfMissing()).isFalse();
 
 			// When
@@ -253,7 +253,7 @@ class RocksDBTest {
 			rw.put("hello".getBytes(), "world".getBytes());
 		}
 
-		try (var opts = new Options();
+		try (var opts = Options.newOptions();
 		     var ro = RocksDB.openReadOnly(opts, dir)) {
 
 			// When

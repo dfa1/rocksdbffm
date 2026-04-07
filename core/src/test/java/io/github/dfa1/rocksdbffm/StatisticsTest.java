@@ -16,7 +16,7 @@ public class StatisticsTest {
 
 	@Test
 	public void testStatistics() {
-		try (Options options = new Options()
+		try (Options options = Options.newOptions()
 				.setCreateIfMissing(true)
 				.enableStatistics()
 				.setStatisticsLevel(StatsLevel.ALL)) {

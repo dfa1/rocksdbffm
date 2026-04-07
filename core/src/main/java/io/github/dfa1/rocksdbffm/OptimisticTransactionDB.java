@@ -20,10 +20,10 @@ import java.util.OptionalLong;
  * The caller should then abort and retry.
  *
  * <pre>{@code
- * try (Options opts = new Options().setCreateIfMissing(true);
+ * try (Options opts = Options.newOptions().setCreateIfMissing(true);
  *      OptimisticTransactionDB db = OptimisticTransactionDB.open(opts, path)) {
  *
- *     try (WriteOptions wo = new WriteOptions();
+ *     try (WriteOptions wo = WriteOptions.newWriteOptions();
  *          Transaction txn = db.beginTransaction(wo)) {
  *         txn.put("key".getBytes(), "value".getBytes());
  *         txn.commit(); // throws RocksDBException if conflict detected
@@ -156,11 +156,11 @@ public final class OptimisticTransactionDB implements AutoCloseable {
 			MemorySegment pathSeg = arena.allocateFrom(path.toString());
 
 			MemorySegment ptr = (MemorySegment) MH_OPEN.invokeExact(
-					dbOptions.ptr, pathSeg, err);
+					dbOptions.ptr(), pathSeg, err);
 			Native.checkError(err);
 
 			MemorySegment baseDb = (MemorySegment) MH_GET_BASE_DB.invokeExact(ptr);
-			return new OptimisticTransactionDB(ptr, baseDb, new WriteOptions(), ReadOptions.newReadOptions());
+			return new OptimisticTransactionDB(ptr, baseDb, WriteOptions.newWriteOptions(), ReadOptions.newReadOptions());
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("OptimisticTransactionDB open failed", t);
 		}
@@ -187,7 +187,7 @@ public final class OptimisticTransactionDB implements AutoCloseable {
 	public Transaction beginTransaction(WriteOptions writeOptions, OptimisticTransactionOptions txnOptions) {
 		try {
 			MemorySegment txnPtr = (MemorySegment) MH_BEGIN.invokeExact(
-					ptr, writeOptions.ptr, txnOptions.ptr, MemorySegment.NULL);
+					ptr, writeOptions.ptr(), txnOptions.ptr, MemorySegment.NULL);
 			return new Transaction(txnPtr);
 		} catch (Throwable t) {
 			throw new RocksDBException("beginTransaction failed", t);
@@ -206,7 +206,7 @@ public final class OptimisticTransactionDB implements AutoCloseable {
 			MemorySegment err = Native.errHolder(arena);
 			MemorySegment k = Native.toNative(arena, key);
 			MemorySegment v = Native.toNative(arena, value);
-			MH_PUT.invokeExact(baseDb, writeOpts.ptr, k, (long) key.length, v, (long) value.length, err);
+			MH_PUT.invokeExact(baseDb, writeOpts.ptr(), k, (long) key.length, v, (long) value.length, err);
 			Native.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("put failed", t);
@@ -268,7 +268,7 @@ public final class OptimisticTransactionDB implements AutoCloseable {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
 			MemorySegment k = Native.toNative(arena, key);
-			MH_DELETE.invokeExact(baseDb, writeOpts.ptr, k, (long) key.length, err);
+			MH_DELETE.invokeExact(baseDb, writeOpts.ptr(), k, (long) key.length, err);
 			Native.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("delete failed", t);

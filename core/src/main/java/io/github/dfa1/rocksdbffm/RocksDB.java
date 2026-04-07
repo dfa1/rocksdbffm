@@ -36,55 +36,55 @@ public final class RocksDB extends NativeObject {
 	private static final Linker LINKER = Linker.nativeLinker();
 	private static final SymbolLookup LIB;
 
-	// rocksdb_open(const rocksdb_options_t* options, const char* name, char** errptr);
+	// rocksdb_open(const rocksdb_options_t* options, const char* name, char** errptr) -> rocksdb_t*
 	private static final MethodHandle MH_OPEN;
-	// rocksdb_open_with_ttl(const rocksdb_options_t* options, const char* name, int ttl, char** errptr);
+	// rocksdb_open_with_ttl(const rocksdb_options_t* options, const char* name, int ttl, char** errptr) -> rocksdb_t*
 	private static final MethodHandle MH_OPEN_WITH_TTL;
-	// rocksdb_open_for_read_only(const rocksdb_options_t* options, const char* name, unsigned char error_if_wal_file_exists, char** errptr);
+	// rocksdb_open_for_read_only(const rocksdb_options_t* options, const char* name, unsigned char error_if_wal_file_exists, char** errptr) -> rocksdb_t*
 	private static final MethodHandle MH_OPEN_FOR_READ_ONLY;
-	// rocksdb_close(rocksdb_t* db);
+	// rocksdb_close(rocksdb_t* db) -> void
 	private static final MethodHandle MH_CLOSE;
-	// rocksdb_put(rocksdb_t* db, const rocksdb_writeoptions_t* options, const char* key, size_t keylen, const char* val, size_t vallen, char** errptr);
+	// rocksdb_put(rocksdb_t* db, const rocksdb_writeoptions_t* options, const char* key, size_t keylen, const char* val, size_t vallen, char** errptr) -> void
 	private static final MethodHandle MH_PUT;
-	// rocksdb_get_pinned(rocksdb_t* db, const rocksdb_readoptions_t* options, const char* key, size_t keylen, char** errptr);
+	// rocksdb_get_pinned(rocksdb_t* db, const rocksdb_readoptions_t* options, const char* key, size_t keylen, char** errptr) -> rocksdb_pinnableslice_t*
 	private static final MethodHandle MH_GET_PINNED;
-	// rocksdb_pinnableslice_value(const rocksdb_pinnableslice_t* t, size_t* vlen);
+	// rocksdb_pinnableslice_value(const rocksdb_pinnableslice_t* t, size_t* vlen) -> const char*
 	private static final MethodHandle MH_PINNABLESLICE_VALUE;
-	// rocksdb_pinnableslice_destroy(rocksdb_pinnableslice_t* v);
+	// rocksdb_pinnableslice_destroy(rocksdb_pinnableslice_t* v) -> void
 	private static final MethodHandle MH_PINNABLESLICE_DESTROY;
-	// rocksdb_delete(rocksdb_t* db, const rocksdb_writeoptions_t* options, const char* key, size_t keylen, char** errptr);
+	// rocksdb_delete(rocksdb_t* db, const rocksdb_writeoptions_t* options, const char* key, size_t keylen, char** errptr) -> void
 	private static final MethodHandle MH_DELETE;
-	// rocksdb_merge(rocksdb_t* db, const rocksdb_writeoptions_t* options, const char* key, size_t keylen, const char* val, size_t vallen, char** errptr);
+	// rocksdb_merge(rocksdb_t* db, const rocksdb_writeoptions_t* options, const char* key, size_t keylen, const char* val, size_t vallen, char** errptr) -> void
 	private static final MethodHandle MH_MERGE;
-	// rocksdb_delete_range_cf(rocksdb_t* db, const rocksdb_writeoptions_t* options, rocksdb_column_family_handle_t* column_family, const char* start_key, size_t start_key_len, const char* end_key, size_t end_key_len, char** errptr);
+	// rocksdb_delete_range_cf(rocksdb_t* db, const rocksdb_writeoptions_t* options, rocksdb_column_family_handle_t* column_family, const char* start_key, size_t start_key_len, const char* end_key, size_t end_key_len, char** errptr) -> void
 	private static final MethodHandle MH_DELETE_RANGE_CF;
-	// rocksdb_get_default_column_family_handle(rocksdb_t* db);
+	// rocksdb_get_default_column_family_handle(rocksdb_t* db) -> rocksdb_column_family_handle_t*
 	private static final MethodHandle MH_GET_DEFAULT_CF;
-	// rocksdb_write(rocksdb_t* db, const rocksdb_writeoptions_t* options, rocksdb_writebatch_t* batch, char** errptr);
+	// rocksdb_write(rocksdb_t* db, const rocksdb_writeoptions_t* options, rocksdb_writebatch_t* batch, char** errptr) -> void
 	private static final MethodHandle MH_WRITE;
-	// rocksdb_create_snapshot(rocksdb_t* db);
+	// rocksdb_create_snapshot(rocksdb_t* db) -> const rocksdb_snapshot_t*
 	private static final MethodHandle MH_CREATE_SNAPSHOT;
-	// rocksdb_flush(rocksdb_t* db, const rocksdb_flushoptions_t* options, char** errptr);
+	// rocksdb_flush(rocksdb_t* db, const rocksdb_flushoptions_t* options, char** errptr) -> void
 	private static final MethodHandle MH_FLUSH;
-	// rocksdb_flush_wal(rocksdb_t* db, unsigned char sync, char** errptr);
+	// rocksdb_flush_wal(rocksdb_t* db, unsigned char sync, char** errptr) -> void
 	private static final MethodHandle MH_FLUSH_WAL;
-	// rocksdb_key_may_exist(rocksdb_t* db, const rocksdb_readoptions_t* options, const char* key, size_t key_len, char** value, size_t* val_len, const char* timestamp, size_t timestamp_len, unsigned char* value_found);
+	// rocksdb_key_may_exist(rocksdb_t* db, const rocksdb_readoptions_t* options, const char* key, size_t key_len, char** value, size_t* val_len, const char* timestamp, size_t timestamp_len, unsigned char* value_found) -> unsigned char
 	private static final MethodHandle MH_KEY_MAY_EXIST;
-	// rocksdb_property_value(rocksdb_t* db, const char* propname);
+	// rocksdb_property_value(rocksdb_t* db, const char* propname) -> char*
 	private static final MethodHandle MH_PROPERTY_VALUE;
-	// rocksdb_property_int(rocksdb_t* db, const char* propname, uint64_t* out_val);
+	// rocksdb_property_int(rocksdb_t* db, const char* propname, uint64_t* out_val) -> int
 	private static final MethodHandle MH_PROPERTY_INT;
-	// rocksdb_compact_range(rocksdb_t* db, const char* start_key, size_t start_key_len, const char* limit_key, size_t limit_key_len);
+	// rocksdb_compact_range(rocksdb_t* db, const char* start_key, size_t start_key_len, const char* limit_key, size_t limit_key_len) -> void
 	private static final MethodHandle MH_COMPACT_RANGE;
-	// rocksdb_compact_range_opt(rocksdb_t* db, rocksdb_compactoptions_t* opt, const char* start_key, size_t start_key_len, const char* limit_key, size_t limit_key_len);
+	// rocksdb_compact_range_opt(rocksdb_t* db, rocksdb_compactoptions_t* opt, const char* start_key, size_t start_key_len, const char* limit_key, size_t limit_key_len) -> void
 	private static final MethodHandle MH_COMPACT_RANGE_OPT;
-	// rocksdb_suggest_compact_range(rocksdb_t* db, const char* start_key, size_t start_key_len, const char* limit_key, size_t limit_key_len, char** errptr);
+	// rocksdb_suggest_compact_range(rocksdb_t* db, const char* start_key, size_t start_key_len, const char* limit_key, size_t limit_key_len, char** errptr) -> void
 	private static final MethodHandle MH_SUGGEST_COMPACT_RANGE;
-	// rocksdb_disable_file_deletions(rocksdb_t* db, char** errptr);
+	// rocksdb_disable_file_deletions(rocksdb_t* db, char** errptr) -> void
 	private static final MethodHandle MH_DISABLE_FILE_DELETIONS;
-	// rocksdb_enable_file_deletions(rocksdb_t* db, char** errptr);
+	// rocksdb_enable_file_deletions(rocksdb_t* db, char** errptr) -> void
 	private static final MethodHandle MH_ENABLE_FILE_DELETIONS;
-	// rocksdb_ingest_external_file(rocksdb_t* db, const char* const* file_list, const size_t list_len, const rocksdb_ingestexternalfileoptions_t* opt, char** errptr);
+	// rocksdb_ingest_external_file(rocksdb_t* db, const char* const* file_list, const size_t list_len, const rocksdb_ingestexternalfileoptions_t* opt, char** errptr) -> void
 	private static final MethodHandle MH_INGEST_EXTERNAL_FILE;
 
 	static {

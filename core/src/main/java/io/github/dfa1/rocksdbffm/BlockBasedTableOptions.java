@@ -61,27 +61,27 @@ public final class BlockBasedTableOptions extends NativeObject {
 	// Method handles
 	// -----------------------------------------------------------------------
 
-	// rocksdb_block_based_options_create(void);
+	// rocksdb_block_based_options_create(void) -> rocksdb_block_based_table_options_t*
 	private static final MethodHandle MH_CREATE;
-	// rocksdb_block_based_options_destroy(rocksdb_block_based_table_options_t* options);
+	// rocksdb_block_based_options_destroy(rocksdb_block_based_table_options_t* options) -> void
 	private static final MethodHandle MH_DESTROY;
-	// rocksdb_block_based_options_set_block_size(rocksdb_block_based_table_options_t* options, size_t block_size);
+	// rocksdb_block_based_options_set_block_size(rocksdb_block_based_table_options_t* options, size_t block_size) -> void
 	private static final MethodHandle MH_SET_BLOCK_SIZE;
-	// rocksdb_block_based_options_set_filter_policy(rocksdb_block_based_table_options_t* options, rocksdb_filterpolicy_t* filter_policy);
+	// rocksdb_block_based_options_set_filter_policy(rocksdb_block_based_table_options_t* options, rocksdb_filterpolicy_t* filter_policy) -> void
 	private static final MethodHandle MH_SET_FILTER_POLICY;
-	// rocksdb_block_based_options_set_no_block_cache(rocksdb_block_based_table_options_t* options, unsigned char no_block_cache);
+	// rocksdb_block_based_options_set_no_block_cache(rocksdb_block_based_table_options_t* options, unsigned char no_block_cache) -> void
 	private static final MethodHandle MH_SET_NO_BLOCK_CACHE;
-	// rocksdb_block_based_options_set_block_cache(rocksdb_block_based_table_options_t* options, rocksdb_cache_t* block_cache);
+	// rocksdb_block_based_options_set_block_cache(rocksdb_block_based_table_options_t* options, rocksdb_cache_t* block_cache) -> void
 	private static final MethodHandle MH_SET_BLOCK_CACHE;
-	// rocksdb_block_based_options_set_cache_index_and_filter_blocks(rocksdb_block_based_table_options_t*, unsigned char);
+	// rocksdb_block_based_options_set_cache_index_and_filter_blocks(rocksdb_block_based_table_options_t*, unsigned char) -> void
 	private static final MethodHandle MH_SET_CACHE_INDEX_AND_FILTER_BLOCKS;
-	// rocksdb_block_based_options_set_index_type(rocksdb_block_based_table_options_t*, int);
+	// rocksdb_block_based_options_set_index_type(rocksdb_block_based_table_options_t*, int) -> void
 	private static final MethodHandle MH_SET_INDEX_TYPE;
-	// rocksdb_block_based_options_set_format_version(rocksdb_block_based_table_options_t*, int);
+	// rocksdb_block_based_options_set_format_version(rocksdb_block_based_table_options_t*, int) -> void
 	private static final MethodHandle MH_SET_FORMAT_VERSION;
-	// rocksdb_block_based_options_set_whole_key_filtering(rocksdb_block_based_table_options_t*, unsigned char);
+	// rocksdb_block_based_options_set_whole_key_filtering(rocksdb_block_based_table_options_t*, unsigned char) -> void
 	private static final MethodHandle MH_SET_WHOLE_KEY_FILTERING;
-	// rocksdb_block_based_options_set_partition_filters(rocksdb_block_based_table_options_t* options, unsigned char partition_filters);
+	// rocksdb_block_based_options_set_partition_filters(rocksdb_block_based_table_options_t* options, unsigned char partition_filters) -> void
 	private static final MethodHandle MH_SET_PARTITION_FILTERS;
 
 	static {

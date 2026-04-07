@@ -29,27 +29,27 @@ import java.nio.file.Path;
  */
 public final class SstFileWriter extends NativeObject {
 
-	// rocksdb_envoptions_create(void);
+	// rocksdb_envoptions_create(void) -> rocksdb_envoptions_t*
 	private static final MethodHandle MH_ENVOPTIONS_CREATE;
-	// rocksdb_envoptions_destroy(rocksdb_envoptions_t* opt);
+	// rocksdb_envoptions_destroy(rocksdb_envoptions_t* opt) -> void
 	private static final MethodHandle MH_ENVOPTIONS_DESTROY;
-	// rocksdb_sstfilewriter_create(const rocksdb_envoptions_t* env, const rocksdb_options_t* io_options);
+	// rocksdb_sstfilewriter_create(const rocksdb_envoptions_t* env, const rocksdb_options_t* io_options) -> rocksdb_sstfilewriter_t*
 	private static final MethodHandle MH_CREATE;
-	// rocksdb_sstfilewriter_destroy(rocksdb_sstfilewriter_t* writer);
+	// rocksdb_sstfilewriter_destroy(rocksdb_sstfilewriter_t* writer) -> void
 	private static final MethodHandle MH_DESTROY;
-	// rocksdb_sstfilewriter_open(rocksdb_sstfilewriter_t* writer, const char* name, char** errptr);
+	// rocksdb_sstfilewriter_open(rocksdb_sstfilewriter_t* writer, const char* name, char** errptr) -> void
 	private static final MethodHandle MH_OPEN;
-	// rocksdb_sstfilewriter_put(rocksdb_sstfilewriter_t* writer, const char* key, size_t keylen, const char* val, size_t vallen, char** errptr);
+	// rocksdb_sstfilewriter_put(rocksdb_sstfilewriter_t* writer, const char* key, size_t keylen, const char* val, size_t vallen, char** errptr) -> void
 	private static final MethodHandle MH_PUT;
-	// rocksdb_sstfilewriter_delete(rocksdb_sstfilewriter_t* writer, const char* key, size_t keylen, char** errptr);
+	// rocksdb_sstfilewriter_delete(rocksdb_sstfilewriter_t* writer, const char* key, size_t keylen, char** errptr) -> void
 	private static final MethodHandle MH_DELETE;
-	// rocksdb_sstfilewriter_delete_range(rocksdb_sstfilewriter_t* writer, const char* begin_key, size_t begin_keylen, const char* end_key, size_t end_keylen, char** errptr);
+	// rocksdb_sstfilewriter_delete_range(rocksdb_sstfilewriter_t* writer, const char* begin_key, size_t begin_keylen, const char* end_key, size_t end_keylen, char** errptr) -> void
 	private static final MethodHandle MH_DELETE_RANGE;
-	// rocksdb_sstfilewriter_merge(rocksdb_sstfilewriter_t* writer, const char* key, size_t keylen, const char* val, size_t vallen, char** errptr);
+	// rocksdb_sstfilewriter_merge(rocksdb_sstfilewriter_t* writer, const char* key, size_t keylen, const char* val, size_t vallen, char** errptr) -> void
 	private static final MethodHandle MH_MERGE;
-	// rocksdb_sstfilewriter_finish(rocksdb_sstfilewriter_t* writer, char** errptr);
+	// rocksdb_sstfilewriter_finish(rocksdb_sstfilewriter_t* writer, char** errptr) -> void
 	private static final MethodHandle MH_FINISH;
-	// rocksdb_sstfilewriter_file_size(rocksdb_sstfilewriter_t* writer, uint64_t* file_size);
+	// rocksdb_sstfilewriter_file_size(rocksdb_sstfilewriter_t* writer, uint64_t* file_size) -> void
 	private static final MethodHandle MH_FILE_SIZE;
 
 	static {

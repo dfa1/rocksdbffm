@@ -20,31 +20,31 @@ import java.lang.invoke.MethodHandle;
  */
 public final class Options extends NativeObject {
 
-	// rocksdb_options_create(void);
+	// rocksdb_options_create(void) -> rocksdb_options_t*
 	private static final MethodHandle MH_CREATE;
-	// rocksdb_options_destroy(rocksdb_options_t*);
+	// rocksdb_options_destroy(rocksdb_options_t*) -> void
 	private static final MethodHandle MH_DESTROY;
-	// rocksdb_options_set_create_if_missing(rocksdb_options_t*, unsigned char);
+	// rocksdb_options_set_create_if_missing(rocksdb_options_t*, unsigned char) -> void
 	private static final MethodHandle MH_SET_CREATE_IF_MISSING;
-	// rocksdb_options_get_create_if_missing(rocksdb_options_t*);
+	// rocksdb_options_get_create_if_missing(rocksdb_options_t*) -> unsigned char
 	private static final MethodHandle MH_GET_CREATE_IF_MISSING;
-	// rocksdb_options_set_block_based_table_factory(rocksdb_options_t* opt, rocksdb_block_based_table_options_t* table_options);
+	// rocksdb_options_set_block_based_table_factory(rocksdb_options_t* opt, rocksdb_block_based_table_options_t* table_options) -> void
 	private static final MethodHandle MH_SET_BLOCK_BASED_TABLE_FACTORY;
-	// rocksdb_options_enable_statistics(rocksdb_options_t*);
+	// rocksdb_options_enable_statistics(rocksdb_options_t*) -> void
 	private static final MethodHandle MH_ENABLE_STATISTICS;
-	// rocksdb_options_set_statistics_level(rocksdb_options_t*, int level);
+	// rocksdb_options_set_statistics_level(rocksdb_options_t*, int level) -> void
 	private static final MethodHandle MH_SET_STATISTICS_LEVEL;
-	// rocksdb_options_get_statistics_level(rocksdb_options_t*);
+	// rocksdb_options_get_statistics_level(rocksdb_options_t*) -> int
 	private static final MethodHandle MH_GET_STATISTICS_LEVEL;
-	// rocksdb_options_statistics_get_string(rocksdb_options_t* opt);
+	// rocksdb_options_statistics_get_string(rocksdb_options_t* opt) -> char*
 	private static final MethodHandle MH_STATISTICS_GET_STRING;
-	// rocksdb_options_statistics_get_ticker_count(rocksdb_options_t* opt, uint32_t ticker_type);
+	// rocksdb_options_statistics_get_ticker_count(rocksdb_options_t* opt, uint32_t ticker_type) -> uint64_t
 	private static final MethodHandle MH_STATISTICS_GET_TICKER_COUNT;
-	// rocksdb_options_statistics_get_histogram_data(rocksdb_options_t* opt, uint32_t histogram_type, rocksdb_statistics_histogram_data_t* const data);
+	// rocksdb_options_statistics_get_histogram_data(rocksdb_options_t* opt, uint32_t histogram_type, rocksdb_statistics_histogram_data_t* const data) -> void
 	private static final MethodHandle MH_STATISTICS_GET_HISTOGRAM_DATA;
-	// rocksdb_options_set_compression(rocksdb_options_t*, int);
+	// rocksdb_options_set_compression(rocksdb_options_t*, int) -> void
 	private static final MethodHandle MH_SET_COMPRESSION;
-	// rocksdb_options_get_compression(rocksdb_options_t*);
+	// rocksdb_options_get_compression(rocksdb_options_t*) -> int
 	private static final MethodHandle MH_GET_COMPRESSION;
 
 	static {

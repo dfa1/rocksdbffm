@@ -24,11 +24,11 @@ import java.lang.invoke.MethodHandle;
  */
 public final class FilterPolicy extends NativeObject {
 
-	// rocksdb_filterpolicy_create_bloom(double bits_per_key);
+	// rocksdb_filterpolicy_create_bloom(double bits_per_key) -> rocksdb_filterpolicy_t*
 	private static final MethodHandle MH_CREATE_BLOOM;
-	// rocksdb_filterpolicy_create_ribbon(double bloom_equivalent_bits_per_key);
+	// rocksdb_filterpolicy_create_ribbon(double bloom_equivalent_bits_per_key) -> rocksdb_filterpolicy_t*
 	private static final MethodHandle MH_CREATE_RIBBON;
-	// rocksdb_filterpolicy_destroy(rocksdb_filterpolicy_t*);
+	// rocksdb_filterpolicy_destroy(rocksdb_filterpolicy_t*) -> void
 	private static final MethodHandle MH_DESTROY;
 
 	static {

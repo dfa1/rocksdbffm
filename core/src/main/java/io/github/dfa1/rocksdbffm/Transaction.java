@@ -21,29 +21,29 @@ import java.lang.invoke.MethodHandle;
  */
 public final class Transaction extends NativeObject {
 
-	// rocksdb_transaction_commit(rocksdb_transaction_t* txn, char** errptr);
+	// rocksdb_transaction_commit(rocksdb_transaction_t* txn, char** errptr) -> void
 	private static final MethodHandle MH_COMMIT;
-	// rocksdb_transaction_rollback(rocksdb_transaction_t* txn, char** errptr);
+	// rocksdb_transaction_rollback(rocksdb_transaction_t* txn, char** errptr) -> void
 	private static final MethodHandle MH_ROLLBACK;
-	// rocksdb_transaction_destroy(rocksdb_transaction_t* txn);
+	// rocksdb_transaction_destroy(rocksdb_transaction_t* txn) -> void
 	private static final MethodHandle MH_DESTROY;
-	// rocksdb_transaction_get_snapshot(rocksdb_transaction_t* txn);
+	// rocksdb_transaction_get_snapshot(rocksdb_transaction_t* txn) -> const rocksdb_snapshot_t*
 	private static final MethodHandle MH_GET_SNAPSHOT;
-	// rocksdb_transaction_set_savepoint(rocksdb_transaction_t* txn);
+	// rocksdb_transaction_set_savepoint(rocksdb_transaction_t* txn) -> void
 	private static final MethodHandle MH_SET_SAVEPOINT;
-	// rocksdb_transaction_rollback_to_savepoint(rocksdb_transaction_t* txn, char** errptr);
+	// rocksdb_transaction_rollback_to_savepoint(rocksdb_transaction_t* txn, char** errptr) -> void
 	private static final MethodHandle MH_ROLLBACK_TO_SAVEPOINT;
-	// rocksdb_transaction_put(rocksdb_transaction_t* txn, const char* key, size_t klen, const char* val, size_t vlen, char** errptr);
+	// rocksdb_transaction_put(rocksdb_transaction_t* txn, const char* key, size_t klen, const char* val, size_t vlen, char** errptr) -> void
 	private static final MethodHandle MH_PUT;
-	// rocksdb_transaction_delete(rocksdb_transaction_t* txn, const char* key, size_t klen, char** errptr);
+	// rocksdb_transaction_delete(rocksdb_transaction_t* txn, const char* key, size_t klen, char** errptr) -> void
 	private static final MethodHandle MH_DELETE;
-	// rocksdb_transaction_get_pinned(rocksdb_transaction_t* txn, const rocksdb_readoptions_t* options, const char* key, size_t klen, char** errptr);
+	// rocksdb_transaction_get_pinned(rocksdb_transaction_t* txn, const rocksdb_readoptions_t* options, const char* key, size_t klen, char** errptr) -> rocksdb_pinnableslice_t*
 	private static final MethodHandle MH_GET_PINNED;
-	// rocksdb_transaction_get_for_update(rocksdb_transaction_t* txn, const rocksdb_readoptions_t* options, const char* key, size_t klen, size_t* vlen, unsigned char exclusive, char** errptr);
+	// rocksdb_transaction_get_for_update(rocksdb_transaction_t* txn, const rocksdb_readoptions_t* options, const char* key, size_t klen, size_t* vlen, unsigned char exclusive, char** errptr) -> char*
 	private static final MethodHandle MH_GET_FOR_UPDATE;
-	// rocksdb_pinnableslice_value(const rocksdb_pinnableslice_t* t, size_t* vlen);
+	// rocksdb_pinnableslice_value(const rocksdb_pinnableslice_t* t, size_t* vlen) -> const char*
 	private static final MethodHandle MH_PINNABLESLICE_VALUE;
-	// rocksdb_pinnableslice_destroy(rocksdb_pinnableslice_t* v);
+	// rocksdb_pinnableslice_destroy(rocksdb_pinnableslice_t* v) -> void
 	private static final MethodHandle MH_PINNABLESLICE_DESTROY;
 
 	static {

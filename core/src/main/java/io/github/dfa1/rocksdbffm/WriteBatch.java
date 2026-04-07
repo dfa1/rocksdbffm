@@ -16,21 +16,21 @@ import java.nio.ByteBuffer;
  */
 public final class WriteBatch extends NativeObject {
 
-	// rocksdb_writebatch_create(void);
+	// rocksdb_writebatch_create(void) -> rocksdb_writebatch_t*
 	private static final MethodHandle MH_CREATE;
-	// rocksdb_writebatch_destroy(rocksdb_writebatch_t*);
+	// rocksdb_writebatch_destroy(rocksdb_writebatch_t*) -> void
 	private static final MethodHandle MH_DESTROY;
-	// rocksdb_writebatch_put(rocksdb_writebatch_t*, const char* key, size_t klen, const char* val, size_t vlen);
+	// rocksdb_writebatch_put(rocksdb_writebatch_t*, const char* key, size_t klen, const char* val, size_t vlen) -> void
 	private static final MethodHandle MH_PUT;
-	// rocksdb_writebatch_delete(rocksdb_writebatch_t*, const char* key, size_t klen);
+	// rocksdb_writebatch_delete(rocksdb_writebatch_t*, const char* key, size_t klen) -> void
 	private static final MethodHandle MH_DELETE;
-	// rocksdb_writebatch_merge(rocksdb_writebatch_t*, const char* key, size_t klen, const char* val, size_t vlen);
+	// rocksdb_writebatch_merge(rocksdb_writebatch_t*, const char* key, size_t klen, const char* val, size_t vlen) -> void
 	private static final MethodHandle MH_MERGE;
-	// rocksdb_writebatch_delete_range(rocksdb_writebatch_t* b, const char* start_key, size_t start_key_len, const char* end_key, size_t end_key_len);
+	// rocksdb_writebatch_delete_range(rocksdb_writebatch_t* b, const char* start_key, size_t start_key_len, const char* end_key, size_t end_key_len) -> void
 	private static final MethodHandle MH_DELETE_RANGE;
-	// rocksdb_writebatch_clear(rocksdb_writebatch_t*);
+	// rocksdb_writebatch_clear(rocksdb_writebatch_t*) -> void
 	private static final MethodHandle MH_CLEAR;
-	// rocksdb_writebatch_count(rocksdb_writebatch_t*);
+	// rocksdb_writebatch_count(rocksdb_writebatch_t*) -> int
 	private static final MethodHandle MH_COUNT;
 
 	static {

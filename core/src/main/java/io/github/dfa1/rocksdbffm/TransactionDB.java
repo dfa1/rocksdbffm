@@ -32,29 +32,29 @@ public final class TransactionDB extends NativeObject {
 	// Method handles
 	// -----------------------------------------------------------------------
 
-	// rocksdb_transactiondb_open(const rocksdb_options_t* options, const rocksdb_transactiondb_options_t* txn_db_options, const char* name, char** errptr);
+	// rocksdb_transactiondb_open(const rocksdb_options_t* options, const rocksdb_transactiondb_options_t* txn_db_options, const char* name, char** errptr) -> rocksdb_transactiondb_t*
 	private static final MethodHandle MH_OPEN;
-	// rocksdb_transactiondb_close(rocksdb_transactiondb_t* txn_db);
+	// rocksdb_transactiondb_close(rocksdb_transactiondb_t* txn_db) -> void
 	private static final MethodHandle MH_CLOSE;
-	// rocksdb_transaction_begin(rocksdb_transactiondb_t* txn_db, const rocksdb_writeoptions_t* write_options, const rocksdb_transaction_options_t* txn_options, rocksdb_transaction_t* old_txn);
+	// rocksdb_transaction_begin(rocksdb_transactiondb_t* txn_db, const rocksdb_writeoptions_t* write_options, const rocksdb_transaction_options_t* txn_options, rocksdb_transaction_t* old_txn) -> rocksdb_transaction_t*
 	private static final MethodHandle MH_BEGIN;
-	// rocksdb_transactiondb_create_snapshot(rocksdb_transactiondb_t* txn_db);
+	// rocksdb_transactiondb_create_snapshot(rocksdb_transactiondb_t* txn_db) -> const rocksdb_snapshot_t*
 	private static final MethodHandle MH_CREATE_SNAPSHOT;
-	// rocksdb_transactiondb_flush(rocksdb_transactiondb_t* txn_db, const rocksdb_flushoptions_t* options, char** errptr);
+	// rocksdb_transactiondb_flush(rocksdb_transactiondb_t* txn_db, const rocksdb_flushoptions_t* options, char** errptr) -> void
 	private static final MethodHandle MH_FLUSH;
-	// rocksdb_transactiondb_flush_wal(rocksdb_transactiondb_t* txn_db, unsigned char sync, char** errptr);
+	// rocksdb_transactiondb_flush_wal(rocksdb_transactiondb_t* txn_db, unsigned char sync, char** errptr) -> void
 	private static final MethodHandle MH_FLUSH_WAL;
-	// rocksdb_transactiondb_property_value(rocksdb_transactiondb_t* db, const char* propname);
+	// rocksdb_transactiondb_property_value(rocksdb_transactiondb_t* db, const char* propname) -> char*
 	private static final MethodHandle MH_PROPERTY_VALUE;
-	// rocksdb_transactiondb_property_int(rocksdb_transactiondb_t* db, const char* propname, uint64_t* out_val);
+	// rocksdb_transactiondb_property_int(rocksdb_transactiondb_t* db, const char* propname, uint64_t* out_val) -> int
 	private static final MethodHandle MH_PROPERTY_INT;
 
 	// Direct (non-transactional) operations on the TransactionDB
-	// rocksdb_transactiondb_put(rocksdb_transactiondb_t* txn_db, const rocksdb_writeoptions_t* options, const char* key, size_t klen, const char* val, size_t vlen, char** errptr);
+	// rocksdb_transactiondb_put(rocksdb_transactiondb_t* txn_db, const rocksdb_writeoptions_t* options, const char* key, size_t klen, const char* val, size_t vlen, char** errptr) -> void
 	private static final MethodHandle MH_PUT;
-	// rocksdb_transactiondb_delete(rocksdb_transactiondb_t* txn_db, const rocksdb_writeoptions_t* options, const char* key, size_t klen, char** errptr);
+	// rocksdb_transactiondb_delete(rocksdb_transactiondb_t* txn_db, const rocksdb_writeoptions_t* options, const char* key, size_t klen, char** errptr) -> void
 	private static final MethodHandle MH_DELETE;
-	// rocksdb_transactiondb_get(rocksdb_transactiondb_t* txn_db, const rocksdb_readoptions_t* options, const char* key, size_t klen, size_t* vlen, char** errptr);
+	// rocksdb_transactiondb_get(rocksdb_transactiondb_t* txn_db, const rocksdb_readoptions_t* options, const char* key, size_t klen, size_t* vlen, char** errptr) -> char*
 	private static final MethodHandle MH_GET;
 
 

@@ -25,31 +25,31 @@ import java.nio.ByteBuffer;
  */
 public final class RocksIterator extends NativeObject {
 
-	// rocksdb_create_iterator(rocksdb_t* db, const rocksdb_readoptions_t* options);
+	// rocksdb_create_iterator(rocksdb_t* db, const rocksdb_readoptions_t* options) -> rocksdb_iterator_t*
 	private static final MethodHandle MH_CREATE;
-	// rocksdb_iter_destroy(rocksdb_iterator_t*);
+	// rocksdb_iter_destroy(rocksdb_iterator_t*) -> void
 	private static final MethodHandle MH_DESTROY;
-	// rocksdb_iter_valid(const rocksdb_iterator_t*);
+	// rocksdb_iter_valid(const rocksdb_iterator_t*) -> unsigned char
 	private static final MethodHandle MH_VALID;
-	// rocksdb_iter_seek_to_first(rocksdb_iterator_t*);
+	// rocksdb_iter_seek_to_first(rocksdb_iterator_t*) -> void
 	private static final MethodHandle MH_SEEK_TO_FIRST;
-	// rocksdb_iter_seek_to_last(rocksdb_iterator_t*);
+	// rocksdb_iter_seek_to_last(rocksdb_iterator_t*) -> void
 	private static final MethodHandle MH_SEEK_TO_LAST;
-	// rocksdb_iter_seek(rocksdb_iterator_t*, const char* k, size_t klen);
+	// rocksdb_iter_seek(rocksdb_iterator_t*, const char* k, size_t klen) -> void
 	private static final MethodHandle MH_SEEK;
-	// rocksdb_iter_seek_for_prev(rocksdb_iterator_t*, const char* k, size_t klen);
+	// rocksdb_iter_seek_for_prev(rocksdb_iterator_t*, const char* k, size_t klen) -> void
 	private static final MethodHandle MH_SEEK_FOR_PREV;
-	// rocksdb_iter_next(rocksdb_iterator_t*);
+	// rocksdb_iter_next(rocksdb_iterator_t*) -> void
 	private static final MethodHandle MH_NEXT;
-	// rocksdb_iter_prev(rocksdb_iterator_t*);
+	// rocksdb_iter_prev(rocksdb_iterator_t*) -> void
 	private static final MethodHandle MH_PREV;
-	// rocksdb_iter_key(const rocksdb_iterator_t*, size_t* klen);
+	// rocksdb_iter_key(const rocksdb_iterator_t*, size_t* klen) -> const char*
 	private static final MethodHandle MH_KEY;
-	// rocksdb_iter_value(const rocksdb_iterator_t*, size_t* vlen);
+	// rocksdb_iter_value(const rocksdb_iterator_t*, size_t* vlen) -> const char*
 	private static final MethodHandle MH_VALUE;
-	// rocksdb_iter_get_error(const rocksdb_iterator_t*, char** errptr);
+	// rocksdb_iter_get_error(const rocksdb_iterator_t*, char** errptr) -> void
 	private static final MethodHandle MH_GET_ERROR;
-	// rocksdb_iter_refresh(const rocksdb_iterator_t* iter, char** errptr);
+	// rocksdb_iter_refresh(const rocksdb_iterator_t* iter, char** errptr) -> void
 	private static final MethodHandle MH_REFRESH;
 
 	static {

@@ -39,23 +39,23 @@ public final class SecondaryDB extends NativeObject {
 	// Method handles
 	// -----------------------------------------------------------------------
 
-	// rocksdb_open_as_secondary(const rocksdb_options_t* options, const char* name, const char* secondary_path, char** errptr);
+	// rocksdb_open_as_secondary(const rocksdb_options_t* options, const char* name, const char* secondary_path, char** errptr) -> rocksdb_t*
 	private static final MethodHandle MH_OPEN;
-	// rocksdb_close(rocksdb_t* db);
+	// rocksdb_close(rocksdb_t* db) -> void
 	private static final MethodHandle MH_CLOSE;
-	// rocksdb_try_catch_up_with_primary(rocksdb_t* db, char** errptr);
+	// rocksdb_try_catch_up_with_primary(rocksdb_t* db, char** errptr) -> void
 	private static final MethodHandle MH_CATCH_UP;
-	// rocksdb_get_pinned(rocksdb_t* db, const rocksdb_readoptions_t* options, const char* key, size_t keylen, char** errptr);
+	// rocksdb_get_pinned(rocksdb_t* db, const rocksdb_readoptions_t* options, const char* key, size_t keylen, char** errptr) -> rocksdb_pinnableslice_t*
 	private static final MethodHandle MH_GET_PINNED;
-	// rocksdb_pinnableslice_value(const rocksdb_pinnableslice_t* t, size_t* vlen);
+	// rocksdb_pinnableslice_value(const rocksdb_pinnableslice_t* t, size_t* vlen) -> const char*
 	private static final MethodHandle MH_PINNABLESLICE_VALUE;
-	// rocksdb_pinnableslice_destroy(rocksdb_pinnableslice_t* v);
+	// rocksdb_pinnableslice_destroy(rocksdb_pinnableslice_t* v) -> void
 	private static final MethodHandle MH_PINNABLESLICE_DESTROY;
-	// rocksdb_create_snapshot(rocksdb_t* db);
+	// rocksdb_create_snapshot(rocksdb_t* db) -> const rocksdb_snapshot_t*
 	private static final MethodHandle MH_CREATE_SNAPSHOT;
-	// rocksdb_property_value(rocksdb_t* db, const char* propname);
+	// rocksdb_property_value(rocksdb_t* db, const char* propname) -> char*
 	private static final MethodHandle MH_PROPERTY_VALUE;
-	// rocksdb_property_int(rocksdb_t* db, const char* propname, uint64_t* out_val);
+	// rocksdb_property_int(rocksdb_t* db, const char* propname, uint64_t* out_val) -> int
 	private static final MethodHandle MH_PROPERTY_INT;
 
 	static {

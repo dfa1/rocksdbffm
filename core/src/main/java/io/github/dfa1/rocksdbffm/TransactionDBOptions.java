@@ -10,13 +10,13 @@ import java.lang.invoke.MethodHandle;
  */
 public final class TransactionDBOptions extends NativeObject {
 
-	// rocksdb_transactiondb_options_create(void);
+	// rocksdb_transactiondb_options_create(void) -> rocksdb_transactiondb_options_t*
 	private static final MethodHandle MH_CREATE;
-	// rocksdb_transactiondb_options_destroy(rocksdb_transactiondb_options_t* opt);
+	// rocksdb_transactiondb_options_destroy(rocksdb_transactiondb_options_t* opt) -> void
 	private static final MethodHandle MH_DESTROY;
-	// rocksdb_transactiondb_options_set_max_num_locks(rocksdb_transactiondb_options_t* opt, int64_t max_num_locks);
+	// rocksdb_transactiondb_options_set_max_num_locks(rocksdb_transactiondb_options_t* opt, int64_t max_num_locks) -> void
 	private static final MethodHandle MH_SET_MAX_NUM_LOCKS;
-	// rocksdb_transactiondb_options_set_num_stripes(rocksdb_transactiondb_options_t* opt, size_t num_stripes);
+	// rocksdb_transactiondb_options_set_num_stripes(rocksdb_transactiondb_options_t* opt, size_t num_stripes) -> void
 	private static final MethodHandle MH_SET_NUM_STRIPES;
 
 	static {

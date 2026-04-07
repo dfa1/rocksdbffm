@@ -21,17 +21,17 @@ import java.lang.invoke.MethodHandle;
  */
 public final class LRUCache extends NativeObject {
 
-	// rocksdb_cache_create_lru(size_t capacity);
+	// rocksdb_cache_create_lru(size_t capacity) -> rocksdb_cache_t*
 	private static final MethodHandle MH_CREATE;
-	// rocksdb_cache_destroy(rocksdb_cache_t* cache);
+	// rocksdb_cache_destroy(rocksdb_cache_t* cache) -> void
 	private static final MethodHandle MH_DESTROY;
-	// rocksdb_cache_set_capacity(rocksdb_cache_t* cache, size_t capacity);
+	// rocksdb_cache_set_capacity(rocksdb_cache_t* cache, size_t capacity) -> void
 	private static final MethodHandle MH_SET_CAPACITY;
-	// rocksdb_cache_get_capacity(const rocksdb_cache_t* cache);
+	// rocksdb_cache_get_capacity(const rocksdb_cache_t* cache) -> size_t
 	private static final MethodHandle MH_GET_CAPACITY;
-	// rocksdb_cache_get_usage(const rocksdb_cache_t* cache);
+	// rocksdb_cache_get_usage(const rocksdb_cache_t* cache) -> size_t
 	private static final MethodHandle MH_GET_USAGE;
-	// rocksdb_cache_get_pinned_usage(const rocksdb_cache_t* cache);
+	// rocksdb_cache_get_pinned_usage(const rocksdb_cache_t* cache) -> size_t
 	private static final MethodHandle MH_GET_PINNED_USAGE;
 
 	static {

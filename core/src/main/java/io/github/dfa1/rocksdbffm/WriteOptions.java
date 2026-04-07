@@ -10,9 +10,9 @@ import java.lang.invoke.MethodHandle;
  */
 public final class WriteOptions extends NativeObject {
 
-	// rocksdb_writeoptions_create(void);
+	// rocksdb_writeoptions_create(void) -> rocksdb_writeoptions_t*
 	private static final MethodHandle MH_CREATE;
-	// rocksdb_writeoptions_destroy(rocksdb_writeoptions_t*);
+	// rocksdb_writeoptions_destroy(rocksdb_writeoptions_t*) -> void
 	private static final MethodHandle MH_DESTROY;
 
 	static {

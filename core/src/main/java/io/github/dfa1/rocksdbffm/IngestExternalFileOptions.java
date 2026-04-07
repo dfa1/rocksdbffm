@@ -18,7 +18,7 @@ import java.lang.invoke.MethodHandle;
  */
 public final class IngestExternalFileOptions implements AutoCloseable {
 
-	static final MethodHandle MH_CREATE;
+	private static final MethodHandle MH_CREATE;
 	private static final MethodHandle MH_DESTROY;
 	private static final MethodHandle MH_SET_MOVE_FILES;
 	private static final MethodHandle MH_SET_SNAPSHOT_CONSISTENCY;

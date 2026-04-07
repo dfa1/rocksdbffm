@@ -131,11 +131,11 @@ public final class OptimisticTransactionDB implements AutoCloseable {
 
 	private final MemorySegment ptr;       // rocksdb_optimistictransactiondb_t*
 	private final MemorySegment baseDb;    // rocksdb_t* — for direct ops
-	private final MemorySegment writeOpts; // default write options
-	private final MemorySegment readOpts;  // default read options
+	private final WriteOptions writeOpts; // default write options
+	private final ReadOptions readOpts;  // default read options
 
 	private OptimisticTransactionDB(MemorySegment ptr, MemorySegment baseDb,
-	                                MemorySegment writeOpts, MemorySegment readOpts) {
+	                                WriteOptions writeOpts, ReadOptions readOpts) {
 		this.ptr = ptr;
 		this.baseDb = baseDb;
 		this.writeOpts = writeOpts;
@@ -160,9 +160,7 @@ public final class OptimisticTransactionDB implements AutoCloseable {
 			Native.checkError(err);
 
 			MemorySegment baseDb = (MemorySegment) MH_GET_BASE_DB.invokeExact(ptr);
-			MemorySegment writeOpts = (MemorySegment) WriteOptions.MH_CREATE.invokeExact();
-			MemorySegment readOpts = (MemorySegment) ReadOptions.MH_CREATE.invokeExact();
-			return new OptimisticTransactionDB(ptr, baseDb, writeOpts, readOpts);
+			return new OptimisticTransactionDB(ptr, baseDb, new WriteOptions(), new ReadOptions());
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("OptimisticTransactionDB open failed", t);
 		}
@@ -367,9 +365,9 @@ public final class OptimisticTransactionDB implements AutoCloseable {
 
 	@Override
 	public void close() {
+		writeOpts.close();
+		readOpts.close();
 		try {
-			WriteOptions.MH_DESTROY.invokeExact(writeOpts);
-			ReadOptions.MH_DESTROY.invokeExact(readOpts);
 			MH_CLOSE_BASE_DB.invokeExact(baseDb);
 			MH_CLOSE.invokeExact(ptr);
 		} catch (Throwable t) {

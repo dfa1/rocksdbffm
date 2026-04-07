@@ -10,8 +10,8 @@ import java.lang.invoke.MethodHandle;
  */
 public final class WriteOptions implements AutoCloseable {
 
-	static final MethodHandle MH_CREATE;
-	static final MethodHandle MH_DESTROY;
+	private static final MethodHandle MH_CREATE;
+	private static final MethodHandle MH_DESTROY;
 
 	static {
 		MH_CREATE = RocksDB.lookup("rocksdb_writeoptions_create",

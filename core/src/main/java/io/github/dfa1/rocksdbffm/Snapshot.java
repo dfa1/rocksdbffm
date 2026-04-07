@@ -30,7 +30,7 @@ public final class Snapshot implements AutoCloseable {
 	// rocksdb_snapshot_get_sequence_number(snap*) -> uint64_t
 	private static final MethodHandle MH_SEQUENCE_NUMBER;
 	// rocksdb_release_snapshot(db*, snap*) — for RocksDB and TransactionDB snapshots
-	static final MethodHandle MH_RELEASE;
+	private static final MethodHandle MH_RELEASE;
 	// rocksdb_free(ptr*) — for Transaction snapshots
 	private static final MethodHandle MH_FREE;
 

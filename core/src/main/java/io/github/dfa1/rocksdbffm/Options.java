@@ -20,10 +20,10 @@ import java.lang.invoke.MethodHandle;
  */
 public final class Options implements AutoCloseable {
 
-	static final MethodHandle MH_CREATE;
-	static final MethodHandle MH_DESTROY;
-	static final MethodHandle MH_SET_CREATE_IF_MISSING;
-	static final MethodHandle MH_GET_CREATE_IF_MISSING;
+	private static final MethodHandle MH_CREATE;
+	private static final MethodHandle MH_DESTROY;
+	private static final MethodHandle MH_SET_CREATE_IF_MISSING;
+	private static final MethodHandle MH_GET_CREATE_IF_MISSING;
 	private static final MethodHandle MH_SET_BLOCK_BASED_TABLE_FACTORY;
 	private static final MethodHandle MH_ENABLE_STATISTICS;
 	private static final MethodHandle MH_SET_STATISTICS_LEVEL;

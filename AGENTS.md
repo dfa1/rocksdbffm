@@ -122,5 +122,7 @@ Documentation
 Code
 ---
 
-- code is written with tabs
-- there is checkstyle.xml file with the style you should follow
+- code is indented with tabs (enforced by checkstyle)
+- always keep the MethodHandles private static final
+- don't map multiple times the same symbol from C library of rocksdb
+-    try to create always a java wrapper for that (i.e. PinnableSlice)

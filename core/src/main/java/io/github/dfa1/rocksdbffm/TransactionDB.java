@@ -116,10 +116,10 @@ public final class TransactionDB implements AutoCloseable {
 	// -----------------------------------------------------------------------
 
 	private final MemorySegment ptr;       // rocksdb_transactiondb_t*
-	private final MemorySegment writeOpts; // default write options for direct ops
-	private final MemorySegment readOpts;  // default read options for direct ops
+	private final WriteOptions writeOpts; // default write options for direct ops
+	private final ReadOptions readOpts;  // default read options for direct ops
 
-	private TransactionDB(MemorySegment ptr, MemorySegment writeOpts, MemorySegment readOpts) {
+	private TransactionDB(MemorySegment ptr, WriteOptions writeOpts, ReadOptions readOpts) {
 		this.ptr = ptr;
 		this.writeOpts = writeOpts;
 		this.readOpts = readOpts;
@@ -143,9 +143,7 @@ public final class TransactionDB implements AutoCloseable {
 
 			Native.checkError(err);
 
-			MemorySegment writeOpts = (MemorySegment) WriteOptions.MH_CREATE.invokeExact();
-			MemorySegment readOpts = (MemorySegment) ReadOptions.MH_CREATE.invokeExact();
-			return new TransactionDB(ptr, writeOpts, readOpts);
+			return new TransactionDB(ptr, new WriteOptions(), new ReadOptions());
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("Native call failed", t);
 		}
@@ -353,8 +351,8 @@ public final class TransactionDB implements AutoCloseable {
 	@Override
 	public void close() {
 		try {
-			WriteOptions.MH_DESTROY.invokeExact(writeOpts);
-			ReadOptions.MH_DESTROY.invokeExact(readOpts);
+			writeOpts.close();
+			readOpts.close();
 			MH_CLOSE.invokeExact(ptr);
 		} catch (Throwable t) {
 			throw new RocksDBException("TransactionDB close failed", t);

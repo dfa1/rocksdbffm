@@ -62,19 +62,6 @@ final class Native {
 		}
 	}
 
-	/**
-	 * Silently executes a close action, discarding any exception.
-	 * Use this in all {@code close()} implementations — destructors must not throw.
-	 * TODO: calling multiple times this for same object could trigger undefined behavior and other problems like heap corruptions or SIGSEGV etc
-	 */
-	@Deprecated
-	public static void closeQuietly(MethodHandle destructor, MemorySegment ptr) {
-		try {
-			destructor.invokeExact(ptr);
-		} catch (Throwable ignored) {
-		}
-	}
-
 	// new stuff, human-generated
 	private static final Arena ARENA_ERROR = Arena.ofAuto();
 

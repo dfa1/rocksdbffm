@@ -33,7 +33,7 @@ import java.util.OptionalLong;
  * }
  * }</pre>
  */
-public final class SecondaryDB implements AutoCloseable {
+public final class SecondaryDB extends NativeObject {
 
 	// -----------------------------------------------------------------------
 	// Method handles
@@ -99,11 +99,10 @@ public final class SecondaryDB implements AutoCloseable {
 	// Instance state
 	// -----------------------------------------------------------------------
 
-	private final MemorySegment ptr;  // rocksdb_t*
 	private final ReadOptions readOpts;
 
 	private SecondaryDB(MemorySegment ptr, ReadOptions readOpts) {
-		this.ptr = ptr;
+		super(ptr);
 		this.readOpts = readOpts;
 	}
 
@@ -150,7 +149,7 @@ public final class SecondaryDB implements AutoCloseable {
 	public void tryCatchUpWithPrimary() {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
-			MH_CATCH_UP.invokeExact(ptr, err);
+			MH_CATCH_UP.invokeExact(ptr(), err);
 			Native.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("tryCatchUpWithPrimary failed", t);
@@ -171,7 +170,7 @@ public final class SecondaryDB implements AutoCloseable {
 			MemorySegment k = Native.toNative(arena, key);
 
 			MemorySegment pin = (MemorySegment) MH_GET_PINNED.invokeExact(
-					ptr, readOpts.ptr(), k, (long) key.length, err);
+					ptr(), readOpts.ptr(), k, (long) key.length, err);
 			Native.checkError(err);
 
 			if (MemorySegment.NULL.equals(pin)) {
@@ -199,7 +198,7 @@ public final class SecondaryDB implements AutoCloseable {
 			MemorySegment k = Native.toNative(arena, key);
 
 			MemorySegment pin = (MemorySegment) MH_GET_PINNED.invokeExact(
-					ptr, readOptions.ptr(), k, (long) key.length, err);
+					ptr(), readOptions.ptr(), k, (long) key.length, err);
 			Native.checkError(err);
 
 			if (MemorySegment.NULL.equals(pin)) {
@@ -226,14 +225,14 @@ public final class SecondaryDB implements AutoCloseable {
 	 * Call {@link #tryCatchUpWithPrimary()} first if you need the latest data.
 	 */
 	public RocksIterator newIterator() {
-		return RocksIterator.create(ptr, readOpts.ptr());
+		return RocksIterator.create(ptr(), readOpts.ptr());
 	}
 
 	/**
 	 * Returns a new iterator using the supplied {@link ReadOptions}.
 	 */
 	public RocksIterator newIterator(ReadOptions readOptions) {
-		return RocksIterator.create(ptr, readOptions.ptr());
+		return RocksIterator.create(ptr(), readOptions.ptr());
 	}
 
 	// -----------------------------------------------------------------------
@@ -246,8 +245,8 @@ public final class SecondaryDB implements AutoCloseable {
 	 */
 	public Snapshot getSnapshot() {
 		try {
-			MemorySegment snapPtr = (MemorySegment) MH_CREATE_SNAPSHOT.invokeExact(ptr);
-			return new Snapshot(ptr, snapPtr);
+			MemorySegment snapPtr = (MemorySegment) MH_CREATE_SNAPSHOT.invokeExact(ptr());
+			return new Snapshot(ptr(), snapPtr);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("getSnapshot failed", t);
 		}
@@ -263,7 +262,7 @@ public final class SecondaryDB implements AutoCloseable {
 	public Optional<String> getProperty(Property property) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment propSeg = arena.allocateFrom(property.propertyName());
-			MemorySegment result = (MemorySegment) MH_PROPERTY_VALUE.invokeExact(ptr, propSeg);
+			MemorySegment result = (MemorySegment) MH_PROPERTY_VALUE.invokeExact(ptr(), propSeg);
 			if (MemorySegment.NULL.equals(result)) {
 				return Optional.empty();
 			}
@@ -282,7 +281,7 @@ public final class SecondaryDB implements AutoCloseable {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment propSeg = arena.allocateFrom(property.propertyName());
 			MemorySegment out = arena.allocate(ValueLayout.JAVA_LONG);
-			int rc = (int) MH_PROPERTY_INT.invokeExact(ptr, propSeg, out);
+			int rc = (int) MH_PROPERTY_INT.invokeExact(ptr(), propSeg, out);
 			if (rc != 0) {
 				return OptionalLong.empty();
 			}
@@ -297,8 +296,8 @@ public final class SecondaryDB implements AutoCloseable {
 	// -----------------------------------------------------------------------
 
 	@Override
-	public void close() {
+	protected void tryClose(MemorySegment ptr) throws Throwable {
 		readOpts.close();
-		Native.closeQuietly(MH_CLOSE, ptr);
+		MH_CLOSE.invokeExact(ptr);
 	}
 }

@@ -31,7 +31,7 @@ import java.util.OptionalLong;
  * }
  * }</pre>
  */
-public final class OptimisticTransactionDB implements AutoCloseable {
+public final class OptimisticTransactionDB extends NativeObject {
 
 	// -----------------------------------------------------------------------
 	// Method handles
@@ -129,14 +129,13 @@ public final class OptimisticTransactionDB implements AutoCloseable {
 	// Instance state
 	// -----------------------------------------------------------------------
 
-	private final MemorySegment ptr;       // rocksdb_optimistictransactiondb_t*
 	private final MemorySegment baseDb;    // rocksdb_t* — for direct ops
 	private final WriteOptions writeOpts; // default write options
 	private final ReadOptions readOpts;  // default read options
 
 	private OptimisticTransactionDB(MemorySegment ptr, MemorySegment baseDb,
 	                                WriteOptions writeOpts, ReadOptions readOpts) {
-		this.ptr = ptr;
+		super(ptr);
 		this.baseDb = baseDb;
 		this.writeOpts = writeOpts;
 		this.readOpts = readOpts;
@@ -187,7 +186,7 @@ public final class OptimisticTransactionDB implements AutoCloseable {
 	public Transaction beginTransaction(WriteOptions writeOptions, OptimisticTransactionOptions txnOptions) {
 		try {
 			MemorySegment txnPtr = (MemorySegment) MH_BEGIN.invokeExact(
-					ptr, writeOptions.ptr(), txnOptions.ptr(), MemorySegment.NULL);
+					ptr(), writeOptions.ptr(), txnOptions.ptr(), MemorySegment.NULL);
 			return new Transaction(txnPtr);
 		} catch (Throwable t) {
 			throw new RocksDBException("beginTransaction failed", t);
@@ -372,10 +371,10 @@ public final class OptimisticTransactionDB implements AutoCloseable {
 	// -----------------------------------------------------------------------
 
 	@Override
-	public void close() {
+	protected void tryClose(MemorySegment ptr) throws Throwable {
 		writeOpts.close();
 		readOpts.close();
-		Native.closeQuietly(MH_CLOSE_BASE_DB, baseDb);
-		Native.closeQuietly(MH_CLOSE, ptr);
+		MH_CLOSE_BASE_DB.invokeExact(baseDb);
+		MH_CLOSE.invokeExact(ptr);
 	}
 }

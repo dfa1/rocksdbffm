@@ -35,7 +35,7 @@ import java.util.concurrent.TimeUnit;
 @Fork(value = 1, jvmArgsPrepend = {"--enable-native-access=ALL-UNNAMED", "--sun-misc-unsafe-memory-access=allow"})
 public class FfmBenchmark {
 
-	private static final int BATCH_SIZE = 10000;
+	private static final int BATCH_SIZE = 100;
 	private static final byte[] READ_KEY_BYTES = "read-key".getBytes();
 	private static final byte[] READ_VALUE_BYTES = "read-value-data-0123456789".getBytes();
 	private static final byte[] WRITE_KEY_BYTES = "bench-key".getBytes();

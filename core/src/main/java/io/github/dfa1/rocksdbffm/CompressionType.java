@@ -14,41 +14,59 @@ package io.github.dfa1.rocksdbffm;
  */
 public enum CompressionType {
 
-    /** No compression. Always supported. */
-    NO_COMPRESSION(0),
+	/**
+	 * No compression. Always supported.
+	 */
+	NO_COMPRESSION(0),
 
-    /** Snappy compression. */
-    SNAPPY(1),
+	/**
+	 * Snappy compression.
+	 */
+	SNAPPY(1),
 
-    /** zlib compression. */
-    ZLIB(2),
+	/**
+	 * zlib compression.
+	 */
+	ZLIB(2),
 
-    /** bzip2 compression. */
-    BZLIB2(3),
+	/**
+	 * bzip2 compression.
+	 */
+	BZLIB2(3),
 
-    /** LZ4 compression. */
-    LZ4(4),
+	/**
+	 * LZ4 compression.
+	 */
+	LZ4(4),
 
-    /** LZ4HC (high-compression) compression. */
-    LZ4HC(5),
+	/**
+	 * LZ4HC (high-compression) compression.
+	 */
+	LZ4HC(5),
 
-    /** Xpress compression (Windows only). */
-    XPRESS(6),
+	/**
+	 * Xpress compression (Windows only).
+	 */
+	XPRESS(6),
 
-    /** Zstandard compression. */
-    ZSTD(7);
+	/**
+	 * Zstandard compression.
+	 */
+	ZSTD(7);
 
-    /** C API integer constant — package-private for use by {@link Options}. */
-    final int value;
+	/**
+	 * C API integer constant — package-private for use by {@link Options}.
+	 */
+	final int value;
 
-    CompressionType(int value) {
-        this.value = value;
-    }
+	CompressionType(int value) {
+		this.value = value;
+	}
 
-    static CompressionType fromValue(int value) {
-        for (CompressionType t : values()) {
-            if (t.value == value) return t;
-        }
-        throw new IllegalArgumentException("Unknown compression type value: " + value);
-    }
+	static CompressionType fromValue(int value) {
+		for (CompressionType t : values()) {
+			if (t.value == value) return t;
+		}
+		throw new IllegalArgumentException("Unknown compression type value: " + value);
+	}
 }

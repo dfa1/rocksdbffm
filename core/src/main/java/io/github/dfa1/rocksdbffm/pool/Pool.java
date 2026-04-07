@@ -2,14 +2,14 @@ package io.github.dfa1.rocksdbffm.pool;
 
 public interface Pool<T> extends AutoCloseable {
 
-    T acquire();
+	T acquire();
 
-    void release(T resource);
+	void release(T resource);
 
-    int capacity();
+	int capacity();
 
-    int available();
+	int available();
 
-    @Override
-    void close();
+	@Override
+	void close();
 }

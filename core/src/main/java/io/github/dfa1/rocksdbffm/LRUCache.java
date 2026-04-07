@@ -1,6 +1,8 @@
 package io.github.dfa1.rocksdbffm;
 
-import java.lang.foreign.*;
+import java.lang.foreign.FunctionDescriptor;
+import java.lang.foreign.MemorySegment;
+import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 
 /**
@@ -19,88 +21,92 @@ import java.lang.invoke.MethodHandle;
  */
 public final class LRUCache implements AutoCloseable {
 
-    private static final MethodHandle MH_CREATE;
-    private static final MethodHandle MH_DESTROY;
-    private static final MethodHandle MH_SET_CAPACITY;
-    private static final MethodHandle MH_GET_CAPACITY;
-    private static final MethodHandle MH_GET_USAGE;
-    private static final MethodHandle MH_GET_PINNED_USAGE;
+	private static final MethodHandle MH_CREATE;
+	private static final MethodHandle MH_DESTROY;
+	private static final MethodHandle MH_SET_CAPACITY;
+	private static final MethodHandle MH_GET_CAPACITY;
+	private static final MethodHandle MH_GET_USAGE;
+	private static final MethodHandle MH_GET_PINNED_USAGE;
 
-    static {
-        // rocksdb_cache_t* rocksdb_cache_create_lru(size_t capacity)
-        MH_CREATE = RocksDB.lookup("rocksdb_cache_create_lru",
-            FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
+	static {
+		// rocksdb_cache_t* rocksdb_cache_create_lru(size_t capacity)
+		MH_CREATE = RocksDB.lookup("rocksdb_cache_create_lru",
+				FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
 
-        MH_DESTROY = RocksDB.lookup("rocksdb_cache_destroy",
-            FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+		MH_DESTROY = RocksDB.lookup("rocksdb_cache_destroy",
+				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
-        // void rocksdb_cache_set_capacity(cache*, size_t)
-        MH_SET_CAPACITY = RocksDB.lookup("rocksdb_cache_set_capacity",
-            FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
+		// void rocksdb_cache_set_capacity(cache*, size_t)
+		MH_SET_CAPACITY = RocksDB.lookup("rocksdb_cache_set_capacity",
+				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
 
-        // size_t rocksdb_cache_get_capacity(cache*)
-        MH_GET_CAPACITY = RocksDB.lookup("rocksdb_cache_get_capacity",
-            FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
+		// size_t rocksdb_cache_get_capacity(cache*)
+		MH_GET_CAPACITY = RocksDB.lookup("rocksdb_cache_get_capacity",
+				FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
 
-        // size_t rocksdb_cache_get_usage(cache*)
-        MH_GET_USAGE = RocksDB.lookup("rocksdb_cache_get_usage",
-            FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
+		// size_t rocksdb_cache_get_usage(cache*)
+		MH_GET_USAGE = RocksDB.lookup("rocksdb_cache_get_usage",
+				FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
 
-        // size_t rocksdb_cache_get_pinned_usage(cache*)
-        MH_GET_PINNED_USAGE = RocksDB.lookup("rocksdb_cache_get_pinned_usage",
-            FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
-    }
+		// size_t rocksdb_cache_get_pinned_usage(cache*)
+		MH_GET_PINNED_USAGE = RocksDB.lookup("rocksdb_cache_get_pinned_usage",
+				FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
+	}
 
-    /** Package-private: accessed by BlockBasedTableConfig. */
-    final MemorySegment ptr;
+	/**
+	 * Package-private: accessed by BlockBasedTableConfig.
+	 */
+	final MemorySegment ptr;
 
-    public LRUCache(MemorySize capacity) {
-        try {
-            this.ptr = (MemorySegment) MH_CREATE.invokeExact(capacity.toBytes());
-        } catch (Throwable t) {
-            throw new RocksDBException("LRUCache create failed", t);
-        }
-    }
+	public LRUCache(MemorySize capacity) {
+		try {
+			this.ptr = (MemorySegment) MH_CREATE.invokeExact(capacity.toBytes());
+		} catch (Throwable t) {
+			throw new RocksDBException("LRUCache create failed", t);
+		}
+	}
 
-    /** Dynamically resizes the cache. Excess entries are evicted as needed. */
-    public void setCapacity(MemorySize capacity) {
-        try {
-            MH_SET_CAPACITY.invokeExact(ptr, capacity.toBytes());
-        } catch (Throwable t) {
-            throw new RocksDBException("setCapacity failed", t);
-        }
-    }
+	/**
+	 * Dynamically resizes the cache. Excess entries are evicted as needed.
+	 */
+	public void setCapacity(MemorySize capacity) {
+		try {
+			MH_SET_CAPACITY.invokeExact(ptr, capacity.toBytes());
+		} catch (Throwable t) {
+			throw new RocksDBException("setCapacity failed", t);
+		}
+	}
 
-    public MemorySize getCapacity() {
-        try {
-            return MemorySize.ofBytes((long) MH_GET_CAPACITY.invokeExact(ptr));
-        } catch (Throwable t) {
-            throw new RocksDBException("getCapacity failed", t);
-        }
-    }
+	public MemorySize getCapacity() {
+		try {
+			return MemorySize.ofBytes((long) MH_GET_CAPACITY.invokeExact(ptr));
+		} catch (Throwable t) {
+			throw new RocksDBException("getCapacity failed", t);
+		}
+	}
 
-    public MemorySize getUsage() {
-        try {
-            return MemorySize.ofBytes((long) MH_GET_USAGE.invokeExact(ptr));
-        } catch (Throwable t) {
-            throw new RocksDBException("getUsage failed", t);
-        }
-    }
+	public MemorySize getUsage() {
+		try {
+			return MemorySize.ofBytes((long) MH_GET_USAGE.invokeExact(ptr));
+		} catch (Throwable t) {
+			throw new RocksDBException("getUsage failed", t);
+		}
+	}
 
-    public MemorySize getPinnedUsage() {
-        try {
-            return MemorySize.ofBytes((long) MH_GET_PINNED_USAGE.invokeExact(ptr));
-        } catch (Throwable t) {
-            throw new RocksDBException("getPinnedUsage failed", t);
-        }
-    }
+	public MemorySize getPinnedUsage() {
+		try {
+			return MemorySize.ofBytes((long) MH_GET_PINNED_USAGE.invokeExact(ptr));
+		} catch (Throwable t) {
+			throw new RocksDBException("getPinnedUsage failed", t);
+		}
+	}
 
-    @Override
-    public void close() {
-        try {
-            MH_DESTROY.invokeExact(ptr);
-        } catch (Throwable t) {
-            throw new RocksDBException("LRUCache destroy failed", t);
-        }
-    }
+	@Override
+	public void close() {
+		try {
+			MH_DESTROY.invokeExact(ptr);
+		} catch (Throwable t) {
+			throw new RocksDBException("LRUCache destroy failed", t);
+		}
+	}
 }

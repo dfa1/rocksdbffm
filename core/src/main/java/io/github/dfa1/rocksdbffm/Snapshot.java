@@ -27,74 +27,78 @@ import java.lang.invoke.MethodHandle;
  */
 public final class Snapshot implements AutoCloseable {
 
-    // rocksdb_snapshot_get_sequence_number(snap*) -> uint64_t
-    private static final MethodHandle MH_SEQUENCE_NUMBER;
-    // rocksdb_release_snapshot(db*, snap*) — for RocksDB and TransactionDB snapshots
-    static final MethodHandle MH_RELEASE;
-    // rocksdb_free(ptr*) — for Transaction snapshots
-    private static final MethodHandle MH_FREE;
+	// rocksdb_snapshot_get_sequence_number(snap*) -> uint64_t
+	private static final MethodHandle MH_SEQUENCE_NUMBER;
+	// rocksdb_release_snapshot(db*, snap*) — for RocksDB and TransactionDB snapshots
+	static final MethodHandle MH_RELEASE;
+	// rocksdb_free(ptr*) — for Transaction snapshots
+	private static final MethodHandle MH_FREE;
 
-    static {
-        MH_SEQUENCE_NUMBER = RocksDB.lookup("rocksdb_snapshot_get_sequence_number",
-            FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
+	static {
+		MH_SEQUENCE_NUMBER = RocksDB.lookup("rocksdb_snapshot_get_sequence_number",
+				FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
 
-        MH_RELEASE = RocksDB.lookup("rocksdb_release_snapshot",
-            FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+		MH_RELEASE = RocksDB.lookup("rocksdb_release_snapshot",
+				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
-        MH_FREE = RocksDB.lookup("rocksdb_free",
-            FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
-    }
+		MH_FREE = RocksDB.lookup("rocksdb_free",
+				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+	}
 
-    /** Package-private: the raw snapshot pointer, used by ReadOptions.setSnapshot(). */
-    final MemorySegment ptr;
+	/**
+	 * Package-private: the raw snapshot pointer, used by ReadOptions.setSnapshot().
+	 */
+	final MemorySegment ptr;
 
-    /**
-     * DB pointer used to release the snapshot; NULL signals that rocksdb_free
-     * should be used instead (transaction snapshot ownership model).
-     */
-    private final MemorySegment dbPtr;
+	/**
+	 * DB pointer used to release the snapshot; NULL signals that rocksdb_free
+	 * should be used instead (transaction snapshot ownership model).
+	 */
+	private final MemorySegment dbPtr;
 
-    /** Creates a snapshot owned by a RocksDB or TransactionDB instance. */
-    Snapshot(MemorySegment dbPtr, MemorySegment ptr) {
-        this.dbPtr = dbPtr;
-        this.ptr = ptr;
-    }
+	/**
+	 * Creates a snapshot owned by a RocksDB or TransactionDB instance.
+	 */
+	Snapshot(MemorySegment dbPtr, MemorySegment ptr) {
+		this.dbPtr = dbPtr;
+		this.ptr = ptr;
+	}
 
-    /**
-     * Creates a snapshot owned by a Transaction instance.
-     * Released via {@code rocksdb_free} rather than {@code rocksdb_release_snapshot}.
-     */
-    Snapshot(MemorySegment ptr) {
-        this.dbPtr = MemorySegment.NULL;
-        this.ptr = ptr;
-    }
+	/**
+	 * Creates a snapshot owned by a Transaction instance.
+	 * Released via {@code rocksdb_free} rather than {@code rocksdb_release_snapshot}.
+	 */
+	Snapshot(MemorySegment ptr) {
+		this.dbPtr = MemorySegment.NULL;
+		this.ptr = ptr;
+	}
 
-    /**
-     * Returns the sequence number at which this snapshot was taken.
-     * Useful for ordering and debugging.
-     */
-    public SequenceNumber sequenceNumber() {
-        try {
-            return SequenceNumber.of((long) MH_SEQUENCE_NUMBER.invokeExact(ptr));
-        } catch (Throwable t) {
-            throw new RocksDBException("snapshot sequenceNumber failed", t);
-        }
-    }
+	/**
+	 * Returns the sequence number at which this snapshot was taken.
+	 * Useful for ordering and debugging.
+	 */
+	public SequenceNumber sequenceNumber() {
+		try {
+			return SequenceNumber.of((long) MH_SEQUENCE_NUMBER.invokeExact(ptr));
+		} catch (Throwable t) {
+			throw new RocksDBException("snapshot sequenceNumber failed", t);
+		}
+	}
 
-    /**
-     * Releases the snapshot. After this call the snapshot is invalid and must
-     * not be used in any {@link ReadOptions}.
-     */
-    @Override
-    public void close() {
-        try {
-            if (MemorySegment.NULL.equals(dbPtr)) {
-                MH_FREE.invokeExact(ptr);
-            } else {
-                MH_RELEASE.invokeExact(dbPtr, ptr);
-            }
-        } catch (Throwable t) {
-            throw new RocksDBException("snapshot release failed", t);
-        }
-    }
+	/**
+	 * Releases the snapshot. After this call the snapshot is invalid and must
+	 * not be used in any {@link ReadOptions}.
+	 */
+	@Override
+	public void close() {
+		try {
+			if (MemorySegment.NULL.equals(dbPtr)) {
+				MH_FREE.invokeExact(ptr);
+			} else {
+				MH_RELEASE.invokeExact(dbPtr, ptr);
+			}
+		} catch (Throwable t) {
+			throw new RocksDBException("snapshot release failed", t);
+		}
+	}
 }

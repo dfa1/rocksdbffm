@@ -1,6 +1,17 @@
 package io.github.dfa1.rocksdbffm.benchmark;
 
-import org.openjdk.jmh.annotations.*;
+import org.openjdk.jmh.annotations.Benchmark;
+import org.openjdk.jmh.annotations.BenchmarkMode;
+import org.openjdk.jmh.annotations.Fork;
+import org.openjdk.jmh.annotations.Level;
+import org.openjdk.jmh.annotations.Measurement;
+import org.openjdk.jmh.annotations.Mode;
+import org.openjdk.jmh.annotations.OutputTimeUnit;
+import org.openjdk.jmh.annotations.Scope;
+import org.openjdk.jmh.annotations.Setup;
+import org.openjdk.jmh.annotations.State;
+import org.openjdk.jmh.annotations.TearDown;
+import org.openjdk.jmh.annotations.Warmup;
 import org.rocksdb.Options;
 import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksDB;
@@ -22,129 +33,129 @@ import java.util.concurrent.TimeUnit;
 @Fork(value = 1, jvmArgsPrepend = {"--enable-native-access=ALL-UNNAMED", "--sun-misc-unsafe-memory-access=allow"})
 public class JniBenchmark {
 
-    static {
-        RocksDB.loadLibrary();
-    }
+	static {
+		RocksDB.loadLibrary();
+	}
 
-    private static final int BATCH_SIZE = 100;
-    private static final byte[] READ_KEY_BYTES   = "read-key".getBytes();
-    private static final byte[] READ_VALUE_BYTES  = "read-value-data-0123456789".getBytes();
-    private static final byte[] WRITE_KEY_BYTES  = "bench-key".getBytes();
-    private static final byte[] WRITE_VALUE_BYTES = "bench-value-data-0123456789".getBytes();
-    private static final byte[] BATCH_VALUE = "batch-value-data-0123456789".getBytes();
+	private static final int BATCH_SIZE = 100;
+	private static final byte[] READ_KEY_BYTES = "read-key".getBytes();
+	private static final byte[] READ_VALUE_BYTES = "read-value-data-0123456789".getBytes();
+	private static final byte[] WRITE_KEY_BYTES = "bench-key".getBytes();
+	private static final byte[] WRITE_VALUE_BYTES = "bench-value-data-0123456789".getBytes();
+	private static final byte[] BATCH_VALUE = "batch-value-data-0123456789".getBytes();
 
-    private RocksDB db;
-    private Options options;
-    private WriteOptions writeOptions;
-    private ReadOptions readOptions;
-    private Path dbPath;
+	private RocksDB db;
+	private Options options;
+	private WriteOptions writeOptions;
+	private ReadOptions readOptions;
+	private Path dbPath;
 
-    // byte[] tier
-    private byte[] writeKey;
-    private byte[] writeValue;
-    private byte[] readKey;
+	// byte[] tier
+	private byte[] writeKey;
+	private byte[] writeValue;
+	private byte[] readKey;
 
-    // ByteBuffer tier
-    private ByteBuffer writeKeyBuf;
-    private ByteBuffer writeValBuf;
-    private ByteBuffer readKeyBuf;
-    private ByteBuffer readValBuf;
+	// ByteBuffer tier
+	private ByteBuffer writeKeyBuf;
+	private ByteBuffer writeValBuf;
+	private ByteBuffer readKeyBuf;
+	private ByteBuffer readValBuf;
 
-    private WriteBatch batch;
-    private byte[][] batchKeys;
+	private WriteBatch batch;
+	private byte[][] batchKeys;
 
-    @Setup(Level.Trial)
-    public void setup() throws Exception {
-        dbPath = Files.createTempDirectory("bench-jni-");
-        options = new Options().setCreateIfMissing(true);
-        db = RocksDB.open(options, dbPath.toString());
-        writeOptions = new WriteOptions();
-        readOptions = new ReadOptions();
+	@Setup(Level.Trial)
+	public void setup() throws Exception {
+		dbPath = Files.createTempDirectory("bench-jni-");
+		options = new Options().setCreateIfMissing(true);
+		db = RocksDB.open(options, dbPath.toString());
+		writeOptions = new WriteOptions();
+		readOptions = new ReadOptions();
 
-        // --- byte[] tier ---
-        writeKey = WRITE_KEY_BYTES.clone();
-        writeValue = WRITE_VALUE_BYTES.clone();
-        readKey = READ_KEY_BYTES.clone();
+		// --- byte[] tier ---
+		writeKey = WRITE_KEY_BYTES.clone();
+		writeValue = WRITE_VALUE_BYTES.clone();
+		readKey = READ_KEY_BYTES.clone();
 
-        // --- ByteBuffer tier ---
-        writeKeyBuf = ByteBuffer.allocateDirect(WRITE_KEY_BYTES.length);
-        writeKeyBuf.put(WRITE_KEY_BYTES).flip();
-        writeValBuf = ByteBuffer.allocateDirect(WRITE_VALUE_BYTES.length);
-        writeValBuf.put(WRITE_VALUE_BYTES).flip();
-        readKeyBuf = ByteBuffer.allocateDirect(READ_KEY_BYTES.length);
-        readKeyBuf.put(READ_KEY_BYTES).flip();
-        readValBuf = ByteBuffer.allocateDirect(64);
+		// --- ByteBuffer tier ---
+		writeKeyBuf = ByteBuffer.allocateDirect(WRITE_KEY_BYTES.length);
+		writeKeyBuf.put(WRITE_KEY_BYTES).flip();
+		writeValBuf = ByteBuffer.allocateDirect(WRITE_VALUE_BYTES.length);
+		writeValBuf.put(WRITE_VALUE_BYTES).flip();
+		readKeyBuf = ByteBuffer.allocateDirect(READ_KEY_BYTES.length);
+		readKeyBuf.put(READ_KEY_BYTES).flip();
+		readValBuf = ByteBuffer.allocateDirect(64);
 
-        // Seed the read key
-        db.put(READ_KEY_BYTES, READ_VALUE_BYTES);
+		// Seed the read key
+		db.put(READ_KEY_BYTES, READ_VALUE_BYTES);
 
-        batchKeys = new byte[BATCH_SIZE][];
-        for (int i = 0; i < BATCH_SIZE; i++) {
-            batchKeys[i] = ("batch-key-" + i).getBytes();
-        }
-        batch = new WriteBatch();
-    }
+		batchKeys = new byte[BATCH_SIZE][];
+		for (int i = 0; i < BATCH_SIZE; i++) {
+			batchKeys[i] = ("batch-key-" + i).getBytes();
+		}
+		batch = new WriteBatch();
+	}
 
-    @TearDown(Level.Trial)
-    public void teardown() throws Exception {
-        batch.close();
-        db.close();
-        options.close();
-        writeOptions.close();
-        readOptions.close();
-        deleteDir(dbPath);
-    }
+	@TearDown(Level.Trial)
+	public void teardown() throws Exception {
+		batch.close();
+		db.close();
+		options.close();
+		writeOptions.close();
+		readOptions.close();
+		deleteDir(dbPath);
+	}
 
-    // ---- byte[] tier -------------------------------------------------------
+	// ---- byte[] tier -------------------------------------------------------
 
-    @Benchmark
-    public void writesBytes() throws Exception {
-        db.put(writeKey, writeValue);
-    }
+	@Benchmark
+	public void writesBytes() throws Exception {
+		db.put(writeKey, writeValue);
+	}
 
-    @Benchmark
-    public byte[] readsBytes() throws Exception {
-        return db.get(readKey);
-    }
+	@Benchmark
+	public byte[] readsBytes() throws Exception {
+		return db.get(readKey);
+	}
 
-    // ---- ByteBuffer tier ---------------------------------------------------
+	// ---- ByteBuffer tier ---------------------------------------------------
 
-    @Benchmark
-    public void writesDirectByteBuffer() throws Exception {
-        writeKeyBuf.rewind();
-        writeValBuf.rewind();
-        db.put(writeOptions, writeKeyBuf, writeValBuf);
-    }
+	@Benchmark
+	public void writesDirectByteBuffer() throws Exception {
+		writeKeyBuf.rewind();
+		writeValBuf.rewind();
+		db.put(writeOptions, writeKeyBuf, writeValBuf);
+	}
 
-    @Benchmark
-    public int readsDirectByteBuffer() throws Exception {
-        readKeyBuf.rewind();
-        readValBuf.clear();
-        return db.get(readOptions, readKeyBuf, readValBuf);
-    }
+	@Benchmark
+	public int readsDirectByteBuffer() throws Exception {
+		readKeyBuf.rewind();
+		readValBuf.clear();
+		return db.get(readOptions, readKeyBuf, readValBuf);
+	}
 
-    // ---- batch (byte[] keys) -----------------------------------------------
+	// ---- batch (byte[] keys) -----------------------------------------------
 
-    @Benchmark
-    public void batchWrites() throws Exception {
-        batch.clear();
-        for (int i = 0; i < BATCH_SIZE; i++) {
-            batch.put(batchKeys[i], BATCH_VALUE);
-        }
-        db.write(writeOptions, batch);
-    }
+	@Benchmark
+	public void batchWrites() throws Exception {
+		batch.clear();
+		for (int i = 0; i < BATCH_SIZE; i++) {
+			batch.put(batchKeys[i], BATCH_VALUE);
+		}
+		db.write(writeOptions, batch);
+	}
 
-    private static void deleteDir(Path dir) throws IOException {
-        Files.walk(dir)
-             .sorted(Comparator.reverseOrder())
-             .forEach(p -> p.toFile().delete());
-    }
+	private static void deleteDir(Path dir) throws IOException {
+		Files.walk(dir)
+				.sorted(Comparator.reverseOrder())
+				.forEach(p -> p.toFile().delete());
+	}
 
-    static void main() throws Exception {
-        org.openjdk.jmh.runner.options.Options opt = new org.openjdk.jmh.runner.options.OptionsBuilder()
-                .include(JniBenchmark.class.getSimpleName())
-                .build();
+	static void main() throws Exception {
+		org.openjdk.jmh.runner.options.Options opt = new org.openjdk.jmh.runner.options.OptionsBuilder()
+				.include(JniBenchmark.class.getSimpleName())
+				.build();
 
-        new org.openjdk.jmh.runner.Runner(opt).run();
-    }
+		new org.openjdk.jmh.runner.Runner(opt).run();
+	}
 }

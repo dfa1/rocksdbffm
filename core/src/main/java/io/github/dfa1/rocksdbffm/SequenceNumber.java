@@ -17,52 +17,60 @@ package io.github.dfa1.rocksdbffm;
  */
 public final class SequenceNumber implements Comparable<SequenceNumber> {
 
-    private final long value;
+	private final long value;
 
-    private SequenceNumber(long value) {
-        if (value < 0) {
-            throw new IllegalArgumentException("SequenceNumber cannot be negative: " + value);
-        }
-        this.value = value;
-    }
+	private SequenceNumber(long value) {
+		if (value < 0) {
+			throw new IllegalArgumentException("SequenceNumber cannot be negative: " + value);
+		}
+		this.value = value;
+	}
 
-    /** Wraps a raw sequence number returned by the native API. */
-    public static SequenceNumber of(long value) {
-        return new SequenceNumber(value);
-    }
+	/**
+	 * Wraps a raw sequence number returned by the native API.
+	 */
+	public static SequenceNumber of(long value) {
+		return new SequenceNumber(value);
+	}
 
-    /** Returns the raw {@code uint64_t} value, for passing to native calls. */
-    public long toLong() {
-        return value;
-    }
+	/**
+	 * Returns the raw {@code uint64_t} value, for passing to native calls.
+	 */
+	public long toLong() {
+		return value;
+	}
 
-    /** Returns true if this sequence number is strictly after {@code other}. */
-    public boolean isAfter(SequenceNumber other) {
-        return this.value > other.value;
-    }
+	/**
+	 * Returns true if this sequence number is strictly after {@code other}.
+	 */
+	public boolean isAfter(SequenceNumber other) {
+		return this.value > other.value;
+	}
 
-    /** Returns true if this sequence number is strictly before {@code other}. */
-    public boolean isBefore(SequenceNumber other) {
-        return this.value < other.value;
-    }
+	/**
+	 * Returns true if this sequence number is strictly before {@code other}.
+	 */
+	public boolean isBefore(SequenceNumber other) {
+		return this.value < other.value;
+	}
 
-    @Override
-    public int compareTo(SequenceNumber other) {
-        return Long.compareUnsigned(this.value, other.value);
-    }
+	@Override
+	public int compareTo(SequenceNumber other) {
+		return Long.compareUnsigned(this.value, other.value);
+	}
 
-    @Override
-    public boolean equals(Object obj) {
-        return obj instanceof SequenceNumber other && this.value == other.value;
-    }
+	@Override
+	public boolean equals(Object obj) {
+		return obj instanceof SequenceNumber other && this.value == other.value;
+	}
 
-    @Override
-    public int hashCode() {
-        return Long.hashCode(value);
-    }
+	@Override
+	public int hashCode() {
+		return Long.hashCode(value);
+	}
 
-    @Override
-    public String toString() {
-        return "SequenceNumber(" + value + ")";
-    }
+	@Override
+	public String toString() {
+		return "SequenceNumber(" + value + ")";
+	}
 }

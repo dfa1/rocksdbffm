@@ -1,6 +1,8 @@
 package io.github.dfa1.rocksdbffm;
 
-import java.lang.foreign.*;
+import java.lang.foreign.FunctionDescriptor;
+import java.lang.foreign.MemorySegment;
+import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 
 /**
@@ -18,242 +20,246 @@ import java.lang.invoke.MethodHandle;
  */
 public final class Options implements AutoCloseable {
 
-    static final MethodHandle MH_CREATE;
-    static final MethodHandle MH_DESTROY;
-    static final MethodHandle MH_SET_CREATE_IF_MISSING;
-    static final MethodHandle MH_GET_CREATE_IF_MISSING;
-    private static final MethodHandle MH_SET_BLOCK_BASED_TABLE_FACTORY;
-    private static final MethodHandle MH_ENABLE_STATISTICS;
-    private static final MethodHandle MH_SET_STATISTICS_LEVEL;
-    private static final MethodHandle MH_GET_STATISTICS_LEVEL;
-    private static final MethodHandle MH_STATISTICS_GET_STRING;
-    private static final MethodHandle MH_STATISTICS_GET_TICKER_COUNT;
-    private static final MethodHandle MH_STATISTICS_GET_HISTOGRAM_DATA;
-    private static final MethodHandle MH_SET_COMPRESSION;
-    private static final MethodHandle MH_GET_COMPRESSION;
-    private static final MethodHandle MH_SET_MERGE_OPERATOR;
-    private static final MethodHandle MH_SET_UINT64ADD_MERGE_OPERATOR;
-    private static final MethodHandle MH_FREE;
+	static final MethodHandle MH_CREATE;
+	static final MethodHandle MH_DESTROY;
+	static final MethodHandle MH_SET_CREATE_IF_MISSING;
+	static final MethodHandle MH_GET_CREATE_IF_MISSING;
+	private static final MethodHandle MH_SET_BLOCK_BASED_TABLE_FACTORY;
+	private static final MethodHandle MH_ENABLE_STATISTICS;
+	private static final MethodHandle MH_SET_STATISTICS_LEVEL;
+	private static final MethodHandle MH_GET_STATISTICS_LEVEL;
+	private static final MethodHandle MH_STATISTICS_GET_STRING;
+	private static final MethodHandle MH_STATISTICS_GET_TICKER_COUNT;
+	private static final MethodHandle MH_STATISTICS_GET_HISTOGRAM_DATA;
+	private static final MethodHandle MH_SET_COMPRESSION;
+	private static final MethodHandle MH_GET_COMPRESSION;
+	private static final MethodHandle MH_SET_MERGE_OPERATOR;
+	private static final MethodHandle MH_SET_UINT64ADD_MERGE_OPERATOR;
+	private static final MethodHandle MH_FREE;
 
-    static {
-        MH_CREATE = RocksDB.lookup("rocksdb_options_create",
-            FunctionDescriptor.of(ValueLayout.ADDRESS));
+	static {
+		MH_CREATE = RocksDB.lookup("rocksdb_options_create",
+				FunctionDescriptor.of(ValueLayout.ADDRESS));
 
-        MH_DESTROY = RocksDB.lookup("rocksdb_options_destroy",
-            FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+		MH_DESTROY = RocksDB.lookup("rocksdb_options_destroy",
+				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
-        MH_SET_CREATE_IF_MISSING = RocksDB.lookup("rocksdb_options_set_create_if_missing",
-            FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_BYTE));
+		MH_SET_CREATE_IF_MISSING = RocksDB.lookup("rocksdb_options_set_create_if_missing",
+				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_BYTE));
 
-        MH_GET_CREATE_IF_MISSING = RocksDB.lookup("rocksdb_options_get_create_if_missing",
-            FunctionDescriptor.of(ValueLayout.JAVA_BYTE, ValueLayout.ADDRESS));
+		MH_GET_CREATE_IF_MISSING = RocksDB.lookup("rocksdb_options_get_create_if_missing",
+				FunctionDescriptor.of(ValueLayout.JAVA_BYTE, ValueLayout.ADDRESS));
 
-        // void rocksdb_options_set_block_based_table_factory(opts*, block_based_table_options_t*)
-        MH_SET_BLOCK_BASED_TABLE_FACTORY = RocksDB.lookup(
-            "rocksdb_options_set_block_based_table_factory",
-            FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+		// void rocksdb_options_set_block_based_table_factory(opts*, block_based_table_options_t*)
+		MH_SET_BLOCK_BASED_TABLE_FACTORY = RocksDB.lookup(
+				"rocksdb_options_set_block_based_table_factory",
+				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
-        MH_ENABLE_STATISTICS = RocksDB.lookup("rocksdb_options_enable_statistics",
-            FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+		MH_ENABLE_STATISTICS = RocksDB.lookup("rocksdb_options_enable_statistics",
+				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
-        MH_SET_STATISTICS_LEVEL = RocksDB.lookup("rocksdb_options_set_statistics_level",
-            FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
+		MH_SET_STATISTICS_LEVEL = RocksDB.lookup("rocksdb_options_set_statistics_level",
+				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
 
-        MH_GET_STATISTICS_LEVEL = RocksDB.lookup("rocksdb_options_get_statistics_level",
-            FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
+		MH_GET_STATISTICS_LEVEL = RocksDB.lookup("rocksdb_options_get_statistics_level",
+				FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
 
-        MH_STATISTICS_GET_STRING = RocksDB.lookup("rocksdb_options_statistics_get_string",
-            FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+		MH_STATISTICS_GET_STRING = RocksDB.lookup("rocksdb_options_statistics_get_string",
+				FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
-        MH_STATISTICS_GET_TICKER_COUNT = RocksDB.lookup("rocksdb_options_statistics_get_ticker_count",
-            FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
+		MH_STATISTICS_GET_TICKER_COUNT = RocksDB.lookup("rocksdb_options_statistics_get_ticker_count",
+				FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
 
-        MH_STATISTICS_GET_HISTOGRAM_DATA = RocksDB.lookup("rocksdb_options_statistics_get_histogram_data",
-            FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
+		MH_STATISTICS_GET_HISTOGRAM_DATA = RocksDB.lookup("rocksdb_options_statistics_get_histogram_data",
+				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
 
-        // void rocksdb_options_set_compression(opts*, int)
-        MH_SET_COMPRESSION = RocksDB.lookup("rocksdb_options_set_compression",
-            FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
+		// void rocksdb_options_set_compression(opts*, int)
+		MH_SET_COMPRESSION = RocksDB.lookup("rocksdb_options_set_compression",
+				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
 
-        // int rocksdb_options_get_compression(opts*)
-        MH_GET_COMPRESSION = RocksDB.lookup("rocksdb_options_get_compression",
-            FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
+		// int rocksdb_options_get_compression(opts*)
+		MH_GET_COMPRESSION = RocksDB.lookup("rocksdb_options_get_compression",
+				FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
 
-        // void rocksdb_options_set_merge_operator(opts*, mergeoperator_t*)
-        MH_SET_MERGE_OPERATOR = RocksDB.lookup("rocksdb_options_set_merge_operator",
-            FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+		// void rocksdb_options_set_merge_operator(opts*, mergeoperator_t*)
+		MH_SET_MERGE_OPERATOR = RocksDB.lookup("rocksdb_options_set_merge_operator",
+				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
-        // void rocksdb_options_set_uint64add_merge_operator(opts*)
-        MH_SET_UINT64ADD_MERGE_OPERATOR = RocksDB.lookup("rocksdb_options_set_uint64add_merge_operator",
-            FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+		// void rocksdb_options_set_uint64add_merge_operator(opts*)
+		MH_SET_UINT64ADD_MERGE_OPERATOR = RocksDB.lookup("rocksdb_options_set_uint64add_merge_operator",
+				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
-        MH_FREE = RocksDB.lookup("rocksdb_free",
-            FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
-    }
+		MH_FREE = RocksDB.lookup("rocksdb_free",
+				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+	}
 
-    /** Package-private: accessed by RocksDB.open(). */
-    final MemorySegment ptr;
+	/**
+	 * Package-private: accessed by RocksDB.open().
+	 */
+	final MemorySegment ptr;
 
-    public Options() {
-        try {
-            this.ptr = (MemorySegment) MH_CREATE.invokeExact();
-        } catch (Throwable t) {
-            throw new RocksDBException("options create failed", t);
-        }
-    }
+	public Options() {
+		try {
+			this.ptr = (MemorySegment) MH_CREATE.invokeExact();
+		} catch (Throwable t) {
+			throw new RocksDBException("options create failed", t);
+		}
+	}
 
-    /**
-     * If true, the database will be created if it does not already exist.
-     * Default: false (same as RocksDB C++ default).
-     */
-    public Options setCreateIfMissing(boolean value) {
-        try {
-            MH_SET_CREATE_IF_MISSING.invokeExact(ptr, value ? (byte) 1 : (byte) 0);
-        } catch (Throwable t) {
-            throw new RocksDBException("setCreateIfMissing failed", t);
-        }
-        return this;
-    }
+	/**
+	 * If true, the database will be created if it does not already exist.
+	 * Default: false (same as RocksDB C++ default).
+	 */
+	public Options setCreateIfMissing(boolean value) {
+		try {
+			MH_SET_CREATE_IF_MISSING.invokeExact(ptr, value ? (byte) 1 : (byte) 0);
+		} catch (Throwable t) {
+			throw new RocksDBException("setCreateIfMissing failed", t);
+		}
+		return this;
+	}
 
-    public boolean getCreateIfMissing() {
-        try {
-            return ((byte) MH_GET_CREATE_IF_MISSING.invokeExact(ptr)) != 0;
-        } catch (Throwable t) {
-            throw new RocksDBException("getCreateIfMissing failed", t);
-        }
-    }
+	public boolean getCreateIfMissing() {
+		try {
+			return ((byte) MH_GET_CREATE_IF_MISSING.invokeExact(ptr)) != 0;
+		} catch (Throwable t) {
+			throw new RocksDBException("getCreateIfMissing failed", t);
+		}
+	}
 
-    /**
-     * Enables statistics gathering for this DB.
-     */
-    public Options enableStatistics() {
-        try {
-            MH_ENABLE_STATISTICS.invokeExact(ptr);
-        } catch (Throwable t) {
-            throw new RocksDBException("enableStatistics failed", t);
-        }
-        return this;
-    }
+	/**
+	 * Enables statistics gathering for this DB.
+	 */
+	public Options enableStatistics() {
+		try {
+			MH_ENABLE_STATISTICS.invokeExact(ptr);
+		} catch (Throwable t) {
+			throw new RocksDBException("enableStatistics failed", t);
+		}
+		return this;
+	}
 
-    public Options setStatisticsLevel(StatsLevel level) {
-        try {
-            MH_SET_STATISTICS_LEVEL.invokeExact(ptr, level.getValue());
-        } catch (Throwable t) {
-            throw new RocksDBException("setStatisticsLevel failed", t);
-        }
-        return this;
-    }
+	public Options setStatisticsLevel(StatsLevel level) {
+		try {
+			MH_SET_STATISTICS_LEVEL.invokeExact(ptr, level.getValue());
+		} catch (Throwable t) {
+			throw new RocksDBException("setStatisticsLevel failed", t);
+		}
+		return this;
+	}
 
-    public StatsLevel getStatisticsLevel() {
-        try {
-            int level = (int) MH_GET_STATISTICS_LEVEL.invokeExact(ptr);
-            for (StatsLevel l : StatsLevel.values()) {
-                if (l.getValue() == level) return l;
-            }
-            return StatsLevel.DISABLE_ALL;
-        } catch (Throwable t) {
-            throw new RocksDBException("getStatisticsLevel failed", t);
-        }
-    }
+	public StatsLevel getStatisticsLevel() {
+		try {
+			int level = (int) MH_GET_STATISTICS_LEVEL.invokeExact(ptr);
+			for (StatsLevel l : StatsLevel.values()) {
+				if (l.getValue() == level) return l;
+			}
+			return StatsLevel.DISABLE_ALL;
+		} catch (Throwable t) {
+			throw new RocksDBException("getStatisticsLevel failed", t);
+		}
+	}
 
-    public String getStatisticsString() {
-        try {
-            MemorySegment strPtr = (MemorySegment) MH_STATISTICS_GET_STRING.invokeExact(ptr);
-            if (MemorySegment.NULL.equals(strPtr)) return null;
-            String result = strPtr.reinterpret(Long.MAX_VALUE).getString(0);
-            MH_FREE.invokeExact(strPtr);
-            return result;
-        } catch (Throwable t) {
-            throw new RocksDBException("getStatisticsString failed", t);
-        }
-    }
+	public String getStatisticsString() {
+		try {
+			MemorySegment strPtr = (MemorySegment) MH_STATISTICS_GET_STRING.invokeExact(ptr);
+			if (MemorySegment.NULL.equals(strPtr)) return null;
+			String result = strPtr.reinterpret(Long.MAX_VALUE).getString(0);
+			MH_FREE.invokeExact(strPtr);
+			return result;
+		} catch (Throwable t) {
+			throw new RocksDBException("getStatisticsString failed", t);
+		}
+	}
 
-    public long getTickerCount(TickerType ticker) {
-        try {
-            return (long) MH_STATISTICS_GET_TICKER_COUNT.invokeExact(ptr, ticker.getValue());
-        } catch (Throwable t) {
-            throw new RocksDBException("getTickerCount failed", t);
-        }
-    }
+	public long getTickerCount(TickerType ticker) {
+		try {
+			return (long) MH_STATISTICS_GET_TICKER_COUNT.invokeExact(ptr, ticker.getValue());
+		} catch (Throwable t) {
+			throw new RocksDBException("getTickerCount failed", t);
+		}
+	}
 
-    public void getHistogramData(HistogramType histogram, StatisticsHistogramData data) {
-        try {
-            MH_STATISTICS_GET_HISTOGRAM_DATA.invokeExact(ptr, histogram.getValue(), data.ptr);
-        } catch (Throwable t) {
-            throw new RocksDBException("getHistogramData failed", t);
-        }
-    }
+	public void getHistogramData(HistogramType histogram, StatisticsHistogramData data) {
+		try {
+			MH_STATISTICS_GET_HISTOGRAM_DATA.invokeExact(ptr, histogram.getValue(), data.ptr);
+		} catch (Throwable t) {
+			throw new RocksDBException("getHistogramData failed", t);
+		}
+	}
 
-    /**
-     * Attaches a custom merge operator. Ownership transfers to this Options object;
-     * {@link MergeOperator#close()} on the passed instance becomes a no-op.
-     */
-    public Options setMergeOperator(MergeOperator operator) {
-        try {
-            MH_SET_MERGE_OPERATOR.invokeExact(ptr, operator.ptr);
-            operator.transferOwnership();
-        } catch (Throwable t) {
-            throw new RocksDBException("setMergeOperator failed", t);
-        }
-        return this;
-    }
+	/**
+	 * Attaches a custom merge operator. Ownership transfers to this Options object;
+	 * {@link MergeOperator#close()} on the passed instance becomes a no-op.
+	 */
+	public Options setMergeOperator(MergeOperator operator) {
+		try {
+			MH_SET_MERGE_OPERATOR.invokeExact(ptr, operator.ptr);
+			operator.transferOwnership();
+		} catch (Throwable t) {
+			throw new RocksDBException("setMergeOperator failed", t);
+		}
+		return this;
+	}
 
-    /**
-     * Configures the built-in uint64 add merge operator.
-     * Operands and values are treated as 8-byte little-endian unsigned integers.
-     */
-    public Options setUint64AddMergeOperator() {
-        try {
-            MH_SET_UINT64ADD_MERGE_OPERATOR.invokeExact(ptr);
-        } catch (Throwable t) {
-            throw new RocksDBException("setUint64AddMergeOperator failed", t);
-        }
-        return this;
-    }
+	/**
+	 * Configures the built-in uint64 add merge operator.
+	 * Operands and values are treated as 8-byte little-endian unsigned integers.
+	 */
+	public Options setUint64AddMergeOperator() {
+		try {
+			MH_SET_UINT64ADD_MERGE_OPERATOR.invokeExact(ptr);
+		} catch (Throwable t) {
+			throw new RocksDBException("setUint64AddMergeOperator failed", t);
+		}
+		return this;
+	}
 
-    /**
-     * Sets the compression algorithm for all levels.
-     * Use {@link CompressionType#getSupportedTypes()} to check which types are available.
-     *
-     * @return {@code this} for chaining
-     */
-    public Options setCompression(CompressionType type) {
-        try {
-            MH_SET_COMPRESSION.invokeExact(ptr, type.value);
-            return this;
-        } catch (Throwable t) {
-            throw new RocksDBException("setCompression failed", t);
-        }
-    }
+	/**
+	 * Sets the compression algorithm for all levels.
+	 * Use {@link CompressionType#getSupportedTypes()} to check which types are available.
+	 *
+	 * @return {@code this} for chaining
+	 */
+	public Options setCompression(CompressionType type) {
+		try {
+			MH_SET_COMPRESSION.invokeExact(ptr, type.value);
+			return this;
+		} catch (Throwable t) {
+			throw new RocksDBException("setCompression failed", t);
+		}
+	}
 
-    /** Returns the compression algorithm configured for this Options. */
-    public CompressionType getCompression() {
-        try {
-            return CompressionType.fromValue((int) MH_GET_COMPRESSION.invokeExact(ptr));
-        } catch (Throwable t) {
-            throw new RocksDBException("getCompression failed", t);
-        }
-    }
+	/**
+	 * Returns the compression algorithm configured for this Options.
+	 */
+	public CompressionType getCompression() {
+		try {
+			return CompressionType.fromValue((int) MH_GET_COMPRESSION.invokeExact(ptr));
+		} catch (Throwable t) {
+			throw new RocksDBException("getCompression failed", t);
+		}
+	}
 
-    /**
-     * Configures block-based table format for this DB.
-     * RocksDB copies the config internally; {@code tableConfig} may be closed after this call.
-     */
-    public Options setTableFormatConfig(BlockBasedTableConfig tableConfig) {
-        try {
-            MH_SET_BLOCK_BASED_TABLE_FACTORY.invokeExact(ptr, tableConfig.ptr);
-        } catch (Throwable t) {
-            throw new RocksDBException("setTableFormatConfig failed", t);
-        }
-        return this;
-    }
+	/**
+	 * Configures block-based table format for this DB.
+	 * RocksDB copies the config internally; {@code tableConfig} may be closed after this call.
+	 */
+	public Options setTableFormatConfig(BlockBasedTableConfig tableConfig) {
+		try {
+			MH_SET_BLOCK_BASED_TABLE_FACTORY.invokeExact(ptr, tableConfig.ptr);
+		} catch (Throwable t) {
+			throw new RocksDBException("setTableFormatConfig failed", t);
+		}
+		return this;
+	}
 
-    @Override
-    public void close() {
-        try {
-            MH_DESTROY.invokeExact(ptr);
-        } catch (Throwable t) {
-            throw new RocksDBException("options destroy failed", t);
-        }
-    }
+	@Override
+	public void close() {
+		try {
+			MH_DESTROY.invokeExact(ptr);
+		} catch (Throwable t) {
+			throw new RocksDBException("options destroy failed", t);
+		}
+	}
 }

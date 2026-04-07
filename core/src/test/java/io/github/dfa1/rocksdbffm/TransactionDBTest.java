@@ -9,237 +9,237 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class TransactionDBTest {
 
-    private static TransactionDB openDb(Path path) {
-        try (var opts = new Options().setCreateIfMissing(true);
-             var txnDbOpts = new TransactionDBOptions()) {
-            return TransactionDB.open(opts, txnDbOpts, path);
-        }
-    }
+	private static TransactionDB openDb(Path path) {
+		try (var opts = new Options().setCreateIfMissing(true);
+		     var txnDbOpts = new TransactionDBOptions()) {
+			return TransactionDB.open(opts, txnDbOpts, path);
+		}
+	}
 
-    // -----------------------------------------------------------------------
-    // commit / rollback
-    // -----------------------------------------------------------------------
+	// -----------------------------------------------------------------------
+	// commit / rollback
+	// -----------------------------------------------------------------------
 
-    @Test
-    void commit_makesChangesVisible(@TempDir Path dir) {
-        // Given
-        try (var db = openDb(dir);
-             var wo = new WriteOptions();
-             var txn = db.beginTransaction(wo)) {
+	@Test
+	void commit_makesChangesVisible(@TempDir Path dir) {
+		// Given
+		try (var db = openDb(dir);
+		     var wo = new WriteOptions();
+		     var txn = db.beginTransaction(wo)) {
 
-            txn.put("k".getBytes(), "v".getBytes());
+			txn.put("k".getBytes(), "v".getBytes());
 
-            // When
-            txn.commit();
+			// When
+			txn.commit();
 
-            // Then
-            assertThat(db.get("k".getBytes())).isEqualTo("v".getBytes());
-        }
-    }
+			// Then
+			assertThat(db.get("k".getBytes())).isEqualTo("v".getBytes());
+		}
+	}
 
-    @Test
-    void rollback_discardsChanges(@TempDir Path dir) {
-        // Given
-        try (var db = openDb(dir);
-             var wo = new WriteOptions();
-             var txn = db.beginTransaction(wo)) {
+	@Test
+	void rollback_discardsChanges(@TempDir Path dir) {
+		// Given
+		try (var db = openDb(dir);
+		     var wo = new WriteOptions();
+		     var txn = db.beginTransaction(wo)) {
 
-            txn.put("k".getBytes(), "v".getBytes());
+			txn.put("k".getBytes(), "v".getBytes());
 
-            // When
-            txn.rollback();
+			// When
+			txn.rollback();
 
-            // Then
-            assertThat(db.get("k".getBytes())).isNull();
-        }
-    }
+			// Then
+			assertThat(db.get("k".getBytes())).isNull();
+		}
+	}
 
-    // -----------------------------------------------------------------------
-    // get within a transaction
-    // -----------------------------------------------------------------------
+	// -----------------------------------------------------------------------
+	// get within a transaction
+	// -----------------------------------------------------------------------
 
-    @Test
-    void get_readsUncommittedWritesWithinSameTransaction(@TempDir Path dir) {
-        // Given
-        try (var db = openDb(dir);
-             var wo = new WriteOptions();
-             var ro = new ReadOptions();
-             var txn = db.beginTransaction(wo)) {
+	@Test
+	void get_readsUncommittedWritesWithinSameTransaction(@TempDir Path dir) {
+		// Given
+		try (var db = openDb(dir);
+		     var wo = new WriteOptions();
+		     var ro = new ReadOptions();
+		     var txn = db.beginTransaction(wo)) {
 
-            txn.put("k".getBytes(), "v".getBytes());
+			txn.put("k".getBytes(), "v".getBytes());
 
-            // When
-            var result = txn.get(ro, "k".getBytes());
+			// When
+			var result = txn.get(ro, "k".getBytes());
 
-            // Then
-            assertThat(result).isEqualTo("v".getBytes());
-            txn.commit();
-        }
-    }
+			// Then
+			assertThat(result).isEqualTo("v".getBytes());
+			txn.commit();
+		}
+	}
 
-    @Test
-    void get_returnsNull_forAbsentKey(@TempDir Path dir) {
-        // Given
-        try (var db = openDb(dir);
-             var wo = new WriteOptions();
-             var ro = new ReadOptions();
-             var txn = db.beginTransaction(wo)) {
+	@Test
+	void get_returnsNull_forAbsentKey(@TempDir Path dir) {
+		// Given
+		try (var db = openDb(dir);
+		     var wo = new WriteOptions();
+		     var ro = new ReadOptions();
+		     var txn = db.beginTransaction(wo)) {
 
-            // When
-            var result = txn.get(ro, "missing".getBytes());
+			// When
+			var result = txn.get(ro, "missing".getBytes());
 
-            // Then
-            assertThat(result).isNull();
-            txn.rollback();
-        }
-    }
+			// Then
+			assertThat(result).isNull();
+			txn.rollback();
+		}
+	}
 
-    @Test
-    void getForUpdate_locksAndReturnsValue(@TempDir Path dir) {
-        // Given
-        seed(dir, "k", "original");
+	@Test
+	void getForUpdate_locksAndReturnsValue(@TempDir Path dir) {
+		// Given
+		seed(dir, "k", "original");
 
-        try (var db = openDb(dir);
-             var wo = new WriteOptions();
-             var ro = new ReadOptions();
-             var txn = db.beginTransaction(wo)) {
+		try (var db = openDb(dir);
+		     var wo = new WriteOptions();
+		     var ro = new ReadOptions();
+		     var txn = db.beginTransaction(wo)) {
 
-            // When
-            var val = txn.getForUpdate(ro, "k".getBytes(), true);
+			// When
+			var val = txn.getForUpdate(ro, "k".getBytes(), true);
 
-            // Then
-            assertThat(val).isEqualTo("original".getBytes());
+			// Then
+			assertThat(val).isEqualTo("original".getBytes());
 
-            txn.put("k".getBytes(), "updated".getBytes());
-            txn.commit();
-        }
+			txn.put("k".getBytes(), "updated".getBytes());
+			txn.commit();
+		}
 
-        try (var db = openDb(dir)) {
-            assertThat(db.get("k".getBytes())).isEqualTo("updated".getBytes());
-        }
-    }
+		try (var db = openDb(dir)) {
+			assertThat(db.get("k".getBytes())).isEqualTo("updated".getBytes());
+		}
+	}
 
-    // -----------------------------------------------------------------------
-    // delete within a transaction
-    // -----------------------------------------------------------------------
+	// -----------------------------------------------------------------------
+	// delete within a transaction
+	// -----------------------------------------------------------------------
 
-    @Test
-    void delete_removesKeyWithinTransaction(@TempDir Path dir) {
-        // Given
-        seed(dir, "k", "v");
+	@Test
+	void delete_removesKeyWithinTransaction(@TempDir Path dir) {
+		// Given
+		seed(dir, "k", "v");
 
-        try (var db = openDb(dir);
-             var wo = new WriteOptions();
-             var ro = new ReadOptions();
-             var txn = db.beginTransaction(wo)) {
+		try (var db = openDb(dir);
+		     var wo = new WriteOptions();
+		     var ro = new ReadOptions();
+		     var txn = db.beginTransaction(wo)) {
 
-            // When
-            txn.delete("k".getBytes());
+			// When
+			txn.delete("k".getBytes());
 
-            // Then — invisible within the transaction immediately
-            assertThat(txn.get(ro, "k".getBytes())).isNull();
-            txn.commit();
-        }
+			// Then — invisible within the transaction immediately
+			assertThat(txn.get(ro, "k".getBytes())).isNull();
+			txn.commit();
+		}
 
-        try (var db = openDb(dir)) {
-            assertThat(db.get("k".getBytes())).isNull();
-        }
-    }
+		try (var db = openDb(dir)) {
+			assertThat(db.get("k".getBytes())).isNull();
+		}
+	}
 
-    // -----------------------------------------------------------------------
-    // savepoints
-    // -----------------------------------------------------------------------
+	// -----------------------------------------------------------------------
+	// savepoints
+	// -----------------------------------------------------------------------
 
-    @Test
-    void rollbackToSavePoint_restoresPartialState(@TempDir Path dir) {
-        // Given
-        try (var db = openDb(dir);
-             var wo = new WriteOptions();
-             var ro = new ReadOptions();
-             var txn = db.beginTransaction(wo)) {
+	@Test
+	void rollbackToSavePoint_restoresPartialState(@TempDir Path dir) {
+		// Given
+		try (var db = openDb(dir);
+		     var wo = new WriteOptions();
+		     var ro = new ReadOptions();
+		     var txn = db.beginTransaction(wo)) {
 
-            txn.put("k1".getBytes(), "v1".getBytes());
-            txn.setSavePoint();
-            txn.put("k2".getBytes(), "v2".getBytes());
+			txn.put("k1".getBytes(), "v1".getBytes());
+			txn.setSavePoint();
+			txn.put("k2".getBytes(), "v2".getBytes());
 
-            // When
-            txn.rollbackToSavePoint();
+			// When
+			txn.rollbackToSavePoint();
 
-            // Then — k1 still staged, k2 discarded
-            assertThat(txn.get(ro, "k1".getBytes())).isEqualTo("v1".getBytes());
-            assertThat(txn.get(ro, "k2".getBytes())).isNull();
+			// Then — k1 still staged, k2 discarded
+			assertThat(txn.get(ro, "k1".getBytes())).isEqualTo("v1".getBytes());
+			assertThat(txn.get(ro, "k2".getBytes())).isNull();
 
-            txn.commit();
-        }
+			txn.commit();
+		}
 
-        try (var db = openDb(dir)) {
-            assertThat(db.get("k1".getBytes())).isEqualTo("v1".getBytes());
-            assertThat(db.get("k2".getBytes())).isNull();
-        }
-    }
+		try (var db = openDb(dir)) {
+			assertThat(db.get("k1".getBytes())).isEqualTo("v1".getBytes());
+			assertThat(db.get("k2".getBytes())).isNull();
+		}
+	}
 
-    // -----------------------------------------------------------------------
-    // direct (non-transactional) operations
-    // -----------------------------------------------------------------------
+	// -----------------------------------------------------------------------
+	// direct (non-transactional) operations
+	// -----------------------------------------------------------------------
 
-    @Test
-    void directPut_isVisibleViaDirectGet(@TempDir Path dir) {
-        // Given
-        try (var db = openDb(dir)) {
-            // When
-            db.put("k".getBytes(), "v".getBytes());
+	@Test
+	void directPut_isVisibleViaDirectGet(@TempDir Path dir) {
+		// Given
+		try (var db = openDb(dir)) {
+			// When
+			db.put("k".getBytes(), "v".getBytes());
 
-            // Then
-            assertThat(db.get("k".getBytes())).isEqualTo("v".getBytes());
-        }
-    }
+			// Then
+			assertThat(db.get("k".getBytes())).isEqualTo("v".getBytes());
+		}
+	}
 
-    @Test
-    void directDelete_removesKey(@TempDir Path dir) {
-        // Given
-        try (var db = openDb(dir)) {
-            db.put("k".getBytes(), "v".getBytes());
+	@Test
+	void directDelete_removesKey(@TempDir Path dir) {
+		// Given
+		try (var db = openDb(dir)) {
+			db.put("k".getBytes(), "v".getBytes());
 
-            // When
-            db.delete("k".getBytes());
+			// When
+			db.delete("k".getBytes());
 
-            // Then
-            assertThat(db.get("k".getBytes())).isNull();
-        }
-    }
+			// Then
+			assertThat(db.get("k".getBytes())).isNull();
+		}
+	}
 
-    // -----------------------------------------------------------------------
-    // TransactionOptions
-    // -----------------------------------------------------------------------
+	// -----------------------------------------------------------------------
+	// TransactionOptions
+	// -----------------------------------------------------------------------
 
-    @Test
-    void transactionOptions_setSnapshot_doesNotBreakNormalFlow(@TempDir Path dir) {
-        // Given
-        try (var db = openDb(dir);
-             var wo = new WriteOptions();
-             var txnOpts = new TransactionOptions().setSetSnapshot(true);
-             var txn = db.beginTransaction(wo, txnOpts)) {
+	@Test
+	void transactionOptions_setSnapshot_doesNotBreakNormalFlow(@TempDir Path dir) {
+		// Given
+		try (var db = openDb(dir);
+		     var wo = new WriteOptions();
+		     var txnOpts = new TransactionOptions().setSetSnapshot(true);
+		     var txn = db.beginTransaction(wo, txnOpts)) {
 
-            txn.put("k".getBytes(), "v".getBytes());
+			txn.put("k".getBytes(), "v".getBytes());
 
-            // When
-            txn.commit();
+			// When
+			txn.commit();
 
-            // Then
-            assertThat(db.get("k".getBytes())).isEqualTo("v".getBytes());
-        }
-    }
+			// Then
+			assertThat(db.get("k".getBytes())).isEqualTo("v".getBytes());
+		}
+	}
 
-    // -----------------------------------------------------------------------
-    // Helpers
-    // -----------------------------------------------------------------------
+	// -----------------------------------------------------------------------
+	// Helpers
+	// -----------------------------------------------------------------------
 
-    private void seed(Path dir, String key, String value) {
-        try (var db = openDb(dir);
-             var wo = new WriteOptions();
-             var txn = db.beginTransaction(wo)) {
-            txn.put(key.getBytes(), value.getBytes());
-            txn.commit();
-        }
-    }
+	private void seed(Path dir, String key, String value) {
+		try (var db = openDb(dir);
+		     var wo = new WriteOptions();
+		     var txn = db.beginTransaction(wo)) {
+			txn.put(key.getBytes(), value.getBytes());
+			txn.commit();
+		}
+	}
 }

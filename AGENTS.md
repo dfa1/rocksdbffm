@@ -4,7 +4,7 @@ This file serves as the primary context for AI agents working on **rocksdbffm**.
 
 ## 🤖 AI-Driven Project Mandate
 This project is heavily AI-driven. As an agent, your goal is to:
-- **Be Autonomous:** Research C headers and identify the best mapping to Java FFM.
+- **Be Autonomous:** Research C headers (rocksdb/include/rocksdb/c.h) and identify the best mapping to Java FFM.
 - **Stay Technical:** Prioritize performance, zero-copy, and manual memory safety.
 - **Maintain Consistency:** Follow established naming and ownership patterns.
 
@@ -69,13 +69,12 @@ try (Arena arena = Arena.ofConfined()) {
 
 ### 1. Comparative Testing
 For every new feature:
-1. Compare the behavior against `rocksdbjni` if possible.
-2. Write unit tests in JUnit 5 using `@TempDir`.
-3. Follow the `// Given / // When / // Then` structure.
+1. Write unit tests in JUnit 5 using `@TempDir`.
+2. Follow the `// Given / // When / // Then` structure.
+3. **Run tests:** `mvn test`
 
 ### 2. Benchmark First
 Performance gains are a primary goal. Use `JMH` to validate changes.
-- **Run tests:** `mvn test`
 - **Run benchmarks:**
   ```bash
   mvn test-compile -q
@@ -111,30 +110,17 @@ For the full feature status and roadmap see `README.md`. This section maps each 
 | Compaction control | `CompactOptions.java`; `RocksDB.compactRange`, `suggestCompactRange`, `disableFileDeletions`, `enableFileDeletions` |
 | Secondary DB | `SecondaryDB.java` |
 
-### Missing features — key C API entry points
-
-| Feature | Key C API symbols |
-| :--- | :--- |
-| ~~Snapshots~~ | ✅ Done — see `Snapshot.java` |
-| **Column Families** | `rocksdb_open_column_families`, `rocksdb_create_column_family`, `rocksdb_drop_column_family` |
-| **Merge / MergeOperator** | `rocksdb_merge`, `rocksdb_writebatch_merge`, `rocksdb_mergeoperator_create` |
-| ~~Flush~~ | ✅ Done — see `FlushOptions.java` |
-| ~~KeyMayExist~~ | ✅ Done — `RocksDB.keyMayExist` (byte[], ByteBuffer, MemorySegment, ReadOptions overload) |
-| ~~Compaction control~~ | ✅ Done — `CompactOptions.java`; `RocksDB.compactRange`, `suggestCompactRange`, `disableFileDeletions`, `enableFileDeletions` |
-| **MultiGet** | `rocksdb_multi_get`, batched `rocksdb_slice_t` variant |
-| ~~DB Properties~~ | ✅ Done — `DBProperty.java`, `RocksDB.getProperty`, `RocksDB.getLongProperty` (`rocksdb_approximate_sizes` not yet) |
-| ~~KeyMayExist~~ | ✅ Done — see above |
-| **DeleteRange** | `rocksdb_delete_range`, `rocksdb_writebatch_delete_range` |
-| **SST File Ingest** | `rocksdb_ingestexternalfile`, `rocksdb_sstfilewriter_*` |
-| **Backup Engine** | `rocksdb_backup_engine_open`, `rocksdb_backup_engine_create_new_backup` |
-| **TTL DB** | `rocksdb_open_with_ttl` |
-| ~~Optimistic Transactions~~ | ✅ Done — `OptimisticTransactionDB.java`, `OptimisticTransactionOptions.java` |
-| **CompactionFilter** | `rocksdb_compactionfilter_create` |
-| **WAL Iterator** | `rocksdb_get_updates_since`, `rocksdb_wal_iterator_*` |
-| **Rate Limiter** | `rocksdb_ratelimiter_create`, `rocksdb_options_set_ratelimiter` |
-| ~~Secondary DB~~ | ✅ Done — `SecondaryDB.java`; `tryCatchUpWithPrimary`, get (pinnable slice), iterator, snapshot, properties |
-
 ---
 
-## 🏗 Technical Debt
-- **Linux support:** `scripts/build-rocksdb.sh` and the CI workflow currently target macOS only. Linux support requires adding `linux-x86_64` and `linux-aarch64` to the matrix and testing the Makefile build under zig on those platforms.
+Documentation
+---
+
+- Javadoc is written in the markdown format to keep same format everywhere
+- some documentation lives in docs/
+-   the intent is to document decisions there
+
+Code
+---
+
+- code is written with tabs
+- there is checkstyle.xml file with the style you should follow

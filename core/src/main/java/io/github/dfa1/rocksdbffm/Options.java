@@ -188,36 +188,10 @@ public final class Options implements AutoCloseable {
 		}
 	}
 
-	/**
-	 * Attaches a custom merge operator. Ownership transfers to this Options object;
-	 * {@link MergeOperator#close()} on the passed instance becomes a no-op.
-	 */
-	public Options setMergeOperator(MergeOperator operator) {
-		try {
-			MH_SET_MERGE_OPERATOR.invokeExact(ptr, operator.ptr);
-			operator.transferOwnership();
-		} catch (Throwable t) {
-			throw new RocksDBException("setMergeOperator failed", t);
-		}
-		return this;
-	}
-
-	/**
-	 * Configures the built-in uint64 add merge operator.
-	 * Operands and values are treated as 8-byte little-endian unsigned integers.
-	 */
-	public Options setUint64AddMergeOperator() {
-		try {
-			MH_SET_UINT64ADD_MERGE_OPERATOR.invokeExact(ptr);
-		} catch (Throwable t) {
-			throw new RocksDBException("setUint64AddMergeOperator failed", t);
-		}
-		return this;
-	}
 
 	/**
 	 * Sets the compression algorithm for all levels.
-	 * Use {@link CompressionType#getSupportedTypes()} to check which types are available.
+	 * Use {@link RocksDB#getSupportedCompressions()} ()} to check which types are available.
 	 *
 	 * @return {@code this} for chaining
 	 */

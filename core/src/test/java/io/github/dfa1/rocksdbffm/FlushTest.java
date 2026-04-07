@@ -93,7 +93,7 @@ class FlushTest {
 	void transactionDB_flush_dataIsReadableAfterFlush(@TempDir Path dir) {
 		// Given
 		try (var opts = Options.newOptions().setCreateIfMissing(true);
-		     var txnDbOpts = new TransactionDBOptions();
+		     var txnDbOpts = TransactionDBOptions.newTransactionDBOptions();
 		     var db = TransactionDB.open(opts, txnDbOpts, dir);
 		     var fo = FlushOptions.newFlushOptions().setWait(true)) {
 			db.put("k".getBytes(), "v".getBytes());
@@ -110,7 +110,7 @@ class FlushTest {
 	void transactionDB_flushWal_doesNotThrow(@TempDir Path dir) {
 		// Given
 		try (var opts = Options.newOptions().setCreateIfMissing(true);
-		     var txnDbOpts = new TransactionDBOptions();
+		     var txnDbOpts = TransactionDBOptions.newTransactionDBOptions();
 		     var db = TransactionDB.open(opts, txnDbOpts, dir)) {
 			db.put("k".getBytes(), "v".getBytes());
 

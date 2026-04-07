@@ -49,10 +49,6 @@ public final class RocksDB implements AutoCloseable {
 	private static final MethodHandle MH_DELETE_RANGE_CF;
 	private static final MethodHandle MH_GET_DEFAULT_CF;
 	private static final MethodHandle MH_WRITE;
-	private static final MethodHandle MH_WRITEOPTIONS_CREATE;
-	private static final MethodHandle MH_WRITEOPTIONS_DESTROY;
-	private static final MethodHandle MH_READOPTIONS_CREATE;
-	private static final MethodHandle MH_READOPTIONS_DESTROY;
 	private static final MethodHandle MH_CREATE_SNAPSHOT;
 	private static final MethodHandle MH_FLUSH;
 	private static final MethodHandle MH_FLUSH_WAL;
@@ -130,17 +126,6 @@ public final class RocksDB implements AutoCloseable {
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
-		MH_WRITEOPTIONS_CREATE = lookup("rocksdb_writeoptions_create",
-				FunctionDescriptor.of(ValueLayout.ADDRESS));
-
-		MH_WRITEOPTIONS_DESTROY = lookup("rocksdb_writeoptions_destroy",
-				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
-
-		MH_READOPTIONS_CREATE = lookup("rocksdb_readoptions_create",
-				FunctionDescriptor.of(ValueLayout.ADDRESS));
-
-		MH_READOPTIONS_DESTROY = lookup("rocksdb_readoptions_destroy",
-				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
 		// const rocksdb_snapshot_t* rocksdb_create_snapshot(db*)
 		MH_CREATE_SNAPSHOT = lookup("rocksdb_create_snapshot",
@@ -215,13 +200,13 @@ public final class RocksDB implements AutoCloseable {
 	}
 
 	private final MemorySegment dbPtr;
-	private final MemorySegment writeOptions; // TODO: upgrade to WriteOptions
-	private final MemorySegment readOptions; // TODO: upgrade to readOptions
+	private final WriteOptions writeOpts;
+	private final ReadOptions readOpts;
 
-	private RocksDB(MemorySegment dbPtr, MemorySegment writeOptions, MemorySegment readOptions) {
+	private RocksDB(MemorySegment dbPtr, WriteOptions writeOpts, ReadOptions readOpts) {
 		this.dbPtr = dbPtr;
-		this.writeOptions = writeOptions;
-		this.readOptions = readOptions;
+		this.writeOpts = writeOpts;
+		this.readOpts = readOpts;
 	}
 
 	/**
@@ -245,9 +230,9 @@ public final class RocksDB implements AutoCloseable {
 
 			Native.checkError(err);
 
-			MemorySegment writeOptions = (MemorySegment) MH_WRITEOPTIONS_CREATE.invokeExact();
-			MemorySegment readOptions = (MemorySegment) MH_READOPTIONS_CREATE.invokeExact();
-			return new RocksDB(dbPtr, writeOptions, readOptions);
+
+
+			return new RocksDB(dbPtr, WriteOptions.newWriteOptions(), ReadOptions.newReadOptions());
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("open failed", t);
 		}
@@ -277,9 +262,9 @@ public final class RocksDB implements AutoCloseable {
 
 			Native.checkError(err);
 
-			MemorySegment writeOptions = (MemorySegment) MH_WRITEOPTIONS_CREATE.invokeExact();
-			MemorySegment readOptions = (MemorySegment) MH_READOPTIONS_CREATE.invokeExact();
-			return new RocksDB(dbPtr, writeOptions, readOptions);
+
+
+			return new RocksDB(dbPtr, WriteOptions.newWriteOptions(), ReadOptions.newReadOptions());
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("openReadOnly failed", t);
 		}
@@ -328,9 +313,9 @@ public final class RocksDB implements AutoCloseable {
 			MemorySegment dbPtr = (MemorySegment) MH_OPEN_WITH_TTL.invokeExact(
 					options.ptr(), pathSeg, ttlSeconds, err);
 			Native.checkError(err);
-			MemorySegment writeOptions = (MemorySegment) MH_WRITEOPTIONS_CREATE.invokeExact();
-			MemorySegment readOptions = (MemorySegment) MH_READOPTIONS_CREATE.invokeExact();
-			return new RocksDB(dbPtr, writeOptions, readOptions);
+
+
+			return new RocksDB(dbPtr, WriteOptions.newWriteOptions(), ReadOptions.newReadOptions());
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("openWithTtl failed", t);
 		}
@@ -355,7 +340,7 @@ public final class RocksDB implements AutoCloseable {
 			MemorySegment keyNative = Native.toNative(arena, key);
 			MemorySegment valNative = Native.toNative(arena, value);
 
-			MH_PUT.invokeExact(dbPtr, writeOptions,
+			MH_PUT.invokeExact(dbPtr, writeOpts.ptr(),
 					keyNative, (long) key.length,
 					valNative, (long) value.length,
 					err);
@@ -372,7 +357,7 @@ public final class RocksDB implements AutoCloseable {
 			MemorySegment keyNative = Native.toNative(arena, key);
 			MemorySegment valNative = Native.toNative(arena, value);
 
-			MH_PUT.invokeExact(dbPtr, writeOptions,
+			MH_PUT.invokeExact(dbPtr, writeOpts.ptr(),
 					keyNative, (long) key.length,
 					valNative, (long) value.length,
 					err);
@@ -392,7 +377,7 @@ public final class RocksDB implements AutoCloseable {
 			MemorySegment err = Native.errHolder(arena);
 			MemorySegment keyNative = MemorySegment.ofBuffer(key);
 			MemorySegment valNative = MemorySegment.ofBuffer(value);
-			MH_PUT.invokeExact(dbPtr, writeOptions,
+			MH_PUT.invokeExact(dbPtr, writeOpts.ptr(),
 					keyNative, (long) key.remaining(),
 					valNative, (long) value.remaining(),
 					err);
@@ -409,7 +394,7 @@ public final class RocksDB implements AutoCloseable {
 	public void put(MemorySegment key, MemorySegment value) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
-			MH_PUT.invokeExact(dbPtr, writeOptions,
+			MH_PUT.invokeExact(dbPtr, writeOpts.ptr(),
 					key, key.byteSize(),
 					value, value.byteSize(),
 					err);
@@ -422,7 +407,7 @@ public final class RocksDB implements AutoCloseable {
 	public void put(Arena arena, MemorySegment key, MemorySegment value) {
 		try {
 			MemorySegment err = Native.errHolder(arena);
-			MH_PUT.invokeExact(dbPtr, writeOptions,
+			MH_PUT.invokeExact(dbPtr, writeOpts.ptr(),
 					key, key.byteSize(),
 					value, value.byteSize(),
 					err);
@@ -438,7 +423,7 @@ public final class RocksDB implements AutoCloseable {
 		try {
 			MH_PUT.invokeExact(
 					dbPtr,
-					writeOptions,
+					writeOpts.ptr(),
 					key, key.byteSize(),
 					value, value.byteSize(),
 					acquire
@@ -465,7 +450,7 @@ public final class RocksDB implements AutoCloseable {
 			MemorySegment keyNative = Native.toNative(arena, key);
 
 			MemorySegment pin = (MemorySegment) MH_GET_PINNED.invokeExact(
-					dbPtr, readOptions, keyNative, (long) key.length, err);
+					dbPtr, readOpts.ptr(), keyNative, (long) key.length, err);
 
 			Native.checkError(err);
 
@@ -524,7 +509,7 @@ public final class RocksDB implements AutoCloseable {
 			MemorySegment err = Native.errHolder(arena);
 			MemorySegment keyNative = MemorySegment.ofBuffer(key);
 			MemorySegment pin = (MemorySegment) MH_GET_PINNED.invokeExact(
-					dbPtr, readOptions, keyNative, (long) key.remaining(), err);
+					dbPtr, readOpts.ptr(), keyNative, (long) key.remaining(), err);
 
 			Native.checkError(err);
 
@@ -554,7 +539,7 @@ public final class RocksDB implements AutoCloseable {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
 			MemorySegment pin = (MemorySegment) MH_GET_PINNED.invokeExact(
-					dbPtr, readOptions, key, key.byteSize(), err);
+					dbPtr, readOpts.ptr(), key, key.byteSize(), err);
 
 			Native.checkError(err);
 
@@ -579,7 +564,7 @@ public final class RocksDB implements AutoCloseable {
 			MemorySegment err = Native.errHolder(arena);
 			MemorySegment keyNative = Native.toNative(arena, key);
 
-			MH_DELETE.invokeExact(dbPtr, writeOptions,
+			MH_DELETE.invokeExact(dbPtr, writeOpts.ptr(),
 					keyNative, (long) key.length,
 					err);
 
@@ -598,7 +583,7 @@ public final class RocksDB implements AutoCloseable {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
 			MemorySegment cf = (MemorySegment) MH_GET_DEFAULT_CF.invokeExact(dbPtr);
-			MH_DELETE_RANGE_CF.invokeExact(dbPtr, writeOptions, cf,
+			MH_DELETE_RANGE_CF.invokeExact(dbPtr, writeOpts.ptr(), cf,
 					Native.toNative(arena, startKey), (long) startKey.length,
 					Native.toNative(arena, endKey), (long) endKey.length,
 					err);
@@ -616,7 +601,7 @@ public final class RocksDB implements AutoCloseable {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
 			MemorySegment cf = (MemorySegment) MH_GET_DEFAULT_CF.invokeExact(dbPtr);
-			MH_DELETE_RANGE_CF.invokeExact(dbPtr, writeOptions, cf,
+			MH_DELETE_RANGE_CF.invokeExact(dbPtr, writeOpts.ptr(), cf,
 					MemorySegment.ofBuffer(startKey), (long) startKey.remaining(),
 					MemorySegment.ofBuffer(endKey), (long) endKey.remaining(),
 					err);
@@ -634,7 +619,7 @@ public final class RocksDB implements AutoCloseable {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
 			MemorySegment cf = (MemorySegment) MH_GET_DEFAULT_CF.invokeExact(dbPtr);
-			MH_DELETE_RANGE_CF.invokeExact(dbPtr, writeOptions, cf,
+			MH_DELETE_RANGE_CF.invokeExact(dbPtr, writeOpts.ptr(), cf,
 					startKey, startKey.byteSize(),
 					endKey, endKey.byteSize(),
 					err);
@@ -654,7 +639,7 @@ public final class RocksDB implements AutoCloseable {
 	public void merge(byte[] key, byte[] value) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
-			MH_MERGE.invokeExact(dbPtr, writeOptions,
+			MH_MERGE.invokeExact(dbPtr, writeOpts.ptr(),
 					Native.toNative(arena, key), (long) key.length,
 					Native.toNative(arena, value), (long) value.length,
 					err);
@@ -670,7 +655,7 @@ public final class RocksDB implements AutoCloseable {
 	public void merge(ByteBuffer key, ByteBuffer value) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
-			MH_MERGE.invokeExact(dbPtr, writeOptions,
+			MH_MERGE.invokeExact(dbPtr, writeOpts.ptr(),
 					MemorySegment.ofBuffer(key), (long) key.remaining(),
 					MemorySegment.ofBuffer(value), (long) value.remaining(),
 					err);
@@ -686,7 +671,7 @@ public final class RocksDB implements AutoCloseable {
 	public void merge(MemorySegment key, MemorySegment value) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
-			MH_MERGE.invokeExact(dbPtr, writeOptions,
+			MH_MERGE.invokeExact(dbPtr, writeOpts.ptr(),
 					key, key.byteSize(),
 					value, value.byteSize(),
 					err);
@@ -711,7 +696,7 @@ public final class RocksDB implements AutoCloseable {
 	public boolean keyMayExist(byte[] key) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment k = Native.toNative(arena, key);
-			return keyMayExistNative(readOptions, k, key.length);
+			return keyMayExistNative(readOpts.ptr(), k, key.length);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("keyMayExist failed", t);
 		}
@@ -735,7 +720,7 @@ public final class RocksDB implements AutoCloseable {
 	 */
 	public boolean keyMayExist(ByteBuffer key) {
 		try {
-			return keyMayExistNative(readOptions, MemorySegment.ofBuffer(key), key.remaining());
+			return keyMayExistNative(readOpts.ptr(), MemorySegment.ofBuffer(key), key.remaining());
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("keyMayExist failed", t);
 		}
@@ -746,7 +731,7 @@ public final class RocksDB implements AutoCloseable {
 	 */
 	public boolean keyMayExist(MemorySegment key) {
 		try {
-			return keyMayExistNative(readOptions, key, (int) key.byteSize());
+			return keyMayExistNative(readOpts.ptr(), key, (int) key.byteSize());
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("keyMayExist failed", t);
 		}
@@ -770,7 +755,7 @@ public final class RocksDB implements AutoCloseable {
 	public void write(WriteBatch batch) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
-			MH_WRITE.invokeExact(dbPtr, writeOptions, batch.ptr, err);
+			MH_WRITE.invokeExact(dbPtr, writeOpts.ptr(), batch.ptr(), err);
 			Native.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("write failed", t);
@@ -780,7 +765,7 @@ public final class RocksDB implements AutoCloseable {
 	public void write(Arena arena, WriteBatch batch) {
 		try {
 			MemorySegment err = Native.errHolder(arena);
-			MH_WRITE.invokeExact(dbPtr, writeOptions, batch.ptr, err);
+			MH_WRITE.invokeExact(dbPtr, writeOpts.ptr(), batch.ptr(), err);
 			Native.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("write failed", t);
@@ -812,7 +797,7 @@ public final class RocksDB implements AutoCloseable {
 	 * Returns a new iterator using the database's default read options.
 	 */
 	public RocksIterator newIterator() {
-		return RocksIterator.create(dbPtr, readOptions);
+		return RocksIterator.create(dbPtr, readOpts.ptr());
 	}
 
 	/**
@@ -1044,7 +1029,7 @@ public final class RocksDB implements AutoCloseable {
 				MemorySegment pathSeg = arena.allocateFrom(files.get(i).toString());
 				fileArray.setAtIndex(ValueLayout.ADDRESS, i, pathSeg);
 			}
-			MH_INGEST_EXTERNAL_FILE.invokeExact(dbPtr, fileArray, (long) files.size(), options.ptr, err);
+			MH_INGEST_EXTERNAL_FILE.invokeExact(dbPtr, fileArray, (long) files.size(), options.ptr(), err);
 			Native.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("ingestExternalFile failed", t);
@@ -1055,7 +1040,7 @@ public final class RocksDB implements AutoCloseable {
 	 * Ingests a list of SST files using default {@link IngestExternalFileOptions}.
 	 */
 	public void ingestExternalFile(List<Path> files) {
-		try (IngestExternalFileOptions opts = new IngestExternalFileOptions()) {
+		try (IngestExternalFileOptions opts = IngestExternalFileOptions.newIngestExternalFileOptions()) {
 			ingestExternalFile(files, opts);
 		}
 	}
@@ -1106,7 +1091,7 @@ public final class RocksDB implements AutoCloseable {
 				}
 				Path sstFile = tmpDir.resolve(type.name().toLowerCase() + ".sst");
 				try (Options opts = Options.newOptions().setCompression(type);
-				     SstFileWriter writer = new SstFileWriter(opts)) {
+				     SstFileWriter writer = SstFileWriter.newSstFileWriter(opts)) {
 					writer.open(sstFile);
 					writer.put(new byte[]{0}, new byte[]{0});
 					writer.finish();
@@ -1134,8 +1119,8 @@ public final class RocksDB implements AutoCloseable {
 
 	@Override
 	public void close() {
-		Native.closeQuietly(MH_WRITEOPTIONS_DESTROY, writeOptions);
-		Native.closeQuietly(MH_READOPTIONS_DESTROY, readOptions);
+		writeOpts.close();
+		readOpts.close();
 		Native.closeQuietly(MH_CLOSE, dbPtr);
 	}
 

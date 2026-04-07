@@ -11,12 +11,12 @@ import java.lang.invoke.MethodHandle;
  * <p>Controls the behaviour of {@link RocksDB#ingestExternalFile}.
  *
  * <pre>{@code
- * try (var opts = new IngestExternalFileOptions().setMoveFiles(true)) {
+ * try (var opts = IngestExternalFileOptions.newIngestExternalFileOptions().setMoveFiles(true)) {
  *     db.ingestExternalFile(List.of(sstPath), opts);
  * }
  * }</pre>
  */
-public final class IngestExternalFileOptions implements AutoCloseable {
+public final class IngestExternalFileOptions extends NativeObject {
 
 	private static final MethodHandle MH_CREATE;
 	private static final MethodHandle MH_DESTROY;
@@ -60,11 +60,13 @@ public final class IngestExternalFileOptions implements AutoCloseable {
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_BYTE));
 	}
 
-	final MemorySegment ptr;
+	private IngestExternalFileOptions(MemorySegment ptr) {
+		super(ptr);
+	}
 
-	public IngestExternalFileOptions() {
+	public static IngestExternalFileOptions newIngestExternalFileOptions() {
 		try {
-			this.ptr = (MemorySegment) MH_CREATE.invokeExact();
+			return new IngestExternalFileOptions((MemorySegment) MH_CREATE.invokeExact());
 		} catch (Throwable t) {
 			throw new RocksDBException("ingestexternalfileoptions create failed", t);
 		}
@@ -77,7 +79,7 @@ public final class IngestExternalFileOptions implements AutoCloseable {
 	 */
 	public IngestExternalFileOptions setMoveFiles(boolean moveFiles) {
 		try {
-			MH_SET_MOVE_FILES.invokeExact(ptr, moveFiles ? (byte) 1 : (byte) 0);
+			MH_SET_MOVE_FILES.invokeExact(ptr(), moveFiles ? (byte) 1 : (byte) 0);
 			return this;
 		} catch (Throwable t) {
 			throw new RocksDBException("ingestexternalfileoptions setMoveFiles failed", t);
@@ -91,7 +93,7 @@ public final class IngestExternalFileOptions implements AutoCloseable {
 	 */
 	public IngestExternalFileOptions setSnapshotConsistency(boolean snapshotConsistency) {
 		try {
-			MH_SET_SNAPSHOT_CONSISTENCY.invokeExact(ptr, snapshotConsistency ? (byte) 1 : (byte) 0);
+			MH_SET_SNAPSHOT_CONSISTENCY.invokeExact(ptr(), snapshotConsistency ? (byte) 1 : (byte) 0);
 			return this;
 		} catch (Throwable t) {
 			throw new RocksDBException("ingestexternalfileoptions setSnapshotConsistency failed", t);
@@ -105,7 +107,7 @@ public final class IngestExternalFileOptions implements AutoCloseable {
 	 */
 	public IngestExternalFileOptions setAllowGlobalSeqno(boolean allowGlobalSeqno) {
 		try {
-			MH_SET_ALLOW_GLOBAL_SEQNO.invokeExact(ptr, allowGlobalSeqno ? (byte) 1 : (byte) 0);
+			MH_SET_ALLOW_GLOBAL_SEQNO.invokeExact(ptr(), allowGlobalSeqno ? (byte) 1 : (byte) 0);
 			return this;
 		} catch (Throwable t) {
 			throw new RocksDBException("ingestexternalfileoptions setAllowGlobalSeqno failed", t);
@@ -119,7 +121,7 @@ public final class IngestExternalFileOptions implements AutoCloseable {
 	 */
 	public IngestExternalFileOptions setAllowBlockingFlush(boolean allowBlockingFlush) {
 		try {
-			MH_SET_ALLOW_BLOCKING_FLUSH.invokeExact(ptr, allowBlockingFlush ? (byte) 1 : (byte) 0);
+			MH_SET_ALLOW_BLOCKING_FLUSH.invokeExact(ptr(), allowBlockingFlush ? (byte) 1 : (byte) 0);
 			return this;
 		} catch (Throwable t) {
 			throw new RocksDBException("ingestexternalfileoptions setAllowBlockingFlush failed", t);
@@ -134,7 +136,7 @@ public final class IngestExternalFileOptions implements AutoCloseable {
 	 */
 	public IngestExternalFileOptions setIngestBehind(boolean ingestBehind) {
 		try {
-			MH_SET_INGEST_BEHIND.invokeExact(ptr, ingestBehind ? (byte) 1 : (byte) 0);
+			MH_SET_INGEST_BEHIND.invokeExact(ptr(), ingestBehind ? (byte) 1 : (byte) 0);
 			return this;
 		} catch (Throwable t) {
 			throw new RocksDBException("ingestexternalfileoptions setIngestBehind failed", t);
@@ -148,7 +150,7 @@ public final class IngestExternalFileOptions implements AutoCloseable {
 	 */
 	public IngestExternalFileOptions setFailIfNotBottommostLevel(boolean failIfNotBottommostLevel) {
 		try {
-			MH_SET_FAIL_IF_NOT_BOTTOMMOST_LEVEL.invokeExact(ptr, failIfNotBottommostLevel ? (byte) 1 : (byte) 0);
+			MH_SET_FAIL_IF_NOT_BOTTOMMOST_LEVEL.invokeExact(ptr(), failIfNotBottommostLevel ? (byte) 1 : (byte) 0);
 			return this;
 		} catch (Throwable t) {
 			throw new RocksDBException("ingestexternalfileoptions setFailIfNotBottommostLevel failed", t);
@@ -156,7 +158,7 @@ public final class IngestExternalFileOptions implements AutoCloseable {
 	}
 
 	@Override
-	public void close() {
-		Native.closeQuietly(MH_DESTROY, ptr);
+	protected void tryClose(MemorySegment ptr) throws Throwable {
+		MH_DESTROY.invokeExact(ptr);
 	}
 }

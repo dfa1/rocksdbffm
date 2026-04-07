@@ -8,7 +8,7 @@ import java.lang.invoke.MethodHandle;
 /**
  * FFM wrapper for rocksdb_transaction_options_t.
  */
-public final class TransactionOptions implements AutoCloseable {
+public final class TransactionOptions extends NativeObject {
 
 	private static final MethodHandle MH_CREATE;
 	private static final MethodHandle MH_DESTROY;
@@ -36,14 +36,13 @@ public final class TransactionOptions implements AutoCloseable {
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
 	}
 
-	/**
-	 * Package-private: accessed by TransactionDB.beginTransaction().
-	 */
-	final MemorySegment ptr;
+	private TransactionOptions(MemorySegment ptr) {
+		super(ptr);
+	}
 
-	public TransactionOptions() {
+	public static TransactionOptions newTransactionOptions() {
 		try {
-			this.ptr = (MemorySegment) MH_CREATE.invokeExact();
+			return new TransactionOptions((MemorySegment) MH_CREATE.invokeExact());
 		} catch (Throwable t) {
 			throw new RocksDBException("transaction options create failed", t);
 		}
@@ -55,7 +54,7 @@ public final class TransactionOptions implements AutoCloseable {
 	 */
 	public TransactionOptions setSetSnapshot(boolean value) {
 		try {
-			MH_SET_SET_SNAPSHOT.invokeExact(ptr, value ? (byte) 1 : (byte) 0);
+			MH_SET_SET_SNAPSHOT.invokeExact(ptr(), value ? (byte) 1 : (byte) 0);
 		} catch (Throwable t) {
 			throw new RocksDBException("setSetSnapshot failed", t);
 		}
@@ -68,7 +67,7 @@ public final class TransactionOptions implements AutoCloseable {
 	 */
 	public TransactionOptions setDeadlockDetect(boolean value) {
 		try {
-			MH_SET_DEADLOCK_DETECT.invokeExact(ptr, value ? (byte) 1 : (byte) 0);
+			MH_SET_DEADLOCK_DETECT.invokeExact(ptr(), value ? (byte) 1 : (byte) 0);
 		} catch (Throwable t) {
 			throw new RocksDBException("setDeadlockDetect failed", t);
 		}
@@ -81,7 +80,7 @@ public final class TransactionOptions implements AutoCloseable {
 	 */
 	public TransactionOptions setLockTimeout(long lockTimeout) {
 		try {
-			MH_SET_LOCK_TIMEOUT.invokeExact(ptr, lockTimeout);
+			MH_SET_LOCK_TIMEOUT.invokeExact(ptr(), lockTimeout);
 		} catch (Throwable t) {
 			throw new RocksDBException("setLockTimeout failed", t);
 		}
@@ -89,7 +88,7 @@ public final class TransactionOptions implements AutoCloseable {
 	}
 
 	@Override
-	public void close() {
-		Native.closeQuietly(MH_DESTROY, ptr);
+	protected void tryClose(MemorySegment ptr) throws Throwable {
+		MH_DESTROY.invokeExact(ptr);
 	}
 }

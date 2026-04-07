@@ -14,7 +14,7 @@ import java.nio.ByteBuffer;
  * Note: rocksdb_writebatch_put/delete have no errptr — they are infallible at
  * the C level. Only rocksdb_write (on the DB) can fail.
  */
-public final class WriteBatch implements AutoCloseable {
+public final class WriteBatch extends NativeObject {
 
 	private static final MethodHandle MH_CREATE;
 	private static final MethodHandle MH_DESTROY;
@@ -66,13 +66,8 @@ public final class WriteBatch implements AutoCloseable {
 				FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
 	}
 
-	/**
-	 * Package-private: accessed by RocksDB.write(WriteBatch).
-	 */
-	final MemorySegment ptr;
-
 	private WriteBatch(MemorySegment ptr) {
-		this.ptr = ptr;
+		super(ptr);
 	}
 
 	public static WriteBatch create() {
@@ -88,7 +83,7 @@ public final class WriteBatch implements AutoCloseable {
 		try {
 			MemorySegment k = Native.toNative(arena, key);
 			MemorySegment v = Native.toNative(arena, value);
-			MH_PUT.invokeExact(ptr, k, (long) key.length, v, (long) value.length);
+			MH_PUT.invokeExact(ptr(), k, (long) key.length, v, (long) value.length);
 		} catch (Throwable t) {
 			throw new RocksDBException("writebatch put failed", t);
 		}
@@ -98,7 +93,7 @@ public final class WriteBatch implements AutoCloseable {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment k = Native.toNative(arena, key);
 			MemorySegment v = Native.toNative(arena, value);
-			MH_PUT.invokeExact(ptr, k, (long) key.length, v, (long) value.length);
+			MH_PUT.invokeExact(ptr(), k, (long) key.length, v, (long) value.length);
 		} catch (Throwable t) {
 			throw new RocksDBException("writebatch put failed", t);
 		}
@@ -107,7 +102,7 @@ public final class WriteBatch implements AutoCloseable {
 	public void delete(byte[] key) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment k = Native.toNative(arena, key);
-			MH_DELETE.invokeExact(ptr, k, (long) key.length);
+			MH_DELETE.invokeExact(ptr(), k, (long) key.length);
 		} catch (Throwable t) {
 			throw new RocksDBException("writebatch delete failed", t);
 		}
@@ -118,7 +113,7 @@ public final class WriteBatch implements AutoCloseable {
 	 */
 	public void merge(byte[] key, byte[] value) {
 		try (Arena arena = Arena.ofConfined()) {
-			MH_MERGE.invokeExact(ptr,
+			MH_MERGE.invokeExact(ptr(),
 					Native.toNative(arena, key), (long) key.length,
 					Native.toNative(arena, value), (long) value.length);
 		} catch (Throwable t) {
@@ -131,7 +126,7 @@ public final class WriteBatch implements AutoCloseable {
 	 */
 	public void merge(ByteBuffer key, ByteBuffer value) {
 		try {
-			MH_MERGE.invokeExact(ptr,
+			MH_MERGE.invokeExact(ptr(),
 					MemorySegment.ofBuffer(key), (long) key.remaining(),
 					MemorySegment.ofBuffer(value), (long) value.remaining());
 		} catch (Throwable t) {
@@ -144,7 +139,7 @@ public final class WriteBatch implements AutoCloseable {
 	 */
 	public void merge(MemorySegment key, MemorySegment value) {
 		try {
-			MH_MERGE.invokeExact(ptr,
+			MH_MERGE.invokeExact(ptr(),
 					key, key.byteSize(),
 					value, value.byteSize());
 		} catch (Throwable t) {
@@ -157,7 +152,7 @@ public final class WriteBatch implements AutoCloseable {
 	 */
 	public void deleteRange(byte[] startKey, byte[] endKey) {
 		try (Arena arena = Arena.ofConfined()) {
-			MH_DELETE_RANGE.invokeExact(ptr,
+			MH_DELETE_RANGE.invokeExact(ptr(),
 					Native.toNative(arena, startKey), (long) startKey.length,
 					Native.toNative(arena, endKey), (long) endKey.length);
 		} catch (Throwable t) {
@@ -170,7 +165,7 @@ public final class WriteBatch implements AutoCloseable {
 	 */
 	public void deleteRange(ByteBuffer startKey, ByteBuffer endKey) {
 		try {
-			MH_DELETE_RANGE.invokeExact(ptr,
+			MH_DELETE_RANGE.invokeExact(ptr(),
 					MemorySegment.ofBuffer(startKey), (long) startKey.remaining(),
 					MemorySegment.ofBuffer(endKey), (long) endKey.remaining());
 		} catch (Throwable t) {
@@ -183,7 +178,7 @@ public final class WriteBatch implements AutoCloseable {
 	 */
 	public void deleteRange(MemorySegment startKey, MemorySegment endKey) {
 		try {
-			MH_DELETE_RANGE.invokeExact(ptr,
+			MH_DELETE_RANGE.invokeExact(ptr(),
 					startKey, startKey.byteSize(),
 					endKey, endKey.byteSize());
 		} catch (Throwable t) {
@@ -193,7 +188,7 @@ public final class WriteBatch implements AutoCloseable {
 
 	public void clear() {
 		try {
-			MH_CLEAR.invokeExact(ptr);
+			MH_CLEAR.invokeExact(ptr());
 		} catch (Throwable t) {
 			throw new RocksDBException("writebatch clear failed", t);
 		}
@@ -201,15 +196,15 @@ public final class WriteBatch implements AutoCloseable {
 
 	public int count() {
 		try {
-			return (int) MH_COUNT.invokeExact(ptr);
+			return (int) MH_COUNT.invokeExact(ptr());
 		} catch (Throwable t) {
 			throw new RocksDBException("writebatch count failed", t);
 		}
 	}
 
 	@Override
-	public void close() {
-		Native.closeQuietly(MH_DESTROY, ptr);
+	protected void tryClose(MemorySegment ptr) throws Throwable {
+		MH_DESTROY.invokeExact(ptr);
 	}
 
 }

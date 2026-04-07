@@ -175,7 +175,7 @@ public final class OptimisticTransactionDB implements AutoCloseable {
 	 * default {@link OptimisticTransactionOptions}.
 	 */
 	public Transaction beginTransaction(WriteOptions writeOptions) {
-		try (OptimisticTransactionOptions txnOpts = new OptimisticTransactionOptions()) {
+		try (OptimisticTransactionOptions txnOpts = OptimisticTransactionOptions.newOptimisticTransactionOptions()) {
 			return beginTransaction(writeOptions, txnOpts);
 		}
 	}
@@ -187,7 +187,7 @@ public final class OptimisticTransactionDB implements AutoCloseable {
 	public Transaction beginTransaction(WriteOptions writeOptions, OptimisticTransactionOptions txnOptions) {
 		try {
 			MemorySegment txnPtr = (MemorySegment) MH_BEGIN.invokeExact(
-					ptr, writeOptions.ptr(), txnOptions.ptr, MemorySegment.NULL);
+					ptr, writeOptions.ptr(), txnOptions.ptr(), MemorySegment.NULL);
 			return new Transaction(txnPtr);
 		} catch (Throwable t) {
 			throw new RocksDBException("beginTransaction failed", t);

@@ -19,7 +19,7 @@ import java.lang.invoke.MethodHandle;
  * }
  * }</pre>
  */
-public final class Transaction implements AutoCloseable {
+public final class Transaction extends NativeObject {
 
 	private static final MethodHandle MH_COMMIT;
 	private static final MethodHandle MH_ROLLBACK;
@@ -99,13 +99,11 @@ public final class Transaction implements AutoCloseable {
 				FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 	}
 
-	private final MemorySegment ptr;
-
 	/**
 	 * Package-private: created by TransactionDB.
 	 */
 	Transaction(MemorySegment ptr) {
-		this.ptr = ptr;
+		super(ptr);
 	}
 
 	// -----------------------------------------------------------------------
@@ -120,7 +118,7 @@ public final class Transaction implements AutoCloseable {
 			MemorySegment err = Native.errHolder(arena);
 			MemorySegment k = Native.toNative(arena, key);
 			MemorySegment v = Native.toNative(arena, value);
-			MH_PUT.invokeExact(ptr, k, (long) key.length, v, (long) value.length, err);
+			MH_PUT.invokeExact(ptr(), k, (long) key.length, v, (long) value.length, err);
 			Native.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("Native call failed", t);
@@ -134,7 +132,7 @@ public final class Transaction implements AutoCloseable {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
 			MemorySegment k = Native.toNative(arena, key);
-			MH_DELETE.invokeExact(ptr, k, (long) key.length, err);
+			MH_DELETE.invokeExact(ptr(), k, (long) key.length, err);
 			Native.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("Native call failed", t);
@@ -157,7 +155,7 @@ public final class Transaction implements AutoCloseable {
 			MemorySegment k = Native.toNative(arena, key);
 
 			MemorySegment pin = (MemorySegment) MH_GET_PINNED.invokeExact(
-					ptr, readOptions.ptr(), k, (long) key.length, err);
+					ptr(), readOptions.ptr(), k, (long) key.length, err);
 
 			Native.checkError(err);
 
@@ -189,7 +187,7 @@ public final class Transaction implements AutoCloseable {
 			MemorySegment valLenSeg = arena.allocate(ValueLayout.JAVA_LONG);
 
 			MemorySegment valPtr = (MemorySegment) MH_GET_FOR_UPDATE.invokeExact(
-					ptr, readOptions.ptr(), k, (long) key.length,
+					ptr(), readOptions.ptr(), k, (long) key.length,
 					valLenSeg, exclusive ? (byte) 1 : (byte) 0, err);
 
 			Native.checkError(err);
@@ -218,7 +216,7 @@ public final class Transaction implements AutoCloseable {
 	 */
 	public Snapshot getSnapshot() {
 		try {
-			MemorySegment snapPtr = (MemorySegment) MH_GET_SNAPSHOT.invokeExact(ptr);
+			MemorySegment snapPtr = (MemorySegment) MH_GET_SNAPSHOT.invokeExact(ptr());
 			if (MemorySegment.NULL.equals(snapPtr)) {
 				return null;
 			}
@@ -238,7 +236,7 @@ public final class Transaction implements AutoCloseable {
 	public void commit() {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
-			MH_COMMIT.invokeExact(ptr, err);
+			MH_COMMIT.invokeExact(ptr(), err);
 			Native.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("Native call failed", t);
@@ -251,7 +249,7 @@ public final class Transaction implements AutoCloseable {
 	public void rollback() {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
-			MH_ROLLBACK.invokeExact(ptr, err);
+			MH_ROLLBACK.invokeExact(ptr(), err);
 			Native.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("Native call failed", t);
@@ -263,7 +261,7 @@ public final class Transaction implements AutoCloseable {
 	 */
 	public void setSavePoint() {
 		try {
-			MH_SET_SAVEPOINT.invokeExact(ptr);
+			MH_SET_SAVEPOINT.invokeExact(ptr());
 		} catch (Throwable t) {
 			throw new RocksDBException("transaction setSavePoint failed", t);
 		}
@@ -275,7 +273,7 @@ public final class Transaction implements AutoCloseable {
 	public void rollbackToSavePoint() {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
-			MH_ROLLBACK_TO_SAVEPOINT.invokeExact(ptr, err);
+			MH_ROLLBACK_TO_SAVEPOINT.invokeExact(ptr(), err);
 			Native.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("Native call failed", t);
@@ -287,8 +285,8 @@ public final class Transaction implements AutoCloseable {
 	 * call {@link #commit()} or {@link #rollback()} first.
 	 */
 	@Override
-	public void close() {
-		Native.closeQuietly(MH_DESTROY, ptr);
+	protected void tryClose(MemorySegment ptr) throws Throwable {
+		MH_DESTROY.invokeExact(ptr);
 	}
 
 	// -----------------------------------------------------------------------

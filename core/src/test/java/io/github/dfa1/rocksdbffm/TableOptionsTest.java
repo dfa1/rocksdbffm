@@ -16,7 +16,7 @@ class TableOptionsTest {
 	@Test
 	void lruCache_reportsConfiguredCapacity() {
 		// Given / When
-		try (var sut = new LRUCache(MemorySize.ofMB(16))) {
+		try (var sut = LRUCache.newLRUCache(MemorySize.ofMB(16))) {
 
 			// Then
 			assertThat(sut.getCapacity()).isEqualTo(MemorySize.ofMB(16));
@@ -26,7 +26,7 @@ class TableOptionsTest {
 	@Test
 	void lruCache_setCapacity_updatesCapacity() {
 		// Given
-		try (var sut = new LRUCache(MemorySize.ofMB(8))) {
+		try (var sut = LRUCache.newLRUCache(MemorySize.ofMB(8))) {
 
 			// When
 			sut.setCapacity(MemorySize.ofMB(32));
@@ -39,7 +39,7 @@ class TableOptionsTest {
 	@Test
 	void lruCache_usageIsNonNegative() {
 		// Given / When
-		try (var sut = new LRUCache(MemorySize.ofMB(16))) {
+		try (var sut = LRUCache.newLRUCache(MemorySize.ofMB(16))) {
 
 			// Then
 			assertThat(sut.getUsage()).isGreaterThanOrEqualTo(MemorySize.ZERO);
@@ -140,7 +140,7 @@ class TableOptionsTest {
 	@Test
 	void sharedBlockCache_servesCachedReads(@TempDir Path dir) {
 		// Given
-		try (var cache = new LRUCache(MemorySize.ofMB(64));
+		try (var cache = LRUCache.newLRUCache(MemorySize.ofMB(64));
 		     var filter = FilterPolicy.newBloom(10);
 		     var tbl = BlockBasedTableOptions.newBlockBasedConfig()
 					 .setBlockCache(cache)

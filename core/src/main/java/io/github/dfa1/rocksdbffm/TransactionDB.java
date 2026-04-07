@@ -14,7 +14,7 @@ import java.util.OptionalLong;
  * (locking) transaction support.
  *
  * <pre>{@code
- * try (TransactionDBOptions txnDbOpts = new TransactionDBOptions();
+ * try (TransactionDBOptions txnDbOpts = TransactionDBOptions.newTransactionDBOptions();
  *      Options opts = Options.newOptions().setCreateIfMissing(true);
  *      TransactionDB db = TransactionDB.open(opts, txnDbOpts, path)) {
  *
@@ -139,7 +139,7 @@ public final class TransactionDB implements AutoCloseable {
 			MemorySegment pathSeg = arena.allocateFrom(path.toString());
 
 			MemorySegment ptr = (MemorySegment) MH_OPEN.invokeExact(
-					dbOptions.ptr(), txnDbOptions.ptr, pathSeg, err);
+					dbOptions.ptr(), txnDbOptions.ptr(), pathSeg, err);
 
 			Native.checkError(err);
 
@@ -208,7 +208,7 @@ public final class TransactionDB implements AutoCloseable {
 	 * transaction options.
 	 */
 	public Transaction beginTransaction(WriteOptions writeOptions) {
-		try (TransactionOptions txnOpts = new TransactionOptions()) {
+		try (TransactionOptions txnOpts = TransactionOptions.newTransactionOptions()) {
 			return beginTransaction(writeOptions, txnOpts);
 		}
 	}
@@ -219,7 +219,7 @@ public final class TransactionDB implements AutoCloseable {
 	public Transaction beginTransaction(WriteOptions writeOptions, TransactionOptions txnOptions) {
 		try {
 			MemorySegment txnPtr = (MemorySegment) MH_BEGIN.invokeExact(
-					ptr, writeOptions.ptr(), txnOptions.ptr, MemorySegment.NULL);
+					ptr, writeOptions.ptr(), txnOptions.ptr(), MemorySegment.NULL);
 			return new Transaction(txnPtr);
 		} catch (Throwable t) {
 			throw new RocksDBException("beginTransaction failed", t);

@@ -8,7 +8,7 @@ import java.lang.invoke.MethodHandle;
 /**
  * FFM wrapper for rocksdb_statistics_histogram_data_t.
  */
-public final class StatisticsHistogramData implements AutoCloseable {
+public final class StatisticsHistogramData extends NativeObject {
 
 	private static final MethodHandle MH_CREATE;
 	private static final MethodHandle MH_DESTROY;
@@ -47,11 +47,13 @@ public final class StatisticsHistogramData implements AutoCloseable {
 				FunctionDescriptor.of(ValueLayout.JAVA_DOUBLE, ValueLayout.ADDRESS));
 	}
 
-	final MemorySegment ptr;
+	private StatisticsHistogramData(MemorySegment ptr) {
+		super(ptr);
+	}
 
-	public StatisticsHistogramData() {
+	public static StatisticsHistogramData newStatisticsHistogramData() {
 		try {
-			this.ptr = (MemorySegment) MH_CREATE.invokeExact();
+			return new StatisticsHistogramData((MemorySegment) MH_CREATE.invokeExact());
 		} catch (Throwable t) {
 			throw new RocksDBException("histogram data create failed", t);
 		}
@@ -59,7 +61,7 @@ public final class StatisticsHistogramData implements AutoCloseable {
 
 	public double getMedian() {
 		try {
-			return (double) MH_GET_MEDIAN.invokeExact(ptr);
+			return (double) MH_GET_MEDIAN.invokeExact(ptr());
 		} catch (Throwable t) {
 			throw new RocksDBException("getMedian failed", t);
 		}
@@ -67,7 +69,7 @@ public final class StatisticsHistogramData implements AutoCloseable {
 
 	public double getP95() {
 		try {
-			return (double) MH_GET_P95.invokeExact(ptr);
+			return (double) MH_GET_P95.invokeExact(ptr());
 		} catch (Throwable t) {
 			throw new RocksDBException("getP95 failed", t);
 		}
@@ -75,7 +77,7 @@ public final class StatisticsHistogramData implements AutoCloseable {
 
 	public double getP99() {
 		try {
-			return (double) MH_GET_P99.invokeExact(ptr);
+			return (double) MH_GET_P99.invokeExact(ptr());
 		} catch (Throwable t) {
 			throw new RocksDBException("getP99 failed", t);
 		}
@@ -83,7 +85,7 @@ public final class StatisticsHistogramData implements AutoCloseable {
 
 	public double getAverage() {
 		try {
-			return (double) MH_GET_AVERAGE.invokeExact(ptr);
+			return (double) MH_GET_AVERAGE.invokeExact(ptr());
 		} catch (Throwable t) {
 			throw new RocksDBException("getAverage failed", t);
 		}
@@ -91,7 +93,7 @@ public final class StatisticsHistogramData implements AutoCloseable {
 
 	public double getStdDev() {
 		try {
-			return (double) MH_GET_STD_DEV.invokeExact(ptr);
+			return (double) MH_GET_STD_DEV.invokeExact(ptr());
 		} catch (Throwable t) {
 			throw new RocksDBException("getStdDev failed", t);
 		}
@@ -99,7 +101,7 @@ public final class StatisticsHistogramData implements AutoCloseable {
 
 	public double getMax() {
 		try {
-			return (double) MH_GET_MAX.invokeExact(ptr);
+			return (double) MH_GET_MAX.invokeExact(ptr());
 		} catch (Throwable t) {
 			throw new RocksDBException("getMax failed", t);
 		}
@@ -107,7 +109,7 @@ public final class StatisticsHistogramData implements AutoCloseable {
 
 	public long getCount() {
 		try {
-			return (long) MH_GET_COUNT.invokeExact(ptr);
+			return (long) MH_GET_COUNT.invokeExact(ptr());
 		} catch (Throwable t) {
 			throw new RocksDBException("getCount failed", t);
 		}
@@ -115,7 +117,7 @@ public final class StatisticsHistogramData implements AutoCloseable {
 
 	public long getSum() {
 		try {
-			return (long) MH_GET_SUM.invokeExact(ptr);
+			return (long) MH_GET_SUM.invokeExact(ptr());
 		} catch (Throwable t) {
 			throw new RocksDBException("getSum failed", t);
 		}
@@ -123,15 +125,15 @@ public final class StatisticsHistogramData implements AutoCloseable {
 
 	public double getMin() {
 		try {
-			return (double) MH_GET_MIN.invokeExact(ptr);
+			return (double) MH_GET_MIN.invokeExact(ptr());
 		} catch (Throwable t) {
 			throw new RocksDBException("getMin failed", t);
 		}
 	}
 
 	@Override
-	public void close() {
-		Native.closeQuietly(MH_DESTROY, ptr);
+	protected void tryClose(MemorySegment ptr) throws Throwable {
+		MH_DESTROY.invokeExact(ptr);
 	}
 
 	@Override

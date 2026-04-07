@@ -13,7 +13,7 @@ import java.lang.invoke.MethodHandle;
  * RocksDB internally copies everything it needs.
  *
  * <pre>{@code
- * try (LRUCache cache = new LRUCache(64 << 20);
+ * try (LRUCache cache = LRUCache.newLRUCache(MemorySize.ofBytes(64 << 20));
  *      BlockBasedTableConfig tbl = new BlockBasedTableConfig()
  *          .setBlockSize(16 * 1024)
  *          .setFilterPolicy(FilterPolicy.newBloom(10))
@@ -182,7 +182,7 @@ public final class BlockBasedTableOptions extends NativeObject {
 	 */
 	public BlockBasedTableOptions setBlockCache(LRUCache cache) {
 		try {
-			MH_SET_BLOCK_CACHE.invokeExact(ptr(), cache.ptr);
+			MH_SET_BLOCK_CACHE.invokeExact(ptr(), cache.ptr());
 		} catch (Throwable t) {
 			throw new RocksDBException("setBlockCache failed", t);
 		}

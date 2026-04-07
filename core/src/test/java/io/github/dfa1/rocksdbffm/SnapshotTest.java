@@ -145,7 +145,7 @@ class SnapshotTest {
 	@Test
 	void transactionDB_snapshot_isolation(@TempDir Path dir) {
 		// Given
-		try (var txnDbOpts = new TransactionDBOptions();
+		try (var txnDbOpts = TransactionDBOptions.newTransactionDBOptions();
 		     var opts = Options.newOptions().setCreateIfMissing(true);
 		     var db = TransactionDB.open(opts, txnDbOpts, dir)) {
 

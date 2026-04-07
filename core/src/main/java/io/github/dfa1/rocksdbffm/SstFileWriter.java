@@ -18,7 +18,7 @@ import java.nio.file.Path;
  * <pre>{@code
  * Path sstPath = dir.resolve("data.sst");
  * try (var opts = Options.newOptions();
- *      var writer = new SstFileWriter(opts)) {
+ *      var writer = SstFileWriter.newSstFileWriter(opts)) {
  *     writer.open(sstPath);
  *     writer.put("aaa".getBytes(), "val1".getBytes());
  *     writer.put("bbb".getBytes(), "val2".getBytes());
@@ -27,7 +27,7 @@ import java.nio.file.Path;
  * db.ingestExternalFile(List.of(sstPath));
  * }</pre>
  */
-public final class SstFileWriter implements AutoCloseable {
+public final class SstFileWriter extends NativeObject {
 
 	private static final MethodHandle MH_ENVOPTIONS_CREATE;
 	private static final MethodHandle MH_ENVOPTIONS_DESTROY;
@@ -101,16 +101,18 @@ public final class SstFileWriter implements AutoCloseable {
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 	}
 
-	private final MemorySegment ptr;
+	private SstFileWriter(MemorySegment ptr) {
+		super(ptr);
+	}
 
 	/**
 	 * Creates an SST file writer using the given DB options (comparator, compression, etc.).
 	 */
-	public SstFileWriter(Options options) {
+	public static SstFileWriter newSstFileWriter(Options options) {
 		try {
 			MemorySegment envOpts = (MemorySegment) MH_ENVOPTIONS_CREATE.invokeExact();
 			try {
-				this.ptr = (MemorySegment) MH_CREATE.invokeExact(envOpts, options.ptr());
+				return new SstFileWriter((MemorySegment) MH_CREATE.invokeExact(envOpts, options.ptr()));
 			} finally {
 				MH_ENVOPTIONS_DESTROY.invokeExact(envOpts);
 			}
@@ -127,7 +129,7 @@ public final class SstFileWriter implements AutoCloseable {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
 			MemorySegment pathSeg = arena.allocateFrom(path.toString());
-			MH_OPEN.invokeExact(ptr, pathSeg, err);
+			MH_OPEN.invokeExact(ptr(), pathSeg, err);
 			Native.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("sstfilewriter open failed", t);
@@ -142,7 +144,7 @@ public final class SstFileWriter implements AutoCloseable {
 			MemorySegment err = Native.errHolder(arena);
 			MemorySegment keyNative = Native.toNative(arena, key);
 			MemorySegment valNative = Native.toNative(arena, value);
-			MH_PUT.invokeExact(ptr,
+			MH_PUT.invokeExact(ptr(),
 					keyNative, (long) key.length,
 					valNative, (long) value.length,
 					err);
@@ -158,7 +160,7 @@ public final class SstFileWriter implements AutoCloseable {
 	public void put(MemorySegment key, MemorySegment value) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
-			MH_PUT.invokeExact(ptr,
+			MH_PUT.invokeExact(ptr(),
 					key, key.byteSize(),
 					value, value.byteSize(),
 					err);
@@ -175,7 +177,7 @@ public final class SstFileWriter implements AutoCloseable {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
 			MemorySegment keyNative = Native.toNative(arena, key);
-			MH_DELETE.invokeExact(ptr, keyNative, (long) key.length, err);
+			MH_DELETE.invokeExact(ptr(), keyNative, (long) key.length, err);
 			Native.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("sstfilewriter delete failed", t);
@@ -188,7 +190,7 @@ public final class SstFileWriter implements AutoCloseable {
 	public void delete(MemorySegment key) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
-			MH_DELETE.invokeExact(ptr, key, key.byteSize(), err);
+			MH_DELETE.invokeExact(ptr(), key, key.byteSize(), err);
 			Native.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("sstfilewriter delete failed", t);
@@ -204,7 +206,7 @@ public final class SstFileWriter implements AutoCloseable {
 			MemorySegment err = Native.errHolder(arena);
 			MemorySegment beginNative = Native.toNative(arena, beginKey);
 			MemorySegment endNative = Native.toNative(arena, endKey);
-			MH_DELETE_RANGE.invokeExact(ptr,
+			MH_DELETE_RANGE.invokeExact(ptr(),
 					beginNative, (long) beginKey.length,
 					endNative, (long) endKey.length,
 					err);
@@ -222,7 +224,7 @@ public final class SstFileWriter implements AutoCloseable {
 			MemorySegment err = Native.errHolder(arena);
 			MemorySegment keyNative = Native.toNative(arena, key);
 			MemorySegment valNative = Native.toNative(arena, value);
-			MH_MERGE.invokeExact(ptr,
+			MH_MERGE.invokeExact(ptr(),
 					keyNative, (long) key.length,
 					valNative, (long) value.length,
 					err);
@@ -239,7 +241,7 @@ public final class SstFileWriter implements AutoCloseable {
 	public void finish() {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
-			MH_FINISH.invokeExact(ptr, err);
+			MH_FINISH.invokeExact(ptr(), err);
 			Native.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("sstfilewriter finish failed", t);
@@ -252,7 +254,7 @@ public final class SstFileWriter implements AutoCloseable {
 	public long fileSize() {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment sizeSeg = arena.allocate(ValueLayout.JAVA_LONG);
-			MH_FILE_SIZE.invokeExact(ptr, sizeSeg);
+			MH_FILE_SIZE.invokeExact(ptr(), sizeSeg);
 			return sizeSeg.get(ValueLayout.JAVA_LONG, 0);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("sstfilewriter fileSize failed", t);
@@ -260,7 +262,7 @@ public final class SstFileWriter implements AutoCloseable {
 	}
 
 	@Override
-	public void close() {
-		Native.closeQuietly(MH_DESTROY, ptr);
+	protected void tryClose(MemorySegment ptr) throws Throwable {
+		MH_DESTROY.invokeExact(ptr);
 	}
 }

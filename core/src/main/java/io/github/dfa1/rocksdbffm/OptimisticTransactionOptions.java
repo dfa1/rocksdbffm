@@ -11,7 +11,7 @@ import java.lang.invoke.MethodHandle;
  * <p>Unlike pessimistic {@link TransactionOptions}, there is no deadlock detection
  * or lock timeout — conflicts are detected at {@link Transaction#commit()} time.
  */
-public final class OptimisticTransactionOptions implements AutoCloseable {
+public final class OptimisticTransactionOptions extends NativeObject {
 
 	private static final MethodHandle MH_CREATE;
 	private static final MethodHandle MH_DESTROY;
@@ -30,14 +30,13 @@ public final class OptimisticTransactionOptions implements AutoCloseable {
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_BYTE));
 	}
 
-	/**
-	 * Package-private: accessed by {@link OptimisticTransactionDB#beginTransaction}.
-	 */
-	final MemorySegment ptr;
+	private OptimisticTransactionOptions(MemorySegment ptr) {
+		super(ptr);
+	}
 
-	public OptimisticTransactionOptions() {
+	public static OptimisticTransactionOptions newOptimisticTransactionOptions() {
 		try {
-			this.ptr = (MemorySegment) MH_CREATE.invokeExact();
+			return new OptimisticTransactionOptions((MemorySegment) MH_CREATE.invokeExact());
 		} catch (Throwable t) {
 			throw new RocksDBException("optimistic transaction options create failed", t);
 		}
@@ -51,7 +50,7 @@ public final class OptimisticTransactionOptions implements AutoCloseable {
 	 */
 	public OptimisticTransactionOptions setSetSnapshot(boolean value) {
 		try {
-			MH_SET_SET_SNAPSHOT.invokeExact(ptr, value ? (byte) 1 : (byte) 0);
+			MH_SET_SET_SNAPSHOT.invokeExact(ptr(), value ? (byte) 1 : (byte) 0);
 		} catch (Throwable t) {
 			throw new RocksDBException("setSetSnapshot failed", t);
 		}
@@ -59,7 +58,7 @@ public final class OptimisticTransactionOptions implements AutoCloseable {
 	}
 
 	@Override
-	public void close() {
-		Native.closeQuietly(MH_DESTROY, ptr);
+	protected void tryClose(MemorySegment ptr) throws Throwable {
+		MH_DESTROY.invokeExact(ptr);
 	}
 }

@@ -175,7 +175,7 @@ public final class Options extends NativeObject {
 
 	public void getHistogramData(HistogramType histogram, StatisticsHistogramData data) {
 		try {
-			MH_STATISTICS_GET_HISTOGRAM_DATA.invokeExact(ptr(), histogram.getValue(), data.ptr);
+			MH_STATISTICS_GET_HISTOGRAM_DATA.invokeExact(ptr(), histogram.getValue(), data.ptr());
 		} catch (Throwable t) {
 			throw new RocksDBException("getHistogramData failed", t);
 		}
@@ -184,7 +184,7 @@ public final class Options extends NativeObject {
 
 	/**
 	 * Sets the compression algorithm for all levels.
-	 * Use {@link RocksDB#getSupportedCompressions()} ()} to check which types are available.
+	 * Use {@link RocksDB#getSupportedCompressions()} to check which types are available.
 	 *
 	 * @return {@code this} for chaining
 	 */

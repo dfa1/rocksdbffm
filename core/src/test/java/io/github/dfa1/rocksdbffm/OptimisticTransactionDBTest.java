@@ -172,7 +172,7 @@ class OptimisticTransactionDBTest {
 		try (var opts = Options.newOptions().setCreateIfMissing(true);
 		     var db = OptimisticTransactionDB.open(opts, dir);
 		     var wo = WriteOptions.newWriteOptions();
-		     var txnOpts = new OptimisticTransactionOptions().setSetSnapshot(true)) {
+		     var txnOpts = OptimisticTransactionOptions.newOptimisticTransactionOptions().setSetSnapshot(true)) {
 
 			db.put("before".getBytes(), "yes".getBytes());
 

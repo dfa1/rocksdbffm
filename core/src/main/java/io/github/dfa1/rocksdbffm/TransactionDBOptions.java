@@ -8,7 +8,7 @@ import java.lang.invoke.MethodHandle;
 /**
  * FFM wrapper for rocksdb_transactiondb_options_t.
  */
-public final class TransactionDBOptions implements AutoCloseable {
+public final class TransactionDBOptions extends NativeObject {
 
 	private static final MethodHandle MH_CREATE;
 	private static final MethodHandle MH_DESTROY;
@@ -31,14 +31,13 @@ public final class TransactionDBOptions implements AutoCloseable {
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
 	}
 
-	/**
-	 * Package-private: accessed by TransactionDB.open().
-	 */
-	final MemorySegment ptr;
+	private TransactionDBOptions(MemorySegment ptr) {
+		super(ptr);
+	}
 
-	public TransactionDBOptions() {
+	public static TransactionDBOptions newTransactionDBOptions() {
 		try {
-			this.ptr = (MemorySegment) MH_CREATE.invokeExact();
+			return new TransactionDBOptions((MemorySegment) MH_CREATE.invokeExact());
 		} catch (Throwable t) {
 			throw new RocksDBException("transactiondb options create failed", t);
 		}
@@ -49,7 +48,7 @@ public final class TransactionDBOptions implements AutoCloseable {
 	 */
 	public TransactionDBOptions setMaxNumLocks(long maxNumLocks) {
 		try {
-			MH_SET_MAX_NUM_LOCKS.invokeExact(ptr, maxNumLocks);
+			MH_SET_MAX_NUM_LOCKS.invokeExact(ptr(), maxNumLocks);
 		} catch (Throwable t) {
 			throw new RocksDBException("setMaxNumLocks failed", t);
 		}
@@ -61,7 +60,7 @@ public final class TransactionDBOptions implements AutoCloseable {
 	 */
 	public TransactionDBOptions setNumStripes(long numStripes) {
 		try {
-			MH_SET_NUM_STRIPES.invokeExact(ptr, numStripes);
+			MH_SET_NUM_STRIPES.invokeExact(ptr(), numStripes);
 		} catch (Throwable t) {
 			throw new RocksDBException("setNumStripes failed", t);
 		}
@@ -69,7 +68,7 @@ public final class TransactionDBOptions implements AutoCloseable {
 	}
 
 	@Override
-	public void close() {
-		Native.closeQuietly(MH_DESTROY, ptr);
+	protected void tryClose(MemorySegment ptr) throws Throwable {
+		MH_DESTROY.invokeExact(ptr);
 	}
 }

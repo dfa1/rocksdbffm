@@ -22,7 +22,7 @@ class SstFileWriterTest {
 		Path dbPath = dir.resolve("db");
 
 		try (var opts = Options.newOptions().setCreateIfMissing(true);
-		     var writer = new SstFileWriter(opts)) {
+		     var writer = SstFileWriter.newSstFileWriter(opts)) {
 			writer.open(sstPath);
 			writer.put("aaa".getBytes(), "val1".getBytes());
 			writer.put("bbb".getBytes(), "val2".getBytes());
@@ -49,7 +49,7 @@ class SstFileWriterTest {
 		Path dbPath = dir.resolve("db");
 
 		try (var opts = Options.newOptions().setCreateIfMissing(true);
-		     var writer = new SstFileWriter(opts)) {
+		     var writer = SstFileWriter.newSstFileWriter(opts)) {
 			writer.open(sst1);
 			writer.put("aaa".getBytes(), "v1".getBytes());
 			writer.put("bbb".getBytes(), "v2".getBytes());
@@ -80,7 +80,7 @@ class SstFileWriterTest {
 		Path dbPath = dir.resolve("db");
 
 		try (var opts = Options.newOptions().setCreateIfMissing(true);
-		     var writer = new SstFileWriter(opts)) {
+		     var writer = SstFileWriter.newSstFileWriter(opts)) {
 			writer.open(sstPath);
 			writer.put("key".getBytes(), "value".getBytes());
 			writer.finish();
@@ -88,7 +88,7 @@ class SstFileWriterTest {
 
 		// When
 		try (var db = RocksDB.open(dbPath);
-		     var ingestOpts = new IngestExternalFileOptions().setMoveFiles(true)) {
+		     var ingestOpts = IngestExternalFileOptions.newIngestExternalFileOptions().setMoveFiles(true)) {
 			db.ingestExternalFile(sstPath, ingestOpts);
 
 			// Then
@@ -103,7 +103,7 @@ class SstFileWriterTest {
 		Path dbPath = dir.resolve("db");
 
 		try (var opts = Options.newOptions().setCreateIfMissing(true);
-		     var writer = new SstFileWriter(opts)) {
+		     var writer = SstFileWriter.newSstFileWriter(opts)) {
 			writer.open(sstPath);
 			writer.put("sst-key".getBytes(), "sst-val".getBytes());
 			writer.finish();
@@ -126,7 +126,7 @@ class SstFileWriterTest {
 		Path sstPath = dir.resolve("data.sst");
 
 		try (var opts = Options.newOptions().setCreateIfMissing(true);
-		     var writer = new SstFileWriter(opts)) {
+		     var writer = SstFileWriter.newSstFileWriter(opts)) {
 			// When
 			writer.open(sstPath);
 			writer.put("key1".getBytes(), "value1".getBytes());
@@ -145,7 +145,7 @@ class SstFileWriterTest {
 	@Test
 	void ingestExternalFileOptions_setMoveFiles_doesNotThrow() {
 		// Given / When / Then
-		try (var opts = new IngestExternalFileOptions()) {
+		try (var opts = IngestExternalFileOptions.newIngestExternalFileOptions()) {
 			opts.setMoveFiles(true);
 			opts.setMoveFiles(false);
 		}
@@ -154,7 +154,7 @@ class SstFileWriterTest {
 	@Test
 	void ingestExternalFileOptions_allSetters_chaining() {
 		// Given / When / Then — verify fluent API compiles and does not throw
-		try (var opts = new IngestExternalFileOptions()
+		try (var opts = IngestExternalFileOptions.newIngestExternalFileOptions()
 				.setMoveFiles(false)
 				.setSnapshotConsistency(true)
 				.setAllowGlobalSeqno(true)
@@ -184,7 +184,7 @@ class SstFileWriterTest {
 		Path sstPath = dir.resolve("nonexistent").resolve("data.sst");
 
 		try (var opts = Options.newOptions().setCreateIfMissing(true);
-		     var writer = new SstFileWriter(opts)) {
+		     var writer = SstFileWriter.newSstFileWriter(opts)) {
 			// When / Then
 			assertThatThrownBy(() -> writer.open(sstPath))
 					.isInstanceOf(RocksDBException.class);
@@ -197,7 +197,7 @@ class SstFileWriterTest {
 		Path sstPath = dir.resolve("data.sst");
 
 		try (var opts = Options.newOptions().setCreateIfMissing(true);
-		     var writer = new SstFileWriter(opts)) {
+		     var writer = SstFileWriter.newSstFileWriter(opts)) {
 			writer.open(sstPath);
 			writer.put("zzz".getBytes(), "v1".getBytes());
 

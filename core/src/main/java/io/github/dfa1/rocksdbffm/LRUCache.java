@@ -12,14 +12,14 @@ import java.lang.invoke.MethodHandle;
  * cache across multiple column families or DB instances.
  *
  * <pre>{@code
- * try (LRUCache cache = new LRUCache(MemorySize.ofMB(64))) {
+ * try (LRUCache cache = LRUCache.newLRUCache(MemorySize.ofMB(64))) {
  *     BlockBasedTableConfig tbl = new BlockBasedTableConfig()
  *         .setBlockCache(cache);
  *     ...
  * }
  * }</pre>
  */
-public final class LRUCache implements AutoCloseable {
+public final class LRUCache extends NativeObject {
 
 	private static final MethodHandle MH_CREATE;
 	private static final MethodHandle MH_DESTROY;
@@ -53,14 +53,13 @@ public final class LRUCache implements AutoCloseable {
 				FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
 	}
 
-	/**
-	 * Package-private: accessed by BlockBasedTableConfig.
-	 */
-	final MemorySegment ptr;
+	private LRUCache(MemorySegment ptr) {
+		super(ptr);
+	}
 
-	public LRUCache(MemorySize capacity) {
+	public static LRUCache newLRUCache(MemorySize capacity) {
 		try {
-			this.ptr = (MemorySegment) MH_CREATE.invokeExact(capacity.toBytes());
+			return new LRUCache((MemorySegment) MH_CREATE.invokeExact(capacity.toBytes()));
 		} catch (Throwable t) {
 			throw new RocksDBException("LRUCache create failed", t);
 		}
@@ -71,7 +70,7 @@ public final class LRUCache implements AutoCloseable {
 	 */
 	public void setCapacity(MemorySize capacity) {
 		try {
-			MH_SET_CAPACITY.invokeExact(ptr, capacity.toBytes());
+			MH_SET_CAPACITY.invokeExact(ptr(), capacity.toBytes());
 		} catch (Throwable t) {
 			throw new RocksDBException("setCapacity failed", t);
 		}
@@ -79,7 +78,7 @@ public final class LRUCache implements AutoCloseable {
 
 	public MemorySize getCapacity() {
 		try {
-			return MemorySize.ofBytes((long) MH_GET_CAPACITY.invokeExact(ptr));
+			return MemorySize.ofBytes((long) MH_GET_CAPACITY.invokeExact(ptr()));
 		} catch (Throwable t) {
 			throw new RocksDBException("getCapacity failed", t);
 		}
@@ -87,7 +86,7 @@ public final class LRUCache implements AutoCloseable {
 
 	public MemorySize getUsage() {
 		try {
-			return MemorySize.ofBytes((long) MH_GET_USAGE.invokeExact(ptr));
+			return MemorySize.ofBytes((long) MH_GET_USAGE.invokeExact(ptr()));
 		} catch (Throwable t) {
 			throw new RocksDBException("getUsage failed", t);
 		}
@@ -95,14 +94,14 @@ public final class LRUCache implements AutoCloseable {
 
 	public MemorySize getPinnedUsage() {
 		try {
-			return MemorySize.ofBytes((long) MH_GET_PINNED_USAGE.invokeExact(ptr));
+			return MemorySize.ofBytes((long) MH_GET_PINNED_USAGE.invokeExact(ptr()));
 		} catch (Throwable t) {
 			throw new RocksDBException("getPinnedUsage failed", t);
 		}
 	}
 
 	@Override
-	public void close() {
-		Native.closeQuietly(MH_DESTROY, ptr);
+	protected void tryClose(MemorySegment ptr) throws Throwable {
+		MH_DESTROY.invokeExact(ptr);
 	}
 }

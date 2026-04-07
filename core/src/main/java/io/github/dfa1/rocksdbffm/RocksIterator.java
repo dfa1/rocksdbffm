@@ -23,7 +23,7 @@ import java.nio.ByteBuffer;
  * }
  * }</pre>
  */
-public final class RocksIterator implements AutoCloseable {
+public final class RocksIterator extends NativeObject {
 
 	private static final MethodHandle MH_CREATE;
 	private static final MethodHandle MH_DESTROY;
@@ -91,7 +91,6 @@ public final class RocksIterator implements AutoCloseable {
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 	}
 
-	private final MemorySegment ptr;
 	// Reused across all key/value calls to avoid per-call Arena allocation.
 	private final Arena lenArena;
 	private final MemorySegment lenSegment;
@@ -100,7 +99,7 @@ public final class RocksIterator implements AutoCloseable {
 	 * Package-private: created via {@link #create}.
 	 */
 	private RocksIterator(MemorySegment ptr) {
-		this.ptr = ptr;
+		super(ptr);
 		this.lenArena = Arena.ofConfined();
 		this.lenSegment = lenArena.allocate(ValueLayout.JAVA_LONG);
 	}
@@ -126,7 +125,7 @@ public final class RocksIterator implements AutoCloseable {
 	 */
 	public void seekToFirst() {
 		try {
-			MH_SEEK_TO_FIRST.invokeExact(ptr);
+			MH_SEEK_TO_FIRST.invokeExact(ptr());
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("seekToFirst failed", t);
 		}
@@ -137,7 +136,7 @@ public final class RocksIterator implements AutoCloseable {
 	 */
 	public void seekToLast() {
 		try {
-			MH_SEEK_TO_LAST.invokeExact(ptr);
+			MH_SEEK_TO_LAST.invokeExact(ptr());
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("seekToLast failed", t);
 		}
@@ -148,7 +147,7 @@ public final class RocksIterator implements AutoCloseable {
 	 */
 	public void seek(byte[] target) {
 		try (Arena arena = Arena.ofConfined()) {
-			MH_SEEK.invokeExact(ptr, Native.toNative(arena, target), (long) target.length);
+			MH_SEEK.invokeExact(ptr(), Native.toNative(arena, target), (long) target.length);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("seek failed", t);
 		}
@@ -159,7 +158,7 @@ public final class RocksIterator implements AutoCloseable {
 	 */
 	public void seek(ByteBuffer target) {
 		try {
-			MH_SEEK.invokeExact(ptr, MemorySegment.ofBuffer(target), (long) target.remaining());
+			MH_SEEK.invokeExact(ptr(), MemorySegment.ofBuffer(target), (long) target.remaining());
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("seek failed", t);
 		}
@@ -170,7 +169,7 @@ public final class RocksIterator implements AutoCloseable {
 	 */
 	public void seek(MemorySegment target) {
 		try {
-			MH_SEEK.invokeExact(ptr, target, target.byteSize());
+			MH_SEEK.invokeExact(ptr(), target, target.byteSize());
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("seek failed", t);
 		}
@@ -181,7 +180,7 @@ public final class RocksIterator implements AutoCloseable {
 	 */
 	public void seekForPrev(byte[] target) {
 		try (Arena arena = Arena.ofConfined()) {
-			MH_SEEK_FOR_PREV.invokeExact(ptr, Native.toNative(arena, target), (long) target.length);
+			MH_SEEK_FOR_PREV.invokeExact(ptr(), Native.toNative(arena, target), (long) target.length);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("seekForPrev failed", t);
 		}
@@ -192,7 +191,7 @@ public final class RocksIterator implements AutoCloseable {
 	 */
 	public void seekForPrev(ByteBuffer target) {
 		try {
-			MH_SEEK_FOR_PREV.invokeExact(ptr, MemorySegment.ofBuffer(target), (long) target.remaining());
+			MH_SEEK_FOR_PREV.invokeExact(ptr(), MemorySegment.ofBuffer(target), (long) target.remaining());
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("seekForPrev failed", t);
 		}
@@ -203,7 +202,7 @@ public final class RocksIterator implements AutoCloseable {
 	 */
 	public void seekForPrev(MemorySegment target) {
 		try {
-			MH_SEEK_FOR_PREV.invokeExact(ptr, target, target.byteSize());
+			MH_SEEK_FOR_PREV.invokeExact(ptr(), target, target.byteSize());
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("seekForPrev failed", t);
 		}
@@ -214,7 +213,7 @@ public final class RocksIterator implements AutoCloseable {
 	 */
 	public void next() {
 		try {
-			MH_NEXT.invokeExact(ptr);
+			MH_NEXT.invokeExact(ptr());
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("next failed", t);
 		}
@@ -225,7 +224,7 @@ public final class RocksIterator implements AutoCloseable {
 	 */
 	public void prev() {
 		try {
-			MH_PREV.invokeExact(ptr);
+			MH_PREV.invokeExact(ptr());
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("prev failed", t);
 		}
@@ -240,7 +239,7 @@ public final class RocksIterator implements AutoCloseable {
 	 */
 	public boolean isValid() {
 		try {
-			return ((byte) MH_VALID.invokeExact(ptr)) != 0;
+			return ((byte) MH_VALID.invokeExact(ptr())) != 0;
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("isValid failed", t);
 		}
@@ -254,7 +253,7 @@ public final class RocksIterator implements AutoCloseable {
 	public void checkError() {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
-			MH_GET_ERROR.invokeExact(ptr, err);
+			MH_GET_ERROR.invokeExact(ptr(), err);
 			Native.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("getError failed", t);
@@ -268,7 +267,7 @@ public final class RocksIterator implements AutoCloseable {
 	public void refresh() {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
-			MH_REFRESH.invokeExact(ptr, err);
+			MH_REFRESH.invokeExact(ptr(), err);
 			Native.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("refresh failed", t);
@@ -286,7 +285,7 @@ public final class RocksIterator implements AutoCloseable {
 	 */
 	public MemorySegment keySegment() {
 		try {
-			MemorySegment data = (MemorySegment) MH_KEY.invokeExact(ptr, lenSegment);
+			MemorySegment data = (MemorySegment) MH_KEY.invokeExact(ptr(), lenSegment);
 			return data.reinterpret(lenSegment.get(ValueLayout.JAVA_LONG, 0));
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("key failed", t);
@@ -300,7 +299,7 @@ public final class RocksIterator implements AutoCloseable {
 	 */
 	public MemorySegment valueSegment() {
 		try {
-			MemorySegment data = (MemorySegment) MH_VALUE.invokeExact(ptr, lenSegment);
+			MemorySegment data = (MemorySegment) MH_VALUE.invokeExact(ptr(), lenSegment);
 			return data.reinterpret(lenSegment.get(ValueLayout.JAVA_LONG, 0));
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("value failed", t);
@@ -317,7 +316,7 @@ public final class RocksIterator implements AutoCloseable {
 	 */
 	public int key(ByteBuffer dst) {
 		try {
-			MemorySegment data = (MemorySegment) MH_KEY.invokeExact(ptr, lenSegment);
+			MemorySegment data = (MemorySegment) MH_KEY.invokeExact(ptr(), lenSegment);
 			long len = lenSegment.get(ValueLayout.JAVA_LONG, 0);
 			int toCopy = (int) Math.min(len, dst.remaining());
 			MemorySegment.ofBuffer(dst).copyFrom(data.reinterpret(toCopy));
@@ -334,7 +333,7 @@ public final class RocksIterator implements AutoCloseable {
 	 */
 	public int value(ByteBuffer dst) {
 		try {
-			MemorySegment data = (MemorySegment) MH_VALUE.invokeExact(ptr, lenSegment);
+			MemorySegment data = (MemorySegment) MH_VALUE.invokeExact(ptr(), lenSegment);
 			long len = lenSegment.get(ValueLayout.JAVA_LONG, 0);
 			int toCopy = (int) Math.min(len, dst.remaining());
 			MemorySegment.ofBuffer(dst).copyFrom(data.reinterpret(toCopy));
@@ -356,7 +355,7 @@ public final class RocksIterator implements AutoCloseable {
 	 */
 	public byte[] key() {
 		try {
-			MemorySegment data = (MemorySegment) MH_KEY.invokeExact(ptr, lenSegment);
+			MemorySegment data = (MemorySegment) MH_KEY.invokeExact(ptr(), lenSegment);
 			return data.reinterpret(lenSegment.get(ValueLayout.JAVA_LONG, 0)).toArray(ValueLayout.JAVA_BYTE);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("key failed", t);
@@ -370,7 +369,7 @@ public final class RocksIterator implements AutoCloseable {
 	 */
 	public byte[] value() {
 		try {
-			MemorySegment data = (MemorySegment) MH_VALUE.invokeExact(ptr, lenSegment);
+			MemorySegment data = (MemorySegment) MH_VALUE.invokeExact(ptr(), lenSegment);
 			return data.reinterpret(lenSegment.get(ValueLayout.JAVA_LONG, 0)).toArray(ValueLayout.JAVA_BYTE);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("value failed", t);
@@ -382,8 +381,8 @@ public final class RocksIterator implements AutoCloseable {
 	// -----------------------------------------------------------------------
 
 	@Override
-	public void close() {
-		Native.closeQuietly(MH_DESTROY, ptr);
+	protected void tryClose(MemorySegment ptr) throws Throwable {
+		MH_DESTROY.invokeExact(ptr);
 		lenArena.close();
 	}
 }

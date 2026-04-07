@@ -5,7 +5,9 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Path;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class StatisticsTest {
 
@@ -36,7 +38,7 @@ public class StatisticsTest {
 				assertNotNull(stats);
 				assertTrue(stats.contains("rocksdb.number.keys.written"));
 
-				try (StatisticsHistogramData hist = new StatisticsHistogramData()) {
+				try (StatisticsHistogramData hist = StatisticsHistogramData.newStatisticsHistogramData()) {
 					options.getHistogramData(HistogramType.DB_GET, hist);
 					assertTrue(hist.getCount() >= 2, "Histogram count should be at least 2, got " + hist.getCount());
 					assertTrue(hist.getAverage() >= 0);

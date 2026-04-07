@@ -11,7 +11,7 @@ class TransactionDBTest {
 
 	private static TransactionDB openDb(Path path) {
 		try (var opts = Options.newOptions().setCreateIfMissing(true);
-		     var txnDbOpts = new TransactionDBOptions()) {
+		     var txnDbOpts = TransactionDBOptions.newTransactionDBOptions()) {
 			return TransactionDB.open(opts, txnDbOpts, path);
 		}
 	}
@@ -217,7 +217,7 @@ class TransactionDBTest {
 		// Given
 		try (var db = openDb(dir);
 		     var wo = WriteOptions.newWriteOptions();
-		     var txnOpts = new TransactionOptions().setSetSnapshot(true);
+		     var txnOpts = TransactionOptions.newTransactionOptions().setSetSnapshot(true);
 		     var txn = db.beginTransaction(wo, txnOpts)) {
 
 			txn.put("k".getBytes(), "v".getBytes());

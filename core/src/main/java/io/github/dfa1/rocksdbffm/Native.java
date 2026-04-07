@@ -46,6 +46,17 @@ final class Native {
 	}
 
 	/**
+	 * Frees a malloc'd pointer returned by the RocksDB C API.
+	 */
+	public static void free(MemorySegment ptr) {
+		try {
+			MH_FREE.invokeExact(ptr);
+		} catch (Throwable ignored) {
+			// Best effort to free
+		}
+	}
+
+	/**
 	 * Checks if the error holder contains a non-NULL pointer.
 	 * If so, throws a {@link RocksDBException} and frees the C string.
 	 */
@@ -53,11 +64,7 @@ final class Native {
 		MemorySegment errPtr = errHolder.get(ValueLayout.ADDRESS, 0);
 		if (!MemorySegment.NULL.equals(errPtr)) {
 			String msg = errPtr.reinterpret(Long.MAX_VALUE).getString(0);
-			try {
-				MH_FREE.invokeExact(errPtr);
-			} catch (Throwable ignored) {
-				// Best effort to free
-			}
+			free(errPtr);
 			throw new RocksDBException(msg);
 		}
 	}

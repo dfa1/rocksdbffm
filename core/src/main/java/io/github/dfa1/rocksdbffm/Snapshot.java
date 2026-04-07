@@ -32,7 +32,6 @@ public final class Snapshot extends NativeObject {
 	// rocksdb_release_snapshot(db*, snap*) — for RocksDB and TransactionDB snapshots
 	private static final MethodHandle MH_RELEASE;
 	// rocksdb_free(ptr*) — for Transaction snapshots
-	private static final MethodHandle MH_FREE;
 
 	static {
 		MH_SEQUENCE_NUMBER = RocksDB.lookup("rocksdb_snapshot_get_sequence_number",
@@ -42,8 +41,6 @@ public final class Snapshot extends NativeObject {
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
 		// TODO: rocksdb_free is declared a lot of times
-		MH_FREE = RocksDB.lookup("rocksdb_free",
-				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 	}
 
 	/**
@@ -84,7 +81,7 @@ public final class Snapshot extends NativeObject {
 	@Override
 	protected void tryClose(MemorySegment ptr) throws Throwable {
 		if (MemorySegment.NULL.equals(dbPtr)) {
-			MH_FREE.invokeExact(ptr);
+			Native.free(ptr);
 		} else {
 			MH_RELEASE.invokeExact(dbPtr, ptr);
 		}

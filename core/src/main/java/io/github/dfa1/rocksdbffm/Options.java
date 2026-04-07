@@ -33,7 +33,6 @@ public final class Options extends NativeObject {
 	private static final MethodHandle MH_STATISTICS_GET_HISTOGRAM_DATA;
 	private static final MethodHandle MH_SET_COMPRESSION;
 	private static final MethodHandle MH_GET_COMPRESSION;
-	private static final MethodHandle MH_FREE;
 
 	static {
 		MH_CREATE = RocksDB.lookup("rocksdb_options_create",
@@ -79,8 +78,6 @@ public final class Options extends NativeObject {
 		MH_GET_COMPRESSION = RocksDB.lookup("rocksdb_options_get_compression",
 				FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
 
-		MH_FREE = RocksDB.lookup("rocksdb_free",
-				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 	}
 
 	private Options(MemorySegment ptr) {
@@ -158,7 +155,7 @@ public final class Options extends NativeObject {
 				return null;
 			}
 			String result = strPtr.reinterpret(Long.MAX_VALUE).getString(0);
-			MH_FREE.invokeExact(strPtr);
+			Native.free(strPtr);
 			return result;
 		} catch (Throwable t) {
 			throw new RocksDBException("getStatisticsString failed", t);

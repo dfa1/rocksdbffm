@@ -33,7 +33,6 @@ public final class Transaction extends NativeObject {
 	private static final MethodHandle MH_GET_FOR_UPDATE;
 	private static final MethodHandle MH_PINNABLESLICE_VALUE;
 	private static final MethodHandle MH_PINNABLESLICE_DESTROY;
-	private static final MethodHandle MH_FREE;
 
 	static {
 		MH_COMMIT = RocksDB.lookup("rocksdb_transaction_commit",
@@ -90,8 +89,6 @@ public final class Transaction extends NativeObject {
 		MH_PINNABLESLICE_DESTROY = RocksDB.lookup("rocksdb_pinnableslice_destroy",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
-		MH_FREE = RocksDB.lookup("rocksdb_free",
-				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
 		// const rocksdb_snapshot_t* rocksdb_transaction_get_snapshot(txn*)
 		// Note: must be freed with rocksdb_free, not rocksdb_release_snapshot
@@ -198,7 +195,7 @@ public final class Transaction extends NativeObject {
 
 			long valLen = valLenSeg.get(ValueLayout.JAVA_LONG, 0);
 			byte[] result = valPtr.reinterpret(valLen).toArray(ValueLayout.JAVA_BYTE);
-			MH_FREE.invokeExact(valPtr);
+			Native.free(valPtr);
 			return result;
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("Native call failed", t);

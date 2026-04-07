@@ -48,7 +48,6 @@ public final class SecondaryDB extends NativeObject {
 	private static final MethodHandle MH_CREATE_SNAPSHOT;
 	private static final MethodHandle MH_PROPERTY_VALUE;
 	private static final MethodHandle MH_PROPERTY_INT;
-	private static final MethodHandle MH_FREE;
 
 	static {
 		// rocksdb_t* rocksdb_open_as_secondary(opts*, primary_path*, secondary_path*, errptr**)
@@ -91,8 +90,6 @@ public final class SecondaryDB extends NativeObject {
 				FunctionDescriptor.of(ValueLayout.JAVA_INT,
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
-		MH_FREE = RocksDB.lookup("rocksdb_free",
-				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 	}
 
 	// -----------------------------------------------------------------------
@@ -267,7 +264,7 @@ public final class SecondaryDB extends NativeObject {
 				return Optional.empty();
 			}
 			String value = result.reinterpret(Long.MAX_VALUE).getString(0);
-			MH_FREE.invokeExact(result);
+			Native.free(result);
 			return Optional.of(value);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("getProperty failed", t);

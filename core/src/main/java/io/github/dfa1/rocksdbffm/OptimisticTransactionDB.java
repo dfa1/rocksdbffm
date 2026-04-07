@@ -52,7 +52,6 @@ public final class OptimisticTransactionDB extends NativeObject {
 	private static final MethodHandle MH_FLUSH_WAL;
 	private static final MethodHandle MH_PROPERTY_VALUE;
 	private static final MethodHandle MH_PROPERTY_INT;
-	private static final MethodHandle MH_FREE;
 
 	static {
 		// rocksdb_optimistictransactiondb_t* rocksdb_optimistictransactiondb_open(opts*, name*, errptr**)
@@ -121,8 +120,6 @@ public final class OptimisticTransactionDB extends NativeObject {
 				FunctionDescriptor.of(ValueLayout.JAVA_INT,
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
-		MH_FREE = RocksDB.lookup("rocksdb_free",
-				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 	}
 
 	// -----------------------------------------------------------------------
@@ -231,7 +228,7 @@ public final class OptimisticTransactionDB extends NativeObject {
 
 			long valLen = valLenSeg.get(ValueLayout.JAVA_LONG, 0);
 			byte[] result = valPtr.reinterpret(valLen).toArray(ValueLayout.JAVA_BYTE);
-			MH_FREE.invokeExact(valPtr);
+			Native.free(valPtr);
 			return result;
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("get failed", t);
@@ -257,7 +254,7 @@ public final class OptimisticTransactionDB extends NativeObject {
 
 			long valLen = valLenSeg.get(ValueLayout.JAVA_LONG, 0);
 			byte[] result = valPtr.reinterpret(valLen).toArray(ValueLayout.JAVA_BYTE);
-			MH_FREE.invokeExact(valPtr);
+			Native.free(valPtr);
 			return result;
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("get failed", t);
@@ -342,7 +339,7 @@ public final class OptimisticTransactionDB extends NativeObject {
 				return Optional.empty();
 			}
 			String value = result.reinterpret(Long.MAX_VALUE).getString(0);
-			MH_FREE.invokeExact(result);
+			Native.free(result);
 			return Optional.of(value);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("getProperty failed", t);

@@ -55,7 +55,6 @@ public final class RocksDB extends NativeObject {
 	private static final MethodHandle MH_KEY_MAY_EXIST;
 	private static final MethodHandle MH_PROPERTY_VALUE;
 	private static final MethodHandle MH_PROPERTY_INT;
-	private static final MethodHandle MH_FREE;
 	private static final MethodHandle MH_COMPACT_RANGE;
 	private static final MethodHandle MH_COMPACT_RANGE_OPT;
 	private static final MethodHandle MH_SUGGEST_COMPACT_RANGE;
@@ -159,7 +158,6 @@ public final class RocksDB extends NativeObject {
 				FunctionDescriptor.of(ValueLayout.JAVA_INT,
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
-		MH_FREE = lookup("rocksdb_free", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
 		// void rocksdb_compact_range(db*, start*, slen, limit*, llen)
 		// NULL pointers mean "beginning" / "end" of keyspace
@@ -850,7 +848,7 @@ public final class RocksDB extends NativeObject {
 				return Optional.empty();
 			}
 			String value = result.reinterpret(Long.MAX_VALUE).getString(0);
-			MH_FREE.invokeExact(result);
+			Native.free(result);
 			return Optional.of(value);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("getProperty failed", t);

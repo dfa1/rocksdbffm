@@ -46,7 +46,6 @@ public final class TransactionDB extends NativeObject {
 	private static final MethodHandle MH_DELETE;
 	private static final MethodHandle MH_GET;   // returns malloc'd char*, caller frees
 
-	private static final MethodHandle MH_FREE;
 
 	static {
 		// rocksdb_transactiondb_t* rocksdb_transactiondb_open(opts*, txnDbOpts*, name, errptr**)
@@ -86,8 +85,6 @@ public final class TransactionDB extends NativeObject {
 						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
-		MH_FREE = RocksDB.lookup("rocksdb_free",
-				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
 		// const rocksdb_snapshot_t* rocksdb_transactiondb_create_snapshot(txndb*)
 		MH_CREATE_SNAPSHOT = RocksDB.lookup("rocksdb_transactiondb_create_snapshot",
@@ -264,7 +261,7 @@ public final class TransactionDB extends NativeObject {
 
 			long valLen = valLenSeg.get(ValueLayout.JAVA_LONG, 0);
 			byte[] result = valPtr.reinterpret(valLen).toArray(ValueLayout.JAVA_BYTE);
-			MH_FREE.invokeExact(valPtr);
+			Native.free(valPtr);
 			return result;
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("Native call failed", t);
@@ -291,7 +288,7 @@ public final class TransactionDB extends NativeObject {
 
 			long valLen = valLenSeg.get(ValueLayout.JAVA_LONG, 0);
 			byte[] result = valPtr.reinterpret(valLen).toArray(ValueLayout.JAVA_BYTE);
-			MH_FREE.invokeExact(valPtr);
+			Native.free(valPtr);
 			return result;
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("Native call failed", t);
@@ -313,7 +310,7 @@ public final class TransactionDB extends NativeObject {
 				return Optional.empty();
 			}
 			String value = result.reinterpret(Long.MAX_VALUE).getString(0);
-			MH_FREE.invokeExact(result);
+			Native.free(result);
 			return Optional.of(value);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("getProperty failed", t);

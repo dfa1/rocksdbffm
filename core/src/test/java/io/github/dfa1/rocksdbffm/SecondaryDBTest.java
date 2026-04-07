@@ -54,7 +54,7 @@ class SecondaryDBTest {
 		// Given — write initial data to primary and flush so secondary can read it
 		try (var opts = new Options().setCreateIfMissing(true);
 		     var primary = RocksDB.open(opts, primaryDir);
-		     var fo = new FlushOptions()) {
+		     var fo = FlushOptions.newFlushOptions()) {
 			primary.put("k1".getBytes(), "v1".getBytes());
 			primary.flush(fo); // flush to SST so secondary can find it
 		}
@@ -69,7 +69,7 @@ class SecondaryDBTest {
 			// When — primary writes more data and flushes
 			try (var popts = new Options();
 			     var primary = RocksDB.open(popts, primaryDir);
-			     var fo = new FlushOptions()) {
+			     var fo = FlushOptions.newFlushOptions()) {
 				primary.put("k2".getBytes(), "v2".getBytes());
 				primary.flush(fo);
 			}
@@ -106,7 +106,7 @@ class SecondaryDBTest {
 		// Given — write and flush
 		try (var opts = new Options().setCreateIfMissing(true);
 		     var primary = RocksDB.open(opts, primaryDir);
-		     var fo = new FlushOptions()) {
+		     var fo = FlushOptions.newFlushOptions()) {
 			primary.put("k".getBytes(), "v".getBytes());
 			primary.flush(fo);
 		}
@@ -130,7 +130,7 @@ class SecondaryDBTest {
 		// Given
 		try (var opts = new Options().setCreateIfMissing(true);
 		     var primary = RocksDB.open(opts, primaryDir);
-		     var fo = new FlushOptions()) {
+		     var fo = FlushOptions.newFlushOptions()) {
 			primary.put("a".getBytes(), "1".getBytes());
 			primary.put("b".getBytes(), "2".getBytes());
 			primary.flush(fo);
@@ -159,7 +159,7 @@ class SecondaryDBTest {
 		// Given
 		try (var opts = new Options().setCreateIfMissing(true);
 		     var primary = RocksDB.open(opts, primaryDir);
-		     var fo = new FlushOptions()) {
+		     var fo = FlushOptions.newFlushOptions()) {
 			primary.put("x".getBytes(), "y".getBytes());
 			primary.flush(fo);
 		}
@@ -186,7 +186,7 @@ class SecondaryDBTest {
 		// Given — write and flush so secondary can catch up
 		try (var opts = new Options().setCreateIfMissing(true);
 		     var primary = RocksDB.open(opts, primaryDir);
-		     var fo = new FlushOptions()) {
+		     var fo = FlushOptions.newFlushOptions()) {
 			primary.put("k".getBytes(), "v".getBytes());
 			primary.flush(fo);
 		}
@@ -214,7 +214,7 @@ class SecondaryDBTest {
 		// Given
 		try (var opts = new Options().setCreateIfMissing(true);
 		     var primary = RocksDB.open(opts, primaryDir);
-		     var fo = new FlushOptions()) {
+		     var fo = FlushOptions.newFlushOptions()) {
 			primary.put("k".getBytes(), "v".getBytes());
 			primary.flush(fo);
 		}

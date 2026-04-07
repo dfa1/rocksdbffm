@@ -302,7 +302,7 @@ public final class OptimisticTransactionDB implements AutoCloseable {
 	public void flush(FlushOptions flushOptions) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
-			MH_FLUSH.invokeExact(baseDb, flushOptions.ptr, err);
+			MH_FLUSH.invokeExact(baseDb, flushOptions.ptr(), err);
 			Native.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("flush failed", t);

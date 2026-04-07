@@ -16,7 +16,7 @@ class FlushTest {
 	@Test
 	void flushOptions_defaultWaitIsTrue() {
 		// Given / When
-		try (FlushOptions fo = new FlushOptions()) {
+		try (FlushOptions fo = FlushOptions.newFlushOptions()) {
 			// Then
 			assertThat(fo.isWait()).isTrue();
 		}
@@ -25,7 +25,7 @@ class FlushTest {
 	@Test
 	void flushOptions_setWait_roundTrips() {
 		// Given
-		try (FlushOptions fo = new FlushOptions()) {
+		try (FlushOptions fo = FlushOptions.newFlushOptions()) {
 			// When
 			fo.setWait(false);
 			// Then
@@ -44,7 +44,7 @@ class FlushTest {
 	void flush_dataIsReadableAfterFlush(@TempDir Path dir) {
 		// Given
 		try (var db = RocksDB.open(dir);
-		     var fo = new FlushOptions().setWait(true)) {
+		     var fo = FlushOptions.newFlushOptions().setWait(true)) {
 			db.put("k".getBytes(), "v".getBytes());
 
 			// When
@@ -59,7 +59,7 @@ class FlushTest {
 	void flush_multipleKeys(@TempDir Path dir) {
 		// Given
 		try (var db = RocksDB.open(dir);
-		     var fo = new FlushOptions()) {
+		     var fo = FlushOptions.newFlushOptions()) {
 			for (int i = 0; i < 100; i++) {
 				db.put(("key" + i).getBytes(), ("val" + i).getBytes());
 			}
@@ -95,7 +95,7 @@ class FlushTest {
 		try (var opts = new Options().setCreateIfMissing(true);
 		     var txnDbOpts = new TransactionDBOptions();
 		     var db = TransactionDB.open(opts, txnDbOpts, dir);
-		     var fo = new FlushOptions().setWait(true)) {
+		     var fo = FlushOptions.newFlushOptions().setWait(true)) {
 			db.put("k".getBytes(), "v".getBytes());
 
 			// When

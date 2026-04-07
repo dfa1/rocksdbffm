@@ -12,12 +12,12 @@ import java.lang.invoke.MethodHandle;
  * {@link TransactionDB#flush(FlushOptions)}.
  *
  * <pre>{@code
- * try (FlushOptions fo = new FlushOptions().setWait(true)) {
+ * try (FlushOptions fo = FlushOptions.newFlushOptions().setWait(true)) {
  *     db.flush(fo);
  * }
  * }</pre>
  */
-public final class FlushOptions implements AutoCloseable {
+public final class FlushOptions extends NativeObject {
 
 	private static final MethodHandle MH_CREATE;
 	private static final MethodHandle MH_DESTROY;
@@ -40,14 +40,16 @@ public final class FlushOptions implements AutoCloseable {
 				FunctionDescriptor.of(ValueLayout.JAVA_BYTE, ValueLayout.ADDRESS));
 	}
 
-	final MemorySegment ptr;
+	private FlushOptions(MemorySegment ptr) {
+		super(ptr);
+	}
 
 	/**
 	 * Creates FlushOptions with {@code wait = true} (the default).
 	 */
-	public FlushOptions() {
+	public static FlushOptions newFlushOptions() {
 		try {
-			this.ptr = (MemorySegment) MH_CREATE.invokeExact();
+			return new FlushOptions((MemorySegment) MH_CREATE.invokeExact());
 		} catch (Throwable t) {
 			throw new RocksDBException("flushoptions create failed", t);
 		}
@@ -61,7 +63,7 @@ public final class FlushOptions implements AutoCloseable {
 	 */
 	public FlushOptions setWait(boolean wait) {
 		try {
-			MH_SET_WAIT.invokeExact(ptr, wait ? (byte) 1 : (byte) 0);
+			MH_SET_WAIT.invokeExact(ptr(), wait ? (byte) 1 : (byte) 0);
 			return this;
 		} catch (Throwable t) {
 			throw new RocksDBException("flushoptions setWait failed", t);
@@ -73,14 +75,14 @@ public final class FlushOptions implements AutoCloseable {
 	 */
 	public boolean isWait() {
 		try {
-			return ((byte) MH_GET_WAIT.invokeExact(ptr)) != 0;
+			return ((byte) MH_GET_WAIT.invokeExact(ptr())) != 0;
 		} catch (Throwable t) {
 			throw new RocksDBException("flushoptions getWait failed", t);
 		}
 	}
 
 	@Override
-	public void close() {
-		Native.closeQuietly(MH_DESTROY, ptr);
+	protected void tryClose(MemorySegment ptr) throws Throwable {
+		MH_DESTROY.invokeExact(ptr);
 	}
 }

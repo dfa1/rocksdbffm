@@ -224,7 +224,7 @@ class OptimisticTransactionDBTest {
 		// Given
 		try (var opts = new Options().setCreateIfMissing(true);
 		     var db = OptimisticTransactionDB.open(opts, dir);
-		     var fo = new FlushOptions()) {
+		     var fo = FlushOptions.newFlushOptions()) {
 
 			db.put("k".getBytes(), "v".getBytes());
 

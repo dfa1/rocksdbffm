@@ -20,10 +20,16 @@ public abstract class NativeObject implements AutoCloseable {
 	}
 
 	/**
-	 * Returns the current native pointer. May be {@link MemorySegment#NULL} after close.
+	 * Returns the current native pointer.
+	 *
+	 * @throws IllegalStateException if this object has been closed or its ownership transferred
 	 */
 	public final MemorySegment ptr() {
-		return owningPointer.get();
+		MemorySegment p = owningPointer.get();
+		if (MemorySegment.NULL.equals(p)) {
+			throw new IllegalStateException("native object is closed or ownership has been transferred");
+		}
+		return p;
 	}
 
 	@Override
@@ -44,7 +50,7 @@ public abstract class NativeObject implements AutoCloseable {
 	/// - RocksDB C API source (db/c.cc) — look at what rocksdb_block_based_options_destroy does: if it calls delete options->rep.filter_policy, ownership was transferred.
 	/// - RocksDB documentation — the C API docs sometimes state it explicitly.
 	/// - The Java JNI bindings (RocksDB official Java library) — they've already solved this; look at how BlockBasedTableConfig handles filter policy lifecycle.
-	public void transferOwnership() {
+	void transferOwnership() {
 		owningPointer.set(MemorySegment.NULL);
 	}
 

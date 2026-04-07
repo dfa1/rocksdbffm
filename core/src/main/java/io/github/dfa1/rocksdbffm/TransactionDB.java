@@ -259,7 +259,9 @@ public final class TransactionDB implements AutoCloseable {
 
 			Native.checkError(err);
 
-			if (MemorySegment.NULL.equals(valPtr)) return null;
+			if (MemorySegment.NULL.equals(valPtr)) {
+				return null;
+			}
 
 			long valLen = valLenSeg.get(ValueLayout.JAVA_LONG, 0);
 			byte[] result = valPtr.reinterpret(valLen).toArray(ValueLayout.JAVA_BYTE);
@@ -284,7 +286,9 @@ public final class TransactionDB implements AutoCloseable {
 
 			Native.checkError(err);
 
-			if (MemorySegment.NULL.equals(valPtr)) return null;
+			if (MemorySegment.NULL.equals(valPtr)) {
+				return null;
+			}
 
 			long valLen = valLenSeg.get(ValueLayout.JAVA_LONG, 0);
 			byte[] result = valPtr.reinterpret(valLen).toArray(ValueLayout.JAVA_BYTE);
@@ -306,7 +310,9 @@ public final class TransactionDB implements AutoCloseable {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment propSeg = arena.allocateFrom(property.propertyName());
 			MemorySegment result = (MemorySegment) MH_PROPERTY_VALUE.invokeExact(ptr, propSeg);
-			if (MemorySegment.NULL.equals(result)) return Optional.empty();
+			if (MemorySegment.NULL.equals(result)) {
+				return Optional.empty();
+			}
 			String value = result.reinterpret(Long.MAX_VALUE).getString(0);
 			MH_FREE.invokeExact(result);
 			return Optional.of(value);
@@ -323,7 +329,9 @@ public final class TransactionDB implements AutoCloseable {
 			MemorySegment propSeg = arena.allocateFrom(property.propertyName());
 			MemorySegment out = arena.allocate(ValueLayout.JAVA_LONG);
 			int rc = (int) MH_PROPERTY_INT.invokeExact(ptr, propSeg, out);
-			if (rc != 0) return OptionalLong.empty();
+			if (rc != 0) {
+				return OptionalLong.empty();
+			}
 			return OptionalLong.of(out.get(ValueLayout.JAVA_LONG, 0));
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("getLongProperty failed", t);

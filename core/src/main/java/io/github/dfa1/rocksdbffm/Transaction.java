@@ -161,7 +161,9 @@ public final class Transaction implements AutoCloseable {
 
 			Native.checkError(err);
 
-			if (MemorySegment.NULL.equals(pin)) return null;
+			if (MemorySegment.NULL.equals(pin)) {
+				return null;
+			}
 
 			MemorySegment valLenSeg = arena.allocate(ValueLayout.JAVA_LONG);
 			MemorySegment valPtr = (MemorySegment) MH_PINNABLESLICE_VALUE.invokeExact(pin, valLenSeg);
@@ -192,7 +194,9 @@ public final class Transaction implements AutoCloseable {
 
 			Native.checkError(err);
 
-			if (MemorySegment.NULL.equals(valPtr)) return null;
+			if (MemorySegment.NULL.equals(valPtr)) {
+				return null;
+			}
 
 			long valLen = valLenSeg.get(ValueLayout.JAVA_LONG, 0);
 			byte[] result = valPtr.reinterpret(valLen).toArray(ValueLayout.JAVA_BYTE);
@@ -215,7 +219,9 @@ public final class Transaction implements AutoCloseable {
 	public Snapshot getSnapshot() {
 		try {
 			MemorySegment snapPtr = (MemorySegment) MH_GET_SNAPSHOT.invokeExact(ptr);
-			if (MemorySegment.NULL.equals(snapPtr)) return null;
+			if (MemorySegment.NULL.equals(snapPtr)) {
+				return null;
+			}
 			return new Snapshot(snapPtr); // released via rocksdb_free
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("getSnapshot failed", t);

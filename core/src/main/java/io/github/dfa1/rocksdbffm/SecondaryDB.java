@@ -174,7 +174,9 @@ public final class SecondaryDB implements AutoCloseable {
 					ptr, readOpts.ptr(), k, (long) key.length, err);
 			Native.checkError(err);
 
-			if (MemorySegment.NULL.equals(pin)) return null;
+			if (MemorySegment.NULL.equals(pin)) {
+				return null;
+			}
 
 			MemorySegment valLenSeg = arena.allocate(ValueLayout.JAVA_LONG);
 			MemorySegment valPtr = (MemorySegment) MH_PINNABLESLICE_VALUE.invokeExact(pin, valLenSeg);
@@ -200,7 +202,9 @@ public final class SecondaryDB implements AutoCloseable {
 					ptr, readOptions.ptr(), k, (long) key.length, err);
 			Native.checkError(err);
 
-			if (MemorySegment.NULL.equals(pin)) return null;
+			if (MemorySegment.NULL.equals(pin)) {
+				return null;
+			}
 
 			MemorySegment valLenSeg = arena.allocate(ValueLayout.JAVA_LONG);
 			MemorySegment valPtr = (MemorySegment) MH_PINNABLESLICE_VALUE.invokeExact(pin, valLenSeg);
@@ -260,7 +264,9 @@ public final class SecondaryDB implements AutoCloseable {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment propSeg = arena.allocateFrom(property.propertyName());
 			MemorySegment result = (MemorySegment) MH_PROPERTY_VALUE.invokeExact(ptr, propSeg);
-			if (MemorySegment.NULL.equals(result)) return Optional.empty();
+			if (MemorySegment.NULL.equals(result)) {
+				return Optional.empty();
+			}
 			String value = result.reinterpret(Long.MAX_VALUE).getString(0);
 			MH_FREE.invokeExact(result);
 			return Optional.of(value);
@@ -277,7 +283,9 @@ public final class SecondaryDB implements AutoCloseable {
 			MemorySegment propSeg = arena.allocateFrom(property.propertyName());
 			MemorySegment out = arena.allocate(ValueLayout.JAVA_LONG);
 			int rc = (int) MH_PROPERTY_INT.invokeExact(ptr, propSeg, out);
-			if (rc != 0) return OptionalLong.empty();
+			if (rc != 0) {
+				return OptionalLong.empty();
+			}
 			return OptionalLong.of(out.get(ValueLayout.JAVA_LONG, 0));
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("getLongProperty failed", t);

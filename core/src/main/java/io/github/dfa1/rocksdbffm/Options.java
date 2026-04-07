@@ -141,7 +141,9 @@ public final class Options extends NativeObject {
 		try {
 			int level = (int) MH_GET_STATISTICS_LEVEL.invokeExact(ptr());
 			for (StatsLevel l : StatsLevel.values()) {
-				if (l.getValue() == level) return l;
+				if (l.getValue() == level) {
+					return l;
+				}
 			}
 			return StatsLevel.DISABLE_ALL;
 		} catch (Throwable t) {
@@ -152,7 +154,9 @@ public final class Options extends NativeObject {
 	public String getStatisticsString() {
 		try {
 			MemorySegment strPtr = (MemorySegment) MH_STATISTICS_GET_STRING.invokeExact(ptr());
-			if (MemorySegment.NULL.equals(strPtr)) return null;
+			if (MemorySegment.NULL.equals(strPtr)) {
+				return null;
+			}
 			String result = strPtr.reinterpret(Long.MAX_VALUE).getString(0);
 			MH_FREE.invokeExact(strPtr);
 			return result;

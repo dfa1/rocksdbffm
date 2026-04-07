@@ -86,10 +86,18 @@ public final class MemorySize implements Comparable<MemorySize> {
 	 */
 	@Override
 	public String toString() {
-		if (bytes == 0) return "0 B";
-		if (bytes % GB == 0) return (bytes / GB) + " GB";
-		if (bytes % MB == 0) return (bytes / MB) + " MB";
-		if (bytes % KB == 0) return (bytes / KB) + " KB";
+		if (bytes == 0) {
+			return "0 B";
+		}
+		if (bytes % GB == 0) {
+			return (bytes / GB) + " GB";
+		}
+		if (bytes % MB == 0) {
+			return (bytes / MB) + " MB";
+		}
+		if (bytes % KB == 0) {
+			return (bytes / KB) + " KB";
+		}
 		return bytes + " B";
 	}
 

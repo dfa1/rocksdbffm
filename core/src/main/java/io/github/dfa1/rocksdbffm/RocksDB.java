@@ -469,7 +469,9 @@ public final class RocksDB implements AutoCloseable {
 
 			Native.checkError(err);
 
-			if (MemorySegment.NULL.equals(pin)) return null;
+			if (MemorySegment.NULL.equals(pin)) {
+				return null;
+			}
 
 			MemorySegment valLenSeg = arena.allocate(ValueLayout.JAVA_LONG);
 			MemorySegment valPtr = (MemorySegment) MH_PINNABLESLICE_VALUE.invokeExact(pin, valLenSeg);
@@ -496,7 +498,9 @@ public final class RocksDB implements AutoCloseable {
 
 			Native.checkError(err);
 
-			if (MemorySegment.NULL.equals(pin)) return null;
+			if (MemorySegment.NULL.equals(pin)) {
+				return null;
+			}
 
 			MemorySegment valLenSeg = arena.allocate(ValueLayout.JAVA_LONG);
 			MemorySegment valPtr = (MemorySegment) MH_PINNABLESLICE_VALUE.invokeExact(pin, valLenSeg);
@@ -524,7 +528,9 @@ public final class RocksDB implements AutoCloseable {
 
 			Native.checkError(err);
 
-			if (MemorySegment.NULL.equals(pin)) return -1;
+			if (MemorySegment.NULL.equals(pin)) {
+				return -1;
+			}
 
 			MemorySegment valLenSeg = arena.allocate(ValueLayout.JAVA_LONG);
 			MemorySegment valPtr = (MemorySegment) MH_PINNABLESLICE_VALUE.invokeExact(pin, valLenSeg);
@@ -863,7 +869,9 @@ public final class RocksDB implements AutoCloseable {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment propSeg = arena.allocateFrom(property.propertyName());
 			MemorySegment result = (MemorySegment) MH_PROPERTY_VALUE.invokeExact(dbPtr, propSeg);
-			if (MemorySegment.NULL.equals(result)) return Optional.empty();
+			if (MemorySegment.NULL.equals(result)) {
+				return Optional.empty();
+			}
 			String value = result.reinterpret(Long.MAX_VALUE).getString(0);
 			MH_FREE.invokeExact(result);
 			return Optional.of(value);
@@ -881,7 +889,9 @@ public final class RocksDB implements AutoCloseable {
 			MemorySegment propSeg = arena.allocateFrom(property.propertyName());
 			MemorySegment out = arena.allocate(ValueLayout.JAVA_LONG);
 			int rc = (int) MH_PROPERTY_INT.invokeExact(dbPtr, propSeg, out);
-			if (rc != 0) return OptionalLong.empty();
+			if (rc != 0) {
+				return OptionalLong.empty();
+			}
 			return OptionalLong.of(out.get(ValueLayout.JAVA_LONG, 0));
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("getLongProperty failed", t);
@@ -1023,7 +1033,9 @@ public final class RocksDB implements AutoCloseable {
 	 * @param options ingest options controlling move vs copy, seqno assignment, etc.
 	 */
 	public void ingestExternalFile(List<Path> files, IngestExternalFileOptions options) {
-		if (files.isEmpty()) return;
+		if (files.isEmpty()) {
+			return;
+		}
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
 			// Allocate an array of pointers (one per file path)
@@ -1084,10 +1096,14 @@ public final class RocksDB implements AutoCloseable {
 			tmpDir = java.nio.file.Files.createTempDirectory("rocksdbffm-compress-probe-");
 			boolean isWindows = System.getProperty("os.name", "").toLowerCase().contains("win");
 			for (CompressionType type : CompressionType.values()) {
-				if (type == CompressionType.NO_COMPRESSION) continue;
+				if (type == CompressionType.NO_COMPRESSION) {
+					continue;
+				}
 				// Xpress is Windows-only; SstFileWriter does not validate it at the
 				// platform level, so we exclude it on non-Windows explicitly.
-				if (type == CompressionType.XPRESS && !isWindows) continue;
+				if (type == CompressionType.XPRESS && !isWindows) {
+					continue;
+				}
 				Path sstFile = tmpDir.resolve(type.name().toLowerCase() + ".sst");
 				try (Options opts = Options.newOptions().setCompression(type);
 				     SstFileWriter writer = new SstFileWriter(opts)) {
@@ -1138,7 +1154,9 @@ public final class RocksDB implements AutoCloseable {
 	private static String resolveLibPath() {
 		// 1. Explicit override
 		String explicit = System.getProperty("rocksdb.lib.path");
-		if (explicit != null) return explicit;
+		if (explicit != null) {
+			return explicit;
+		}
 
 		// 2. Bundled in JAR / classpath
 

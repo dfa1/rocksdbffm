@@ -25,7 +25,7 @@ import java.lang.invoke.MethodHandle;
  * }
  * }</pre>
  */
-public final class Snapshot implements AutoCloseable {
+public final class Snapshot extends NativeObject {
 
 	// rocksdb_snapshot_get_sequence_number(snap*) -> uint64_t
 	private static final MethodHandle MH_SEQUENCE_NUMBER;
@@ -60,6 +60,7 @@ public final class Snapshot implements AutoCloseable {
 	 * Creates a snapshot owned by a RocksDB or TransactionDB instance.
 	 */
 	Snapshot(MemorySegment dbPtr, MemorySegment ptr) {
+		super(ptr);
 		this.dbPtr = dbPtr;
 		this.ptr = ptr;
 	}
@@ -69,6 +70,7 @@ public final class Snapshot implements AutoCloseable {
 	 * Released via {@code rocksdb_free} rather than {@code rocksdb_release_snapshot}.
 	 */
 	Snapshot(MemorySegment ptr) {
+		super(ptr);
 		this.dbPtr = MemorySegment.NULL;
 		this.ptr = ptr;
 	}
@@ -85,16 +87,13 @@ public final class Snapshot implements AutoCloseable {
 		}
 	}
 
-	/**
-	 * Releases the snapshot. After this call the snapshot is invalid and must
-	 * not be used in any {@link ReadOptions}.
-	 */
 	@Override
-	public void close() {
+	protected void tryClose(MemorySegment ptr) throws Throwable {
 		if (MemorySegment.NULL.equals(dbPtr)) {
-			Native.closeQuietly(MH_FREE, ptr);
+			MH_FREE.invokeExact(ptr);
 		} else {
-			Native.closeQuietly(MH_RELEASE, dbPtr, ptr);
+			MH_RELEASE.invokeExact(dbPtr, ptr);
 		}
 	}
+
 }

@@ -172,9 +172,8 @@ class SnapshotTest {
 		try (var db = RocksDB.open(dir)) {
 			final Snapshot snap = db.getSnapshot();
 			snap.close();
-			//snap.close();
+			// normally this would trigger a JVM crash
 			snap.close();
-
 		}
 	}
 }

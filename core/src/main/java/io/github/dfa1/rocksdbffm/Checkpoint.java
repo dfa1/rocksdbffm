@@ -31,8 +31,11 @@ import java.nio.file.Path;
  */
 public final class Checkpoint extends NativeObject {
 
+	// rocksdb_checkpoint_object_create(rocksdb_t* db, char** errptr);
 	private static final MethodHandle MH_CREATE;
+	// rocksdb_checkpoint_create(rocksdb_checkpoint_t* checkpoint, const char* checkpoint_dir, uint64_t log_size_for_flush, char** errptr);
 	private static final MethodHandle MH_EXPORT;
+	// rocksdb_checkpoint_object_destroy(rocksdb_checkpoint_t* checkpoint);
 	private static final MethodHandle MH_DESTROY;
 
 	static {

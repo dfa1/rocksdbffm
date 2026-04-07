@@ -10,10 +10,15 @@ import java.lang.invoke.MethodHandle;
  */
 public final class TransactionOptions extends NativeObject {
 
+	// rocksdb_transaction_options_create(void);
 	private static final MethodHandle MH_CREATE;
+	// rocksdb_transaction_options_destroy(rocksdb_transaction_options_t* opt);
 	private static final MethodHandle MH_DESTROY;
+	// rocksdb_transaction_options_set_set_snapshot(rocksdb_transaction_options_t* opt, unsigned char v);
 	private static final MethodHandle MH_SET_SET_SNAPSHOT;
+	// rocksdb_transaction_options_set_deadlock_detect(rocksdb_transaction_options_t* opt, unsigned char v);
 	private static final MethodHandle MH_SET_DEADLOCK_DETECT;
+	// rocksdb_transaction_options_set_lock_timeout(rocksdb_transaction_options_t* opt, int64_t lock_timeout);
 	private static final MethodHandle MH_SET_LOCK_TIMEOUT;
 
 	static {

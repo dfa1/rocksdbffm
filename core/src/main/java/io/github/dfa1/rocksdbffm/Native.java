@@ -17,6 +17,7 @@ import java.lang.invoke.MethodHandle;
  */
 final class Native {
 
+	// rocksdb_free(void* ptr);
 	private static final MethodHandle MH_FREE = RocksDB.lookup("rocksdb_free",
 			FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 

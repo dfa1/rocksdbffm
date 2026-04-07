@@ -13,8 +13,11 @@ import java.lang.invoke.MethodHandle;
  */
 public final class OptimisticTransactionOptions extends NativeObject {
 
+	// rocksdb_optimistictransaction_options_create(void);
 	private static final MethodHandle MH_CREATE;
+	// rocksdb_optimistictransaction_options_destroy(rocksdb_optimistictransaction_options_t* opt);
 	private static final MethodHandle MH_DESTROY;
+	// rocksdb_optimistictransaction_options_set_set_snapshot(rocksdb_optimistictransaction_options_t* opt, unsigned char v);
 	private static final MethodHandle MH_SET_SET_SNAPSHOT;
 
 	static {

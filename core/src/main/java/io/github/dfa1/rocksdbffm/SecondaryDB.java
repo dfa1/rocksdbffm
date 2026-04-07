@@ -39,14 +39,23 @@ public final class SecondaryDB extends NativeObject {
 	// Method handles
 	// -----------------------------------------------------------------------
 
+	// rocksdb_open_as_secondary(const rocksdb_options_t* options, const char* name, const char* secondary_path, char** errptr);
 	private static final MethodHandle MH_OPEN;
+	// rocksdb_close(rocksdb_t* db);
 	private static final MethodHandle MH_CLOSE;
+	// rocksdb_try_catch_up_with_primary(rocksdb_t* db, char** errptr);
 	private static final MethodHandle MH_CATCH_UP;
+	// rocksdb_get_pinned(rocksdb_t* db, const rocksdb_readoptions_t* options, const char* key, size_t keylen, char** errptr);
 	private static final MethodHandle MH_GET_PINNED;
+	// rocksdb_pinnableslice_value(const rocksdb_pinnableslice_t* t, size_t* vlen);
 	private static final MethodHandle MH_PINNABLESLICE_VALUE;
+	// rocksdb_pinnableslice_destroy(rocksdb_pinnableslice_t* v);
 	private static final MethodHandle MH_PINNABLESLICE_DESTROY;
+	// rocksdb_create_snapshot(rocksdb_t* db);
 	private static final MethodHandle MH_CREATE_SNAPSHOT;
+	// rocksdb_property_value(rocksdb_t* db, const char* propname);
 	private static final MethodHandle MH_PROPERTY_VALUE;
+	// rocksdb_property_int(rocksdb_t* db, const char* propname, uint64_t* out_val);
 	private static final MethodHandle MH_PROPERTY_INT;
 
 	static {

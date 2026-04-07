@@ -157,6 +157,7 @@ Code
 
 - code is indented with tabs (enforced by checkstyle)
 - always keep the MethodHandles private static final
+- every `MH_` field must have a `// <c prototype>` comment on the line immediately above it, copied verbatim from `rocksdb/include/rocksdb/c.h` (strip the `extern ROCKSDB_LIBRARY_API` prefix)
 - don't map multiple times the same symbol from C library of rocksdb
     - try to create always a java wrapper for that (i.e. PinnableSlice)
 - use NativePointer as base class for all managed objects

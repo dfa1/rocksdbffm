@@ -18,13 +18,21 @@ import java.lang.invoke.MethodHandle;
  */
 public final class IngestExternalFileOptions extends NativeObject {
 
+	// rocksdb_ingestexternalfileoptions_create(void);
 	private static final MethodHandle MH_CREATE;
+	// rocksdb_ingestexternalfileoptions_destroy(rocksdb_ingestexternalfileoptions_t* opt);
 	private static final MethodHandle MH_DESTROY;
+	// rocksdb_ingestexternalfileoptions_set_move_files(rocksdb_ingestexternalfileoptions_t* opt, unsigned char move_files);
 	private static final MethodHandle MH_SET_MOVE_FILES;
+	// rocksdb_ingestexternalfileoptions_set_snapshot_consistency(rocksdb_ingestexternalfileoptions_t* opt, unsigned char snapshot_consistency);
 	private static final MethodHandle MH_SET_SNAPSHOT_CONSISTENCY;
+	// rocksdb_ingestexternalfileoptions_set_allow_global_seqno(rocksdb_ingestexternalfileoptions_t* opt, unsigned char allow_global_seqno);
 	private static final MethodHandle MH_SET_ALLOW_GLOBAL_SEQNO;
+	// rocksdb_ingestexternalfileoptions_set_allow_blocking_flush(rocksdb_ingestexternalfileoptions_t* opt, unsigned char allow_blocking_flush);
 	private static final MethodHandle MH_SET_ALLOW_BLOCKING_FLUSH;
+	// rocksdb_ingestexternalfileoptions_set_ingest_behind(rocksdb_ingestexternalfileoptions_t* opt, unsigned char ingest_behind);
 	private static final MethodHandle MH_SET_INGEST_BEHIND;
+	// rocksdb_ingestexternalfileoptions_set_fail_if_not_bottommost_level(rocksdb_ingestexternalfileoptions_t* opt, unsigned char fail_if_not_bottommost_level);
 	private static final MethodHandle MH_SET_FAIL_IF_NOT_BOTTOMMOST_LEVEL;
 
 	static {

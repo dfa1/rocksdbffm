@@ -19,9 +19,13 @@ import java.lang.invoke.MethodHandle;
  */
 public final class FlushOptions extends NativeObject {
 
+	// rocksdb_flushoptions_create(void);
 	private static final MethodHandle MH_CREATE;
+	// rocksdb_flushoptions_destroy(rocksdb_flushoptions_t*);
 	private static final MethodHandle MH_DESTROY;
+	// rocksdb_flushoptions_set_wait(rocksdb_flushoptions_t*, unsigned char);
 	private static final MethodHandle MH_SET_WAIT;
+	// rocksdb_flushoptions_get_wait(rocksdb_flushoptions_t*);
 	private static final MethodHandle MH_GET_WAIT;
 
 	static {

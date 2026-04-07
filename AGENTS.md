@@ -126,3 +126,4 @@ Code
 - always keep the MethodHandles private static final
 - don't map multiple times the same symbol from C library of rocksdb
 -    try to create always a java wrapper for that (i.e. PinnableSlice)
+- all `AutoCloseable.close()` implementations must delegate to `Native.closeQuietly(...)` — close() must never throw, like C++ destructors

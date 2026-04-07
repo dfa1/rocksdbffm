@@ -209,11 +209,7 @@ public final class WriteBatch implements AutoCloseable {
 
 	@Override
 	public void close() {
-		try {
-			MH_DESTROY.invokeExact(ptr);
-		} catch (Throwable t) {
-			throw new RocksDBException("writebatch destroy failed", t);
-		}
+		Native.closeQuietly(() -> MH_DESTROY.invokeExact(ptr));
 	}
 
 }

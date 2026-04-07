@@ -383,12 +383,7 @@ public final class RocksIterator implements AutoCloseable {
 
 	@Override
 	public void close() {
-		try {
-			MH_DESTROY.invokeExact(ptr);
-		} catch (Throwable t) {
-			throw new RocksDBException("iterator destroy failed", t);
-		} finally {
-			lenArena.close();
-		}
+		Native.closeQuietly(() -> MH_DESTROY.invokeExact(ptr));
+		Native.closeQuietly(lenArena::close);
 	}
 }

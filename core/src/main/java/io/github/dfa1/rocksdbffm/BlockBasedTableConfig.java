@@ -258,10 +258,6 @@ public final class BlockBasedTableConfig implements AutoCloseable {
 
 	@Override
 	public void close() {
-		try {
-			MH_DESTROY.invokeExact(ptr);
-		} catch (Throwable t) {
-			throw new RocksDBException("BlockBasedTableConfig destroy failed", t);
-		}
+		Native.closeQuietly(() -> MH_DESTROY.invokeExact(ptr));
 	}
 }

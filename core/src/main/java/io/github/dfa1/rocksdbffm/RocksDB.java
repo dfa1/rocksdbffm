@@ -1118,13 +1118,9 @@ public final class RocksDB implements AutoCloseable {
 
 	@Override
 	public void close() {
-		try {
-			MH_WRITEOPTIONS_DESTROY.invokeExact(writeOptions);
-			MH_READOPTIONS_DESTROY.invokeExact(readOptions);
-			MH_CLOSE.invokeExact(dbPtr);
-		} catch (Throwable t) {
-			throw new RocksDBException("close failed", t);
-		}
+		Native.closeQuietly(() -> MH_WRITEOPTIONS_DESTROY.invokeExact(writeOptions));
+		Native.closeQuietly(() -> MH_READOPTIONS_DESTROY.invokeExact(readOptions));
+		Native.closeQuietly(() -> MH_CLOSE.invokeExact(dbPtr));
 	}
 
 	// -----------------------------------------------------------------------

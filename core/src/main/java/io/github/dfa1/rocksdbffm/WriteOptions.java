@@ -36,10 +36,6 @@ public final class WriteOptions implements AutoCloseable {
 
 	@Override
 	public void close() {
-		try {
-			MH_DESTROY.invokeExact(ptr);
-		} catch (Throwable t) {
-			throw new RocksDBException("writeoptions destroy failed", t);
-		}
+		Native.closeQuietly(() -> MH_DESTROY.invokeExact(ptr));
 	}
 }

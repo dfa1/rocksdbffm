@@ -261,10 +261,6 @@ public final class SstFileWriter implements AutoCloseable {
 
 	@Override
 	public void close() {
-		try {
-			MH_DESTROY.invokeExact(ptr);
-		} catch (Throwable t) {
-			throw new RocksDBException("sstfilewriter destroy failed", t);
-		}
+		Native.closeQuietly(() -> MH_DESTROY.invokeExact(ptr));
 	}
 }

@@ -90,10 +90,6 @@ public final class TransactionOptions implements AutoCloseable {
 
 	@Override
 	public void close() {
-		try {
-			MH_DESTROY.invokeExact(ptr);
-		} catch (Throwable t) {
-			throw new RocksDBException("transaction options destroy failed", t);
-		}
+		Native.closeQuietly(() -> MH_DESTROY.invokeExact(ptr));
 	}
 }

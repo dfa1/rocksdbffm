@@ -97,10 +97,6 @@ public final class FilterPolicy implements AutoCloseable {
 	@Override
 	public void close() {
 		if (transferred) return;
-		try {
-			MH_DESTROY.invokeExact(ptr);
-		} catch (Throwable t) {
-			throw new RocksDBException("FilterPolicy destroy failed", t);
-		}
+		Native.closeQuietly(() -> MH_DESTROY.invokeExact(ptr));
 	}
 }

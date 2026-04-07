@@ -62,6 +62,22 @@ final class Native {
 		}
 	}
 
+	@FunctionalInterface
+	interface NativeClose {
+		void close() throws Throwable;
+	}
+
+	/**
+	 * Silently executes a close action, discarding any exception.
+	 * Use this in all {@code close()} implementations — destructors must not throw.
+	 */
+	public static void closeQuietly(NativeClose action) {
+		try {
+			action.close();
+		} catch (Throwable ignored) {
+		}
+	}
+
 	// new stuff, human-generated
 	private static final Arena ARENA_ERROR = Arena.ofAuto();
 

@@ -350,13 +350,9 @@ public final class TransactionDB implements AutoCloseable {
 
 	@Override
 	public void close() {
-		try {
-			writeOpts.close();
-			readOpts.close();
-			MH_CLOSE.invokeExact(ptr);
-		} catch (Throwable t) {
-			throw new RocksDBException("TransactionDB close failed", t);
-		}
+		Native.closeQuietly(writeOpts::close);
+		Native.closeQuietly(readOpts::close);
+		Native.closeQuietly(() -> MH_CLOSE.invokeExact(ptr));
 	}
 
 }

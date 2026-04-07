@@ -291,11 +291,7 @@ public final class SecondaryDB implements AutoCloseable {
 
 	@Override
 	public void close() {
-		try {
-			ReadOptions.MH_DESTROY.invokeExact(readOpts);
-			MH_CLOSE.invokeExact(ptr);
-		} catch (Throwable t) {
-			throw new RocksDBException("SecondaryDB close failed", t);
-		}
+		Native.closeQuietly(() -> ReadOptions.MH_DESTROY.invokeExact(readOpts));
+		Native.closeQuietly(() -> MH_CLOSE.invokeExact(ptr));
 	}
 }

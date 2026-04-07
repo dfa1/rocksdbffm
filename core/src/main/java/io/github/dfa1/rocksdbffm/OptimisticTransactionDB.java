@@ -365,13 +365,9 @@ public final class OptimisticTransactionDB implements AutoCloseable {
 
 	@Override
 	public void close() {
-		writeOpts.close();
-		readOpts.close();
-		try {
-			MH_CLOSE_BASE_DB.invokeExact(baseDb);
-			MH_CLOSE.invokeExact(ptr);
-		} catch (Throwable t) {
-			throw new RocksDBException("OptimisticTransactionDB close failed", t);
-		}
+		Native.closeQuietly(writeOpts::close);
+		Native.closeQuietly(readOpts::close);
+		Native.closeQuietly(() -> MH_CLOSE_BASE_DB.invokeExact(baseDb));
+		Native.closeQuietly(() -> MH_CLOSE.invokeExact(ptr));
 	}
 }

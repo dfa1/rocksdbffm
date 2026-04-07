@@ -91,14 +91,10 @@ public final class Snapshot implements AutoCloseable {
 	 */
 	@Override
 	public void close() {
-		try {
-			if (MemorySegment.NULL.equals(dbPtr)) {
-				MH_FREE.invokeExact(ptr);
-			} else {
-				MH_RELEASE.invokeExact(dbPtr, ptr);
-			}
-		} catch (Throwable t) {
-			throw new RocksDBException("snapshot release failed", t);
+		if (MemorySegment.NULL.equals(dbPtr)) {
+			Native.closeQuietly(() -> MH_FREE.invokeExact(ptr));
+		} else {
+			Native.closeQuietly(() -> MH_RELEASE.invokeExact(dbPtr, ptr));
 		}
 	}
 }

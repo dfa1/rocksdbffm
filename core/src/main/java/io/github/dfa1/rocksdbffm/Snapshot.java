@@ -92,9 +92,9 @@ public final class Snapshot implements AutoCloseable {
 	@Override
 	public void close() {
 		if (MemorySegment.NULL.equals(dbPtr)) {
-			Native.closeQuietly(() -> MH_FREE.invokeExact(ptr));
+			Native.closeQuietly(MH_FREE, ptr);
 		} else {
-			Native.closeQuietly(() -> MH_RELEASE.invokeExact(dbPtr, ptr));
+			Native.closeQuietly(MH_RELEASE, dbPtr, ptr);
 		}
 	}
 }

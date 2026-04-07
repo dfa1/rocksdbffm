@@ -60,6 +60,6 @@ public final class OptimisticTransactionOptions implements AutoCloseable {
 
 	@Override
 	public void close() {
-		Native.closeQuietly(() -> MH_DESTROY.invokeExact(ptr));
+		Native.closeQuietly(MH_DESTROY, ptr);
 	}
 }

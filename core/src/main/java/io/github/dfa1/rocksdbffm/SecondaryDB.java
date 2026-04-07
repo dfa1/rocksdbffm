@@ -100,7 +100,7 @@ public final class SecondaryDB implements AutoCloseable {
 	// -----------------------------------------------------------------------
 
 	private final MemorySegment ptr;      // rocksdb_t*
-	private final MemorySegment readOpts; // default read options
+	private final MemorySegment readOpts; // TODO: upgrade to ReadOptions
 
 	private SecondaryDB(MemorySegment ptr, MemorySegment readOpts) {
 		this.ptr = ptr;
@@ -291,7 +291,7 @@ public final class SecondaryDB implements AutoCloseable {
 
 	@Override
 	public void close() {
-		Native.closeQuietly(() -> ReadOptions.MH_DESTROY.invokeExact(readOpts));
-		Native.closeQuietly(() -> MH_CLOSE.invokeExact(ptr));
+		Native.closeQuietly(ReadOptions.MH_DESTROY, readOpts);
+		Native.closeQuietly(MH_CLOSE, ptr);
 	}
 }

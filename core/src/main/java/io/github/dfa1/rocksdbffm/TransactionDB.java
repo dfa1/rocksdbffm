@@ -350,9 +350,9 @@ public final class TransactionDB implements AutoCloseable {
 
 	@Override
 	public void close() {
-		Native.closeQuietly(writeOpts::close);
-		Native.closeQuietly(readOpts::close);
-		Native.closeQuietly(() -> MH_CLOSE.invokeExact(ptr));
+		writeOpts.close();
+		readOpts.close();
+		Native.closeQuietly(MH_CLOSE, ptr);
 	}
 
 }

@@ -62,18 +62,21 @@ final class Native {
 		}
 	}
 
-	@FunctionalInterface
-	interface NativeClose {
-		void close() throws Throwable;
-	}
-
 	/**
 	 * Silently executes a close action, discarding any exception.
 	 * Use this in all {@code close()} implementations — destructors must not throw.
+	 * TODO: calling multiple times this for same object could trigger undefined behavior and other problems like heap corruptions or SIGSEGV etc
 	 */
-	public static void closeQuietly(NativeClose action) {
+	public static void closeQuietly(MethodHandle destructor, MemorySegment ptr) {
 		try {
-			action.close();
+			destructor.invokeExact(ptr);
+		} catch (Throwable ignored) {
+		}
+	}
+
+	public static void closeQuietly(MethodHandle destructor, MemorySegment ptr1, MemorySegment ptr2) {
+		try {
+			destructor.invokeExact(ptr1, ptr2);
 		} catch (Throwable ignored) {
 		}
 	}

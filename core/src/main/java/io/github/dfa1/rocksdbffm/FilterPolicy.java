@@ -96,7 +96,9 @@ public final class FilterPolicy implements AutoCloseable {
 	 */
 	@Override
 	public void close() {
-		if (transferred) return;
-		Native.closeQuietly(() -> MH_DESTROY.invokeExact(ptr));
+		if (transferred) {
+			return;
+		}
+		Native.closeQuietly(MH_DESTROY, ptr);
 	}
 }

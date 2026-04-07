@@ -169,6 +169,6 @@ public final class CompactOptions implements AutoCloseable {
 
 	@Override
 	public void close() {
-		Native.closeQuietly(() -> MH_DESTROY.invokeExact(ptr));
+		Native.closeQuietly(MH_DESTROY, ptr);
 	}
 }

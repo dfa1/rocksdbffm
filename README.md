@@ -1,6 +1,9 @@
-# rocksdbffm
+# RocksDB FFM
 
-**rocksdbffm** is a Java wrapper for [RocksDB](https://rocksdb.org/) **v10.10.1** using the **Foreign Function & Memory (FFM) API** (Project Panama).
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![CI](https://github.com/dfa1/rocksdbffm/workflows/CI/badge.svg?branch:master)](https://github.com/dfa1/rocksdbffm/actions?query=branch:master)
+
+**rocksdbffm** is an experimental Java wrapper for [RocksDB](https://rocksdb.org/) **v10.10.1** using the **Foreign Function & Memory (FFM) API** (Project Panama).
 
 The project aims to provide a more maintainable alternative to the traditional JNI-based `rocksdbjni`.
 The target is JDK 25+ because of `java.lang.foreign`.

@@ -165,4 +165,16 @@ class SnapshotTest {
 			}
 		}
 	}
+
+	@Test
+	void snapshot_double_close(@TempDir Path dir) {
+		// Given
+		try (var db = RocksDB.open(dir)) {
+			final Snapshot snap = db.getSnapshot();
+			snap.close();
+			//snap.close();
+			snap.close();
+
+		}
+	}
 }

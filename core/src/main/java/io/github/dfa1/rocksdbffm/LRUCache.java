@@ -8,7 +8,7 @@ import java.lang.invoke.MethodHandle;
 /**
  * FFM wrapper for rocksdb_cache_t (LRU block cache).
  *
- * <p>Pass to {@link BlockBasedTableConfig#setBlockCache(LRUCache)} to share a single
+ * <p>Pass to {@link BlockBasedTableOptions#setBlockCache(LRUCache)} to share a single
  * cache across multiple column families or DB instances.
  *
  * <pre>{@code

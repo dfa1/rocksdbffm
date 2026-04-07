@@ -21,7 +21,7 @@ class CheckpointTest {
 			db.put("k".getBytes(), "v".getBytes());
 
 			// When
-			try (var cp = Checkpoint.create(db)) {
+			try (var cp = Checkpoint.newCheckpoint(db)) {
 				cp.exportTo(cpDir);
 			}
 		}
@@ -39,7 +39,7 @@ class CheckpointTest {
 		try (var db = RocksDB.open(dir.resolve("db"))) {
 			db.put("k".getBytes(), "before".getBytes());
 
-			try (var cp = Checkpoint.create(db)) {
+			try (var cp = Checkpoint.newCheckpoint(db)) {
 				cp.exportTo(cpDir);
 			}
 
@@ -64,7 +64,7 @@ class CheckpointTest {
 		var cp2Dir = dir.resolve("checkpoint-2");
 
 		try (var db = RocksDB.open(dir.resolve("db"));
-		     var cp = Checkpoint.create(db)) {
+		     var cp = Checkpoint.newCheckpoint(db)) {
 
 			db.put("k".getBytes(), "v1".getBytes());
 			cp.exportTo(cp1Dir);
@@ -93,7 +93,7 @@ class CheckpointTest {
 		var cpDir = dir.resolve("checkpoint");
 		try (var db = RocksDB.open(dir.resolve("db"))) {
 			// checkpoint taken before any write
-			try (var cp = Checkpoint.create(db)) {
+			try (var cp = Checkpoint.newCheckpoint(db)) {
 				cp.exportTo(cpDir);
 			}
 
@@ -118,7 +118,7 @@ class CheckpointTest {
 		try (var db = RocksDB.open(dir.resolve("db"))) {
 			db.put("k".getBytes(), "v".getBytes());
 
-			try (var cp = Checkpoint.create(db)) {
+			try (var cp = Checkpoint.newCheckpoint(db)) {
 				cp.exportTo(cpDir);
 			}
 

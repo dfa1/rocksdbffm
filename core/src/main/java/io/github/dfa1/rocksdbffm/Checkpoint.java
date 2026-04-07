@@ -29,7 +29,7 @@ import java.nio.file.Path;
  * }
  * }</pre>
  */
-public final class Checkpoint implements AutoCloseable {
+public final class Checkpoint extends NativeObject {
 
 	private static final MethodHandle MH_CREATE;
 	private static final MethodHandle MH_EXPORT;
@@ -56,10 +56,8 @@ public final class Checkpoint implements AutoCloseable {
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 	}
 
-	private final MemorySegment ptr;
-
 	private Checkpoint(MemorySegment ptr) {
-		this.ptr = ptr;
+		super(ptr);
 	}
 
 	/**
@@ -67,7 +65,7 @@ public final class Checkpoint implements AutoCloseable {
 	 * The checkpoint object may be reused to export multiple snapshots.
 	 * Close it when done — this does not affect the database or any exported checkpoints.
 	 */
-	public static Checkpoint create(RocksDB db) {
+	public static Checkpoint newCheckpoint(RocksDB db) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
 			var ptr = (MemorySegment) MH_CREATE.invokeExact(db.ptr(), err);
@@ -91,11 +89,12 @@ public final class Checkpoint implements AutoCloseable {
 	 *                        Pass {@code 0} to always flush; pass {@code Long.MAX_VALUE}
 	 *                        to never flush (use WAL as-is).
 	 */
+	// TODO: expose MemorySize for logSizeForFlush
 	public void exportTo(Path checkpointDir, long logSizeForFlush) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
 			var dirSeg = arena.allocateFrom(checkpointDir.toString());
-			MH_EXPORT.invokeExact(ptr, dirSeg, logSizeForFlush, err);
+			MH_EXPORT.invokeExact(ptr(), dirSeg, logSizeForFlush, err);
 			Native.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("Native call failed", t);
@@ -111,7 +110,7 @@ public final class Checkpoint implements AutoCloseable {
 	}
 
 	@Override
-	public void close() {
-		Native.closeQuietly(MH_DESTROY, ptr);
+	public void tryClose(MemorySegment ptr) throws Throwable {
+		MH_DESTROY.invokeExact(ptr);
 	}
 }

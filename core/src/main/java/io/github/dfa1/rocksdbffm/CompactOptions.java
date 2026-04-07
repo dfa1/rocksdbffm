@@ -16,7 +16,7 @@ import java.lang.invoke.MethodHandle;
  * }
  * }</pre>
  */
-public final class CompactOptions implements AutoCloseable {
+public final class CompactOptions extends NativeObject {
 
 	private static final MethodHandle MH_CREATE;
 	private static final MethodHandle MH_DESTROY;
@@ -69,17 +69,18 @@ public final class CompactOptions implements AutoCloseable {
 				FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
 	}
 
-	/**
-	 * Package-private: read by {@link RocksDB#compactRange(CompactOptions, byte[], byte[])}.
-	 */
-	final MemorySegment ptr;
+	private CompactOptions(MemorySegment ptr) {
+		super(ptr);
+	}
 
-	public CompactOptions() {
+	public static CompactOptions newCompactOptions() {
+		MemorySegment result;
 		try {
-			this.ptr = (MemorySegment) MH_CREATE.invokeExact();
-		} catch (Throwable t) {
-			throw new RocksDBException("compactoptions create failed", t);
+			result = (MemorySegment) MH_CREATE.invokeExact();
+		} catch (Throwable e) {
+			throw new RocksDBException(e.getMessage());
 		}
+		return new CompactOptions(result);
 	}
 
 	/**
@@ -88,7 +89,7 @@ public final class CompactOptions implements AutoCloseable {
 	 */
 	public CompactOptions setExclusiveManualCompaction(boolean value) {
 		try {
-			MH_SET_EXCLUSIVE.invokeExact(ptr, value ? (byte) 1 : (byte) 0);
+			MH_SET_EXCLUSIVE.invokeExact(ptr(), value ? (byte) 1 : (byte) 0);
 		} catch (Throwable t) {
 			throw new RocksDBException("setExclusiveManualCompaction failed", t);
 		}
@@ -97,7 +98,7 @@ public final class CompactOptions implements AutoCloseable {
 
 	public boolean isExclusiveManualCompaction() {
 		try {
-			return (byte) MH_GET_EXCLUSIVE.invokeExact(ptr) != 0;
+			return (byte) MH_GET_EXCLUSIVE.invokeExact(ptr()) != 0;
 		} catch (Throwable t) {
 			throw new RocksDBException("isExclusiveManualCompaction failed", t);
 		}
@@ -109,7 +110,7 @@ public final class CompactOptions implements AutoCloseable {
 	 */
 	public CompactOptions setBottommostLevelCompaction(boolean value) {
 		try {
-			MH_SET_BOTTOMMOST.invokeExact(ptr, value ? (byte) 1 : (byte) 0);
+			MH_SET_BOTTOMMOST.invokeExact(ptr(), value ? (byte) 1 : (byte) 0);
 		} catch (Throwable t) {
 			throw new RocksDBException("setBottommostLevelCompaction failed", t);
 		}
@@ -118,7 +119,7 @@ public final class CompactOptions implements AutoCloseable {
 
 	public boolean isBottommostLevelCompaction() {
 		try {
-			return (byte) MH_GET_BOTTOMMOST.invokeExact(ptr) != 0;
+			return (byte) MH_GET_BOTTOMMOST.invokeExact(ptr()) != 0;
 		} catch (Throwable t) {
 			throw new RocksDBException("isBottommostLevelCompaction failed", t);
 		}
@@ -131,7 +132,7 @@ public final class CompactOptions implements AutoCloseable {
 	 */
 	public CompactOptions setChangeLevel(boolean value) {
 		try {
-			MH_SET_CHANGE_LEVEL.invokeExact(ptr, value ? (byte) 1 : (byte) 0);
+			MH_SET_CHANGE_LEVEL.invokeExact(ptr(), value ? (byte) 1 : (byte) 0);
 		} catch (Throwable t) {
 			throw new RocksDBException("setChangeLevel failed", t);
 		}
@@ -140,7 +141,7 @@ public final class CompactOptions implements AutoCloseable {
 
 	public boolean isChangeLevel() {
 		try {
-			return (byte) MH_GET_CHANGE_LEVEL.invokeExact(ptr) != 0;
+			return (byte) MH_GET_CHANGE_LEVEL.invokeExact(ptr()) != 0;
 		} catch (Throwable t) {
 			throw new RocksDBException("isChangeLevel failed", t);
 		}
@@ -152,7 +153,7 @@ public final class CompactOptions implements AutoCloseable {
 	 */
 	public CompactOptions setTargetLevel(int level) {
 		try {
-			MH_SET_TARGET_LEVEL.invokeExact(ptr, level);
+			MH_SET_TARGET_LEVEL.invokeExact(ptr(), level);
 		} catch (Throwable t) {
 			throw new RocksDBException("setTargetLevel failed", t);
 		}
@@ -161,14 +162,14 @@ public final class CompactOptions implements AutoCloseable {
 
 	public int getTargetLevel() {
 		try {
-			return (int) MH_GET_TARGET_LEVEL.invokeExact(ptr);
+			return (int) MH_GET_TARGET_LEVEL.invokeExact(ptr());
 		} catch (Throwable t) {
 			throw new RocksDBException("getTargetLevel failed", t);
 		}
 	}
 
 	@Override
-	public void close() {
-		Native.closeQuietly(MH_DESTROY, ptr);
+	public void tryClose(MemorySegment ptr) throws Throwable {
+		MH_DESTROY.invokeExact(ptr);
 	}
 }

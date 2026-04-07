@@ -48,7 +48,7 @@ public final class ReadOptions implements AutoCloseable {
 	 */
 	public ReadOptions setSnapshot(Snapshot snapshot) {
 		try {
-			MemorySegment snapPtr = (snapshot == null) ? MemorySegment.NULL : snapshot.ptr;
+			MemorySegment snapPtr = (snapshot == null) ? MemorySegment.NULL : snapshot.ptr();
 			MH_SET_SNAPSHOT.invokeExact(ptr, snapPtr);
 			return this;
 		} catch (Throwable t) {

@@ -65,7 +65,9 @@ public enum CompressionType {
 
 	static CompressionType fromValue(int value) {
 		for (CompressionType t : values()) {
-			if (t.value == value) return t;
+			if (t.value == value) {
+				return t;
+			}
 		}
 		throw new IllegalArgumentException("Unknown compression type value: " + value);
 	}

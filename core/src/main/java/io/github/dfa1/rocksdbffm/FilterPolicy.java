@@ -9,7 +9,7 @@ import java.lang.invoke.MethodHandle;
  * FFM wrapper for rocksdb_filterpolicy_t.
  *
  * <p>Use inside a try-with-resources block. If the policy is passed to
- * {@link BlockBasedTableConfig#setFilterPolicy(FilterPolicy)}, ownership
+ * {@link BlockBasedTableOptions#setFilterPolicy(FilterPolicy)}, ownership
  * transfers to RocksDB's internal reference counting and {@link #close()}
  * becomes a no-op — it is safe (and recommended) to still call it via
  * try-with-resources.
@@ -22,7 +22,7 @@ import java.lang.invoke.MethodHandle;
  * }
  * }</pre>
  */
-public final class FilterPolicy implements AutoCloseable {
+public final class FilterPolicy extends NativeObject {
 
 	private static final MethodHandle MH_CREATE_BLOOM;
 	private static final MethodHandle MH_CREATE_RIBBON;
@@ -41,19 +41,8 @@ public final class FilterPolicy implements AutoCloseable {
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 	}
 
-	/**
-	 * Package-private: read by BlockBasedTableConfig.
-	 */
-	final MemorySegment ptr;
-
-	/**
-	 * True once ownership has been transferred to a BlockBasedTableConfig.
-	 * After transfer, close() is a no-op — RocksDB manages the lifetime.
-	 */
-	private boolean transferred;
-
 	private FilterPolicy(MemorySegment ptr) {
-		this.ptr = ptr;
+		super(ptr);
 	}
 
 	/**
@@ -81,24 +70,8 @@ public final class FilterPolicy implements AutoCloseable {
 		}
 	}
 
-	/**
-	 * Called by {@link BlockBasedTableConfig#setFilterPolicy(FilterPolicy)} to
-	 * indicate that native ownership has transferred. Subsequent {@link #close()}
-	 * calls are no-ops.
-	 */
-	void transferOwnership() {
-		this.transferred = true;
-	}
-
-	/**
-	 * Destroys the native filter policy unless ownership has been transferred
-	 * to a {@link BlockBasedTableConfig}, in which case this is a no-op.
-	 */
 	@Override
-	public void close() {
-		if (transferred) {
-			return;
-		}
-		Native.closeQuietly(MH_DESTROY, ptr);
+	public void tryClose(MemorySegment ptr) throws Throwable {
+		MH_DESTROY.invokeExact(ptr);
 	}
 }

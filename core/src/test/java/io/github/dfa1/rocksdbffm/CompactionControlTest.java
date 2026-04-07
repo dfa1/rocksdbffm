@@ -112,7 +112,7 @@ class CompactionControlTest {
 		// Given
 		try (var dbOpts = new Options().setCreateIfMissing(true);
 		     var db = RocksDB.open(dbOpts, dir);
-		     var compact = new CompactOptions()
+		     var compact = CompactOptions.newCompactOptions()
 					 .setExclusiveManualCompaction(false)
 					 .setBottommostLevelCompaction(true)) {
 
@@ -133,7 +133,7 @@ class CompactionControlTest {
 		// Given
 		try (var dbOpts = new Options().setCreateIfMissing(true);
 		     var db = RocksDB.open(dbOpts, dir);
-		     var compact = new CompactOptions()
+		     var compact = CompactOptions.newCompactOptions()
 					 .setChangeLevel(true)
 					 .setTargetLevel(-1)) {  // -1 = bottommost
 
@@ -153,7 +153,7 @@ class CompactionControlTest {
 	@Test
 	void compactOptions_defaults(@TempDir Path dir) {
 		// Given / When
-		try (var opts = new CompactOptions()) {
+		try (var opts = CompactOptions.newCompactOptions()) {
 			// Then — verify getters don't throw and return consistent boolean values
 			assertThat(opts.isExclusiveManualCompaction()).isIn(true, false);
 			assertThat(opts.isBottommostLevelCompaction()).isIn(true, false);
@@ -164,7 +164,7 @@ class CompactionControlTest {
 	@Test
 	void compactOptions_roundtrip() {
 		// Given / When
-		try (var opts = new CompactOptions()
+		try (var opts = CompactOptions.newCompactOptions()
 				.setExclusiveManualCompaction(false)
 				.setBottommostLevelCompaction(true)
 				.setChangeLevel(true)

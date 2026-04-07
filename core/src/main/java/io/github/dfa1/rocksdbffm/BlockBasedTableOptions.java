@@ -8,7 +8,7 @@ import java.lang.invoke.MethodHandle;
 /**
  * FFM wrapper for rocksdb_block_based_table_options_t.
  *
- * <p>Configure and pass to {@link Options#setTableFormatConfig(BlockBasedTableConfig)}.
+ * <p>Configure and pass to {@link Options#setTableFormatConfig(BlockBasedTableOptions)}.
  * {@code BlockBasedTableConfig} may be closed once the options have been applied —
  * RocksDB internally copies everything it needs.
  *
@@ -30,7 +30,7 @@ import java.lang.invoke.MethodHandle;
  * Calling {@link #setFilterPolicy(FilterPolicy)} transfers native ownership to this
  * config object. The {@code FilterPolicy} must not be used after that call.
  */
-public final class BlockBasedTableConfig implements AutoCloseable {
+public final class BlockBasedTableOptions extends NativeObject {
 
 	// -----------------------------------------------------------------------
 	// Index type constants (mirrors rocksdb_block_based_table_index_type_*)
@@ -120,16 +120,15 @@ public final class BlockBasedTableConfig implements AutoCloseable {
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_BYTE));
 	}
 
-	/**
-	 * Package-private: accessed by Options.setTableFormatConfig().
-	 */
-	final MemorySegment ptr;
+	private BlockBasedTableOptions(MemorySegment ptr) {
+		super(ptr);
+	}
 
-	public BlockBasedTableConfig() {
+	public static BlockBasedTableOptions newBlockBasedConfig() {
 		try {
-			this.ptr = (MemorySegment) MH_CREATE.invokeExact();
-		} catch (Throwable t) {
-			throw new RocksDBException("BlockBasedTableConfig create failed", t);
+			return new BlockBasedTableOptions((MemorySegment) MH_CREATE.invokeExact());
+		} catch (Throwable e) {
+			throw RocksDBException.wrap("new block based config", e);
 		}
 	}
 
@@ -141,9 +140,9 @@ public final class BlockBasedTableConfig implements AutoCloseable {
 	 * Size of each data block. Default: 4 KB.
 	 * Larger blocks improve compression but increase read amplification.
 	 */
-	public BlockBasedTableConfig setBlockSize(MemorySize blockSize) {
+	public BlockBasedTableOptions setBlockSize(MemorySize blockSize) {
 		try {
-			MH_SET_BLOCK_SIZE.invokeExact(ptr, blockSize.toBytes());
+			MH_SET_BLOCK_SIZE.invokeExact(ptr(), blockSize.toBytes());
 		} catch (Throwable t) {
 			throw new RocksDBException("setBlockSize failed", t);
 		}
@@ -151,17 +150,16 @@ public final class BlockBasedTableConfig implements AutoCloseable {
 	}
 
 	/**
-	 * Sets the filter policy. Native ownership transfers to RocksDB's internal
-	 * reference counting. The {@code policy} may still be closed via
-	 * try-with-resources — {@link FilterPolicy#close()} becomes a no-op after transfer.
+	 * Sets the filter policy.
 	 */
-	public BlockBasedTableConfig setFilterPolicy(FilterPolicy policy) {
+	public BlockBasedTableOptions setFilterPolicy(FilterPolicy policy) {
 		try {
-			MH_SET_FILTER_POLICY.invokeExact(ptr, policy.ptr);
-			policy.transferOwnership();
+			MH_SET_FILTER_POLICY.invokeExact(ptr(), policy.ptr());
 		} catch (Throwable t) {
 			throw new RocksDBException("setFilterPolicy failed", t);
 		}
+		// BlockBasedTableConfig will take care of the freeing the policy
+		policy.transferOwnership();
 		return this;
 	}
 
@@ -169,9 +167,9 @@ public final class BlockBasedTableConfig implements AutoCloseable {
 	 * If true, no block cache is used for this table. Default: false.
 	 * Use when all data fits in memory or when block cache would be counter-productive.
 	 */
-	public BlockBasedTableConfig setNoBlockCache(boolean noBlockCache) {
+	public BlockBasedTableOptions setNoBlockCache(boolean noBlockCache) {
 		try {
-			MH_SET_NO_BLOCK_CACHE.invokeExact(ptr, noBlockCache ? (byte) 1 : (byte) 0);
+			MH_SET_NO_BLOCK_CACHE.invokeExact(ptr(), noBlockCache ? (byte) 1 : (byte) 0);
 		} catch (Throwable t) {
 			throw new RocksDBException("setNoBlockCache failed", t);
 		}
@@ -182,9 +180,9 @@ public final class BlockBasedTableConfig implements AutoCloseable {
 	 * Sets a custom block cache. The {@code cache} object remains owned by the caller
 	 * and can be shared across multiple table configs.
 	 */
-	public BlockBasedTableConfig setBlockCache(LRUCache cache) {
+	public BlockBasedTableOptions setBlockCache(LRUCache cache) {
 		try {
-			MH_SET_BLOCK_CACHE.invokeExact(ptr, cache.ptr);
+			MH_SET_BLOCK_CACHE.invokeExact(ptr(), cache.ptr);
 		} catch (Throwable t) {
 			throw new RocksDBException("setBlockCache failed", t);
 		}
@@ -195,9 +193,9 @@ public final class BlockBasedTableConfig implements AutoCloseable {
 	 * If true, index and filter blocks are stored in the block cache (subject to
 	 * eviction). Default: false (index/filter are pinned in memory).
 	 */
-	public BlockBasedTableConfig setCacheIndexAndFilterBlocks(boolean value) {
+	public BlockBasedTableOptions setCacheIndexAndFilterBlocks(boolean value) {
 		try {
-			MH_SET_CACHE_INDEX_AND_FILTER_BLOCKS.invokeExact(ptr, value ? (byte) 1 : (byte) 0);
+			MH_SET_CACHE_INDEX_AND_FILTER_BLOCKS.invokeExact(ptr(), value ? (byte) 1 : (byte) 0);
 		} catch (Throwable t) {
 			throw new RocksDBException("setCacheIndexAndFilterBlocks failed", t);
 		}
@@ -208,9 +206,9 @@ public final class BlockBasedTableConfig implements AutoCloseable {
 	 * Sets the index type. Default: {@link IndexType#BINARY_SEARCH}.
 	 * Use {@link IndexType#TWO_LEVEL_INDEX_SEARCH} for very large SSTs.
 	 */
-	public BlockBasedTableConfig setIndexType(IndexType indexType) {
+	public BlockBasedTableOptions setIndexType(IndexType indexType) {
 		try {
-			MH_SET_INDEX_TYPE.invokeExact(ptr, indexType.value);
+			MH_SET_INDEX_TYPE.invokeExact(ptr(), indexType.value);
 		} catch (Throwable t) {
 			throw new RocksDBException("setIndexType failed", t);
 		}
@@ -221,9 +219,9 @@ public final class BlockBasedTableConfig implements AutoCloseable {
 	 * Sets the SST format version. Higher versions enable newer features but
 	 * reduce backward compatibility. Default: 2.
 	 */
-	public BlockBasedTableConfig setFormatVersion(int formatVersion) {
+	public BlockBasedTableOptions setFormatVersion(int formatVersion) {
 		try {
-			MH_SET_FORMAT_VERSION.invokeExact(ptr, formatVersion);
+			MH_SET_FORMAT_VERSION.invokeExact(ptr(), formatVersion);
 		} catch (Throwable t) {
 			throw new RocksDBException("setFormatVersion failed", t);
 		}
@@ -234,9 +232,9 @@ public final class BlockBasedTableConfig implements AutoCloseable {
 	 * If true, a whole-key Bloom filter is built in addition to any prefix filter.
 	 * Default: true. Set to false when only a prefix filter is desired.
 	 */
-	public BlockBasedTableConfig setWholeKeyFiltering(boolean value) {
+	public BlockBasedTableOptions setWholeKeyFiltering(boolean value) {
 		try {
-			MH_SET_WHOLE_KEY_FILTERING.invokeExact(ptr, value ? (byte) 1 : (byte) 0);
+			MH_SET_WHOLE_KEY_FILTERING.invokeExact(ptr(), value ? (byte) 1 : (byte) 0);
 		} catch (Throwable t) {
 			throw new RocksDBException("setWholeKeyFiltering failed", t);
 		}
@@ -247,9 +245,9 @@ public final class BlockBasedTableConfig implements AutoCloseable {
 	 * If true, use partitioned Bloom filters (one small filter per index partition).
 	 * Requires {@link IndexType#TWO_LEVEL_INDEX_SEARCH}.
 	 */
-	public BlockBasedTableConfig setPartitionFilters(boolean value) {
+	public BlockBasedTableOptions setPartitionFilters(boolean value) {
 		try {
-			MH_SET_PARTITION_FILTERS.invokeExact(ptr, value ? (byte) 1 : (byte) 0);
+			MH_SET_PARTITION_FILTERS.invokeExact(ptr(), value ? (byte) 1 : (byte) 0);
 		} catch (Throwable t) {
 			throw new RocksDBException("setPartitionFilters failed", t);
 		}
@@ -257,7 +255,7 @@ public final class BlockBasedTableConfig implements AutoCloseable {
 	}
 
 	@Override
-	public void close() {
-		Native.closeQuietly(MH_DESTROY, ptr);
+	public void tryClose(MemorySegment ptr) throws Throwable {
+		MH_DESTROY.invokeExact(ptr);
 	}
 }

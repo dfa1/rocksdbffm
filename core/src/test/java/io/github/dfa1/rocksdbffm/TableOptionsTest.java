@@ -54,7 +54,7 @@ class TableOptionsTest {
 	@Test
 	void defaultTableConfig_allowsReadWrite(@TempDir Path dir) {
 		// Given
-		try (var tbl = new BlockBasedTableConfig();
+		try (var tbl = BlockBasedTableOptions.newBlockBasedConfig();
 		     var opts = new Options().setCreateIfMissing(true).setTableFormatConfig(tbl);
 		     var db = RocksDB.open(opts, dir)) {
 
@@ -71,7 +71,7 @@ class TableOptionsTest {
 	@Test
 	void customBlockSize_allowsReadWrite(@TempDir Path dir) {
 		// Given
-		try (var tbl = new BlockBasedTableConfig().setBlockSize(MemorySize.ofKB(16));
+		try (var tbl = BlockBasedTableOptions.newBlockBasedConfig().setBlockSize(MemorySize.ofKB(16));
 		     var opts = new Options().setCreateIfMissing(true).setTableFormatConfig(tbl);
 		     var db = RocksDB.open(opts, dir)) {
 
@@ -93,7 +93,7 @@ class TableOptionsTest {
 	void bloomFilter_returnsExistingKey(@TempDir Path dir) {
 		// Given
 		try (var filter = FilterPolicy.newBloom(10);
-		     var tbl = new BlockBasedTableConfig().setFilterPolicy(filter);
+		     var tbl = BlockBasedTableOptions.newBlockBasedConfig().setFilterPolicy(filter);
 		     var opts = new Options().setCreateIfMissing(true).setTableFormatConfig(tbl);
 		     var db = RocksDB.open(opts, dir)) {
 
@@ -117,7 +117,7 @@ class TableOptionsTest {
 	void ribbonFilter_returnsExistingKey(@TempDir Path dir) {
 		// Given
 		try (var filter = FilterPolicy.newRibbon(10);
-		     var tbl = new BlockBasedTableConfig().setFilterPolicy(filter);
+		     var tbl = BlockBasedTableOptions.newBlockBasedConfig().setFilterPolicy(filter);
 		     var opts = new Options().setCreateIfMissing(true).setTableFormatConfig(tbl);
 		     var db = RocksDB.open(opts, dir)) {
 
@@ -142,7 +142,7 @@ class TableOptionsTest {
 		// Given
 		try (var cache = new LRUCache(MemorySize.ofMB(64));
 		     var filter = FilterPolicy.newBloom(10);
-		     var tbl = new BlockBasedTableConfig()
+		     var tbl = BlockBasedTableOptions.newBlockBasedConfig()
 					 .setBlockCache(cache)
 					 .setCacheIndexAndFilterBlocks(true)
 					 .setFilterPolicy(filter);
@@ -166,7 +166,7 @@ class TableOptionsTest {
 	@Test
 	void noBlockCache_allowsReadWrite(@TempDir Path dir) {
 		// Given
-		try (var tbl = new BlockBasedTableConfig().setNoBlockCache(true);
+		try (var tbl = BlockBasedTableOptions.newBlockBasedConfig().setNoBlockCache(true);
 		     var opts = new Options().setCreateIfMissing(true).setTableFormatConfig(tbl);
 		     var db = RocksDB.open(opts, dir)) {
 
@@ -188,8 +188,8 @@ class TableOptionsTest {
 	void twoLevelIndexSearch_allowsReadWrite(@TempDir Path dir) {
 		// Given
 		try (var filter = FilterPolicy.newBloom(10);
-		     var tbl = new BlockBasedTableConfig()
-					 .setIndexType(BlockBasedTableConfig.IndexType.TWO_LEVEL_INDEX_SEARCH)
+		     var tbl = BlockBasedTableOptions.newBlockBasedConfig()
+					 .setIndexType(BlockBasedTableOptions.IndexType.TWO_LEVEL_INDEX_SEARCH)
 					 .setPartitionFilters(true)
 					 .setFilterPolicy(filter);
 		     var opts = new Options().setCreateIfMissing(true).setTableFormatConfig(tbl);
@@ -212,7 +212,7 @@ class TableOptionsTest {
 	@Test
 	void formatVersion5_allowsReadWrite(@TempDir Path dir) {
 		// Given
-		try (var tbl = new BlockBasedTableConfig().setFormatVersion(5);
+		try (var tbl = BlockBasedTableOptions.newBlockBasedConfig().setFormatVersion(5);
 		     var opts = new Options().setCreateIfMissing(true).setTableFormatConfig(tbl);
 		     var db = RocksDB.open(opts, dir)) {
 

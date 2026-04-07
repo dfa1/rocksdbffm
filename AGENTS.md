@@ -115,9 +115,9 @@ For the full feature status and roadmap see `README.md`. This section maps each 
 Documentation
 ---
 
-- Javadoc is written in the markdown format to keep same format everywhere
+- Javadoc is written in the Markdown format to keep same format everywhere
 - some documentation lives in docs/
--   the intent is to document decisions there
+    -the intent is to document decisions there
 
 Code
 ---
@@ -125,5 +125,8 @@ Code
 - code is indented with tabs (enforced by checkstyle)
 - always keep the MethodHandles private static final
 - don't map multiple times the same symbol from C library of rocksdb
--    try to create always a java wrapper for that (i.e. PinnableSlice)
-- all `AutoCloseable.close()` implementations must delegate to `Native.closeQuietly(...)` — close() must never throw, like C++ destructors
+  - try to create always a java wrapper for that (i.e. PinnableSlice)
+- use NativePointer as base class for all managed objects
+  - this is needed to avoid double close() crashing the JVM 
+- don't expose public constructors, like CompactOptions.newCompactOptions(), CompactOptions.newCompactOptions()
+  - why? to be able to call super in the private constructor and to have more freedom in the static factory method

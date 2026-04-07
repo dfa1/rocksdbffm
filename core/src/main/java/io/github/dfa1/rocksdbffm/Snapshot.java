@@ -41,14 +41,10 @@ public final class Snapshot extends NativeObject {
 		MH_RELEASE = RocksDB.lookup("rocksdb_release_snapshot",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
+		// TODO: rocksdb_free is declared a lot of times
 		MH_FREE = RocksDB.lookup("rocksdb_free",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 	}
-
-	/**
-	 * Package-private: the raw snapshot pointer, used by ReadOptions.setSnapshot().
-	 */
-	final MemorySegment ptr;
 
 	/**
 	 * DB pointer used to release the snapshot; NULL signals that rocksdb_free
@@ -62,7 +58,6 @@ public final class Snapshot extends NativeObject {
 	Snapshot(MemorySegment dbPtr, MemorySegment ptr) {
 		super(ptr);
 		this.dbPtr = dbPtr;
-		this.ptr = ptr;
 	}
 
 	/**
@@ -72,7 +67,6 @@ public final class Snapshot extends NativeObject {
 	Snapshot(MemorySegment ptr) {
 		super(ptr);
 		this.dbPtr = MemorySegment.NULL;
-		this.ptr = ptr;
 	}
 
 	/**
@@ -81,7 +75,7 @@ public final class Snapshot extends NativeObject {
 	 */
 	public SequenceNumber sequenceNumber() {
 		try {
-			return SequenceNumber.of((long) MH_SEQUENCE_NUMBER.invokeExact(ptr));
+			return SequenceNumber.of((long) MH_SEQUENCE_NUMBER.invokeExact(ptr()));
 		} catch (Throwable t) {
 			throw new RocksDBException("snapshot sequenceNumber failed", t);
 		}

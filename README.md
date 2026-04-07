@@ -80,7 +80,8 @@ This project is currently experimental. The table below tracks parity with `rock
 | Statistics | ✅ | TickerType, HistogramType, StatsLevel |
 | Compression | ✅ | `CompressionType` enum (NO/Snappy/zlib/bz2/LZ4/LZ4HC/Xpress/Zstd); `Options.setCompression`; `CompressionType.getSupportedTypes()` runtime probe |
 | Column Families | ❌ | Key namespace isolation |
-| Merge / MergeOperator | ✅ | `merge` on `RocksDB` and `WriteBatch`; custom `MergeOperator` via FFM upcall stubs; built-in uint64 add |
+| Merge | ✅ | `merge` on `RocksDB` and `WriteBatch` |
+| MergeOperator | ❌| custom `MergeOperator` via FFM upcall stubs; built-in uint64 add |
 | MultiGet | ❌ | Bulk reads |
 | DeleteRange | ✅ | Range tombstones; `deleteRange` on `RocksDB` and `WriteBatch`; all three access tiers |
 | Compaction control | ✅ | `compactRange` (all three tiers + `CompactOptions`), `suggestCompactRange`, `disableFileDeletions`, `enableFileDeletions` |

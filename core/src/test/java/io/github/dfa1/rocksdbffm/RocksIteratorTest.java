@@ -249,7 +249,7 @@ class RocksIteratorTest {
 	void newIterator_withReadOptions(@TempDir Path dir) {
 		// Given
 		try (var db = RocksDB.open(dir);
-		     var readOptions = new ReadOptions()) {
+		     var readOptions = ReadOptions.newReadOptions()) {
 			db.put("x".getBytes(), "y".getBytes());
 
 			// When

@@ -160,7 +160,7 @@ public final class OptimisticTransactionDB implements AutoCloseable {
 			Native.checkError(err);
 
 			MemorySegment baseDb = (MemorySegment) MH_GET_BASE_DB.invokeExact(ptr);
-			return new OptimisticTransactionDB(ptr, baseDb, new WriteOptions(), new ReadOptions());
+			return new OptimisticTransactionDB(ptr, baseDb, new WriteOptions(), ReadOptions.newReadOptions());
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("OptimisticTransactionDB open failed", t);
 		}
@@ -223,7 +223,7 @@ public final class OptimisticTransactionDB implements AutoCloseable {
 			MemorySegment valLenSeg = arena.allocate(ValueLayout.JAVA_LONG);
 
 			MemorySegment valPtr = (MemorySegment) MH_GET.invokeExact(
-					baseDb, readOptions.ptr, k, (long) key.length, valLenSeg, err);
+					baseDb, readOptions.ptr(), k, (long) key.length, valLenSeg, err);
 			Native.checkError(err);
 
 			if (MemorySegment.NULL.equals(valPtr)) return null;
@@ -247,7 +247,7 @@ public final class OptimisticTransactionDB implements AutoCloseable {
 			MemorySegment valLenSeg = arena.allocate(ValueLayout.JAVA_LONG);
 
 			MemorySegment valPtr = (MemorySegment) MH_GET.invokeExact(
-					baseDb, readOpts.ptr, k, (long) key.length, valLenSeg, err);
+					baseDb, readOpts.ptr(), k, (long) key.length, valLenSeg, err);
 			Native.checkError(err);
 
 			if (MemorySegment.NULL.equals(valPtr)) return null;

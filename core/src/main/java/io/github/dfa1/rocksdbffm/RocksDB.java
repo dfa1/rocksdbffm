@@ -492,7 +492,7 @@ public final class RocksDB implements AutoCloseable {
 			MemorySegment keyNative = Native.toNative(arena, key);
 
 			MemorySegment pin = (MemorySegment) MH_GET_PINNED.invokeExact(
-					dbPtr, readOptions.ptr, keyNative, (long) key.length, err);
+					dbPtr, readOptions.ptr(), keyNative, (long) key.length, err);
 
 			Native.checkError(err);
 
@@ -718,7 +718,7 @@ public final class RocksDB implements AutoCloseable {
 	public boolean keyMayExist(ReadOptions readOptions, byte[] key) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment k = Native.toNative(arena, key);
-			return keyMayExistNative(readOptions.ptr, k, key.length);
+			return keyMayExistNative(readOptions.ptr(), k, key.length);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("keyMayExist failed", t);
 		}
@@ -813,7 +813,7 @@ public final class RocksDB implements AutoCloseable {
 	 * Returns a new iterator using the supplied {@code readOptions}.
 	 */
 	public RocksIterator newIterator(ReadOptions readOptions) {
-		return RocksIterator.create(dbPtr, readOptions.ptr);
+		return RocksIterator.create(dbPtr, readOptions.ptr());
 	}
 
 	// -----------------------------------------------------------------------

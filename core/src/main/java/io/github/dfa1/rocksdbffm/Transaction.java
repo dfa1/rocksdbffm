@@ -157,7 +157,7 @@ public final class Transaction implements AutoCloseable {
 			MemorySegment k = Native.toNative(arena, key);
 
 			MemorySegment pin = (MemorySegment) MH_GET_PINNED.invokeExact(
-					ptr, readOptions.ptr, k, (long) key.length, err);
+					ptr, readOptions.ptr(), k, (long) key.length, err);
 
 			Native.checkError(err);
 
@@ -187,7 +187,7 @@ public final class Transaction implements AutoCloseable {
 			MemorySegment valLenSeg = arena.allocate(ValueLayout.JAVA_LONG);
 
 			MemorySegment valPtr = (MemorySegment) MH_GET_FOR_UPDATE.invokeExact(
-					ptr, readOptions.ptr, k, (long) key.length,
+					ptr, readOptions.ptr(), k, (long) key.length,
 					valLenSeg, exclusive ? (byte) 1 : (byte) 0, err);
 
 			Native.checkError(err);

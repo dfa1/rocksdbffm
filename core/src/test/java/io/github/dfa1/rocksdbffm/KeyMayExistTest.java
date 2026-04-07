@@ -60,7 +60,7 @@ class KeyMayExistTest {
 		// Given
 		try (var db = RocksDB.open(dir)) {
 			try (Snapshot snap = db.getSnapshot();
-			     ReadOptions ro = new ReadOptions().setSnapshot(snap)) {
+			     ReadOptions ro = ReadOptions.newReadOptions().setSnapshot(snap)) {
 
 				db.put("added-after-snap".getBytes(), "v".getBytes());
 

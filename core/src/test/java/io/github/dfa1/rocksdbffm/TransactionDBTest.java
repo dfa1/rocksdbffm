@@ -63,7 +63,7 @@ class TransactionDBTest {
 		// Given
 		try (var db = openDb(dir);
 		     var wo = new WriteOptions();
-		     var ro = new ReadOptions();
+		     var ro = ReadOptions.newReadOptions();
 		     var txn = db.beginTransaction(wo)) {
 
 			txn.put("k".getBytes(), "v".getBytes());
@@ -82,7 +82,7 @@ class TransactionDBTest {
 		// Given
 		try (var db = openDb(dir);
 		     var wo = new WriteOptions();
-		     var ro = new ReadOptions();
+		     var ro = ReadOptions.newReadOptions();
 		     var txn = db.beginTransaction(wo)) {
 
 			// When
@@ -101,7 +101,7 @@ class TransactionDBTest {
 
 		try (var db = openDb(dir);
 		     var wo = new WriteOptions();
-		     var ro = new ReadOptions();
+		     var ro = ReadOptions.newReadOptions();
 		     var txn = db.beginTransaction(wo)) {
 
 			// When
@@ -130,7 +130,7 @@ class TransactionDBTest {
 
 		try (var db = openDb(dir);
 		     var wo = new WriteOptions();
-		     var ro = new ReadOptions();
+		     var ro = ReadOptions.newReadOptions();
 		     var txn = db.beginTransaction(wo)) {
 
 			// When
@@ -155,7 +155,7 @@ class TransactionDBTest {
 		// Given
 		try (var db = openDb(dir);
 		     var wo = new WriteOptions();
-		     var ro = new ReadOptions();
+		     var ro = ReadOptions.newReadOptions();
 		     var txn = db.beginTransaction(wo)) {
 
 			txn.put("k1".getBytes(), "v1".getBytes());

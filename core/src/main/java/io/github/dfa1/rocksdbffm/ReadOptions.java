@@ -8,10 +8,10 @@ import java.lang.invoke.MethodHandle;
 /**
  * FFM wrapper for rocksdb_readoptions_t.
  */
-public final class ReadOptions implements AutoCloseable {
+public final class ReadOptions extends NativeObject {
 
-	static final MethodHandle MH_CREATE;
-	static final MethodHandle MH_DESTROY;
+	private static final MethodHandle MH_CREATE;
+	private static final MethodHandle MH_DESTROY;
 	private static final MethodHandle MH_SET_SNAPSHOT;
 
 	static {
@@ -26,14 +26,13 @@ public final class ReadOptions implements AutoCloseable {
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 	}
 
-	/**
-	 * Package-private: accessed by Transaction.get() and RocksDB.
-	 */
-	final MemorySegment ptr;
+	private ReadOptions(MemorySegment ptr) {
+		super(ptr);
+	}
 
-	public ReadOptions() {
+	public static ReadOptions newReadOptions() {
 		try {
-			this.ptr = (MemorySegment) MH_CREATE.invokeExact();
+			return new ReadOptions((MemorySegment) MH_CREATE.invokeExact());
 		} catch (Throwable t) {
 			throw new RocksDBException("readoptions create failed", t);
 		}
@@ -49,7 +48,7 @@ public final class ReadOptions implements AutoCloseable {
 	public ReadOptions setSnapshot(Snapshot snapshot) {
 		try {
 			MemorySegment snapPtr = (snapshot == null) ? MemorySegment.NULL : snapshot.ptr();
-			MH_SET_SNAPSHOT.invokeExact(ptr, snapPtr);
+			MH_SET_SNAPSHOT.invokeExact(ptr(), snapPtr);
 			return this;
 		} catch (Throwable t) {
 			throw new RocksDBException("readoptions setSnapshot failed", t);
@@ -57,7 +56,7 @@ public final class ReadOptions implements AutoCloseable {
 	}
 
 	@Override
-	public void close() {
-		Native.closeQuietly(MH_DESTROY, ptr);
+	protected void tryClose(MemorySegment ptr) throws Throwable {
+		MH_DESTROY.invokeExact(ptr);
 	}
 }

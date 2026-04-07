@@ -21,7 +21,7 @@ class SnapshotTest {
 
 			// When — take snapshot, then overwrite the key
 			try (Snapshot snap = db.getSnapshot();
-			     ReadOptions ro = new ReadOptions().setSnapshot(snap)) {
+			     ReadOptions ro = ReadOptions.newReadOptions().setSnapshot(snap)) {
 
 				db.put("key".getBytes(), "after".getBytes());
 
@@ -41,7 +41,7 @@ class SnapshotTest {
 
 			// When
 			try (Snapshot snap = db.getSnapshot();
-			     ReadOptions ro = new ReadOptions().setSnapshot(snap)) {
+			     ReadOptions ro = ReadOptions.newReadOptions().setSnapshot(snap)) {
 
 				db.delete("key".getBytes());
 
@@ -88,7 +88,7 @@ class SnapshotTest {
 	void setSnapshot_null_clearsSnapshot(@TempDir Path dir) {
 		// Given
 		try (var db = RocksDB.open(dir);
-		     ReadOptions ro = new ReadOptions()) {
+		     ReadOptions ro = ReadOptions.newReadOptions()) {
 			db.put("key".getBytes(), "v1".getBytes());
 
 			try (Snapshot snap = db.getSnapshot()) {
@@ -119,7 +119,7 @@ class SnapshotTest {
 			db.put("b".getBytes(), "2".getBytes());
 
 			try (Snapshot snap = db.getSnapshot();
-			     ReadOptions ro = new ReadOptions().setSnapshot(snap);
+			     ReadOptions ro = ReadOptions.newReadOptions().setSnapshot(snap);
 			     RocksIterator it = db.newIterator(ro)) {
 
 				// Write after snapshot
@@ -153,7 +153,7 @@ class SnapshotTest {
 
 			// When
 			try (Snapshot snap = db.getSnapshot();
-			     ReadOptions ro = new ReadOptions().setSnapshot(snap);
+			     ReadOptions ro = ReadOptions.newReadOptions().setSnapshot(snap);
 			     WriteOptions wo = new WriteOptions();
 			     Transaction txn = db.beginTransaction(wo)) {
 

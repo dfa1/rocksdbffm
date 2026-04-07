@@ -18,7 +18,7 @@ import java.lang.invoke.MethodHandle;
  *
  * <pre>{@code
  * try (Snapshot snap = db.getSnapshot();
- *      ReadOptions ro = new ReadOptions().setSnapshot(snap)) {
+ *      ReadOptions ro = ReadOptions.newReadOptions().setSnapshot(snap)) {
  *     byte[] v1 = db.get(ro, key);
  *     db.put(key, newValue);
  *     byte[] v2 = db.get(ro, key); // still returns v1 — consistent read

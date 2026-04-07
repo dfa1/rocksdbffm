@@ -113,7 +113,7 @@ class SecondaryDBTest {
 
 		try (var opts = new Options();
 		     var secondary = SecondaryDB.open(opts, primaryDir, secondaryDir);
-		     var ro = new ReadOptions()) {
+		     var ro = ReadOptions.newReadOptions()) {
 			secondary.tryCatchUpWithPrimary();
 
 			// When / Then
@@ -166,7 +166,7 @@ class SecondaryDBTest {
 
 		try (var opts = new Options();
 		     var secondary = SecondaryDB.open(opts, primaryDir, secondaryDir);
-		     var ro = new ReadOptions()) {
+		     var ro = ReadOptions.newReadOptions()) {
 			secondary.tryCatchUpWithPrimary();
 
 			try (var it = secondary.newIterator(ro)) {
@@ -197,7 +197,7 @@ class SecondaryDBTest {
 
 			// When — take a snapshot and read through it
 			try (var snap = secondary.getSnapshot();
-			     var ro = new ReadOptions().setSnapshot(snap)) {
+			     var ro = ReadOptions.newReadOptions().setSnapshot(snap)) {
 
 				// Then — snapshot read returns the value visible at snapshot time
 				assertThat(secondary.get(ro, "k".getBytes())).isEqualTo("v".getBytes());

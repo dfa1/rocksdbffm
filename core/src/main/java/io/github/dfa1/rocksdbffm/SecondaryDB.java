@@ -99,10 +99,10 @@ public final class SecondaryDB implements AutoCloseable {
 	// Instance state
 	// -----------------------------------------------------------------------
 
-	private final MemorySegment ptr;      // rocksdb_t*
-	private final MemorySegment readOpts; // TODO: upgrade to ReadOptions
+	private final MemorySegment ptr;  // rocksdb_t*
+	private final ReadOptions readOpts;
 
-	private SecondaryDB(MemorySegment ptr, MemorySegment readOpts) {
+	private SecondaryDB(MemorySegment ptr, ReadOptions readOpts) {
 		this.ptr = ptr;
 		this.readOpts = readOpts;
 	}
@@ -130,8 +130,7 @@ public final class SecondaryDB implements AutoCloseable {
 					dbOptions.ptr, primary, secondary, err);
 			Native.checkError(err);
 
-			MemorySegment readOpts = (MemorySegment) ReadOptions.MH_CREATE.invokeExact();
-			return new SecondaryDB(ptr, readOpts);
+			return new SecondaryDB(ptr, ReadOptions.newReadOptions());
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("SecondaryDB open failed", t);
 		}
@@ -172,7 +171,7 @@ public final class SecondaryDB implements AutoCloseable {
 			MemorySegment k = Native.toNative(arena, key);
 
 			MemorySegment pin = (MemorySegment) MH_GET_PINNED.invokeExact(
-					ptr, readOpts, k, (long) key.length, err);
+					ptr, readOpts.ptr(), k, (long) key.length, err);
 			Native.checkError(err);
 
 			if (MemorySegment.NULL.equals(pin)) return null;
@@ -198,7 +197,7 @@ public final class SecondaryDB implements AutoCloseable {
 			MemorySegment k = Native.toNative(arena, key);
 
 			MemorySegment pin = (MemorySegment) MH_GET_PINNED.invokeExact(
-					ptr, readOptions.ptr, k, (long) key.length, err);
+					ptr, readOptions.ptr(), k, (long) key.length, err);
 			Native.checkError(err);
 
 			if (MemorySegment.NULL.equals(pin)) return null;
@@ -223,14 +222,14 @@ public final class SecondaryDB implements AutoCloseable {
 	 * Call {@link #tryCatchUpWithPrimary()} first if you need the latest data.
 	 */
 	public RocksIterator newIterator() {
-		return RocksIterator.create(ptr, readOpts);
+		return RocksIterator.create(ptr, readOpts.ptr());
 	}
 
 	/**
 	 * Returns a new iterator using the supplied {@link ReadOptions}.
 	 */
 	public RocksIterator newIterator(ReadOptions readOptions) {
-		return RocksIterator.create(ptr, readOptions.ptr);
+		return RocksIterator.create(ptr, readOptions.ptr());
 	}
 
 	// -----------------------------------------------------------------------
@@ -291,7 +290,7 @@ public final class SecondaryDB implements AutoCloseable {
 
 	@Override
 	public void close() {
-		Native.closeQuietly(ReadOptions.MH_DESTROY, readOpts);
+		readOpts.close();
 		Native.closeQuietly(MH_CLOSE, ptr);
 	}
 }

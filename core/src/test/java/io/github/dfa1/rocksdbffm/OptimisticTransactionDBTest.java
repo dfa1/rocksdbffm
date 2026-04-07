@@ -117,7 +117,7 @@ class OptimisticTransactionDBTest {
 			// When — transaction can read its own uncommitted writes
 			try (var txn = db.beginTransaction(wo)) {
 				txn.put("k".getBytes(), "v".getBytes());
-				assertThat(txn.get(new ReadOptions(), "k".getBytes())).isEqualTo("v".getBytes());
+				assertThat(txn.get(ReadOptions.newReadOptions(), "k".getBytes())).isEqualTo("v".getBytes());
 				txn.rollback();
 			}
 		}
@@ -140,8 +140,8 @@ class OptimisticTransactionDBTest {
 			     var txn2 = db.beginTransaction(wo)) {
 
 				// Both read the key
-				txn1.getForUpdate(new ReadOptions(), "k".getBytes(), true);
-				txn2.getForUpdate(new ReadOptions(), "k".getBytes(), true);
+				txn1.getForUpdate(ReadOptions.newReadOptions(), "k".getBytes(), true);
+				txn2.getForUpdate(ReadOptions.newReadOptions(), "k".getBytes(), true);
 
 				// Both write to it
 				txn1.put("k".getBytes(), "txn1".getBytes());
@@ -181,7 +181,7 @@ class OptimisticTransactionDBTest {
 				db.put("after".getBytes(), "no".getBytes());
 
 				// getForUpdate through the transaction sees committed data
-				assertThat(txn.get(new ReadOptions(), "before".getBytes())).isEqualTo("yes".getBytes());
+				assertThat(txn.get(ReadOptions.newReadOptions(), "before".getBytes())).isEqualTo("yes".getBytes());
 
 				txn.commit();
 			}
@@ -202,7 +202,7 @@ class OptimisticTransactionDBTest {
 
 			// When — take snapshot, then overwrite
 			try (var snap = db.getSnapshot();
-			     var ro = new ReadOptions().setSnapshot(snap)) {
+			     var ro = ReadOptions.newReadOptions().setSnapshot(snap)) {
 
 				db.put("k".getBytes(), "v2".getBytes());
 

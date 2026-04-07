@@ -238,7 +238,7 @@ public final class TransactionDB implements AutoCloseable {
 			MemorySegment err = Native.errHolder(arena);
 			MemorySegment k = Native.toNative(arena, key);
 			MemorySegment v = Native.toNative(arena, value);
-			MH_PUT.invokeExact(ptr, writeOpts, k, (long) key.length, v, (long) value.length, err);
+			MH_PUT.invokeExact(ptr, writeOpts.ptr, k, (long) key.length, v, (long) value.length, err);
 			Native.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("Native call failed", t);
@@ -280,7 +280,7 @@ public final class TransactionDB implements AutoCloseable {
 			MemorySegment valLenSeg = arena.allocate(ValueLayout.JAVA_LONG);
 
 			MemorySegment valPtr = (MemorySegment) MH_GET.invokeExact(
-					ptr, readOpts, k, (long) key.length, valLenSeg, err);
+					ptr, readOpts.ptr, k, (long) key.length, valLenSeg, err);
 
 			Native.checkError(err);
 
@@ -337,7 +337,7 @@ public final class TransactionDB implements AutoCloseable {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
 			MemorySegment k = Native.toNative(arena, key);
-			MH_DELETE.invokeExact(ptr, writeOpts, k, (long) key.length, err);
+			MH_DELETE.invokeExact(ptr, writeOpts.ptr, k, (long) key.length, err);
 			Native.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("Native call failed", t);
@@ -358,9 +358,5 @@ public final class TransactionDB implements AutoCloseable {
 			throw new RocksDBException("TransactionDB close failed", t);
 		}
 	}
-
-	// -----------------------------------------------------------------------
-	// Helpers
-	// -----------------------------------------------------------------------
 
 }

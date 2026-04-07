@@ -206,7 +206,7 @@ public final class OptimisticTransactionDB implements AutoCloseable {
 			MemorySegment err = Native.errHolder(arena);
 			MemorySegment k = Native.toNative(arena, key);
 			MemorySegment v = Native.toNative(arena, value);
-			MH_PUT.invokeExact(baseDb, writeOpts, k, (long) key.length, v, (long) value.length, err);
+			MH_PUT.invokeExact(baseDb, writeOpts.ptr, k, (long) key.length, v, (long) value.length, err);
 			Native.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("put failed", t);
@@ -247,7 +247,7 @@ public final class OptimisticTransactionDB implements AutoCloseable {
 			MemorySegment valLenSeg = arena.allocate(ValueLayout.JAVA_LONG);
 
 			MemorySegment valPtr = (MemorySegment) MH_GET.invokeExact(
-					baseDb, readOpts, k, (long) key.length, valLenSeg, err);
+					baseDb, readOpts.ptr, k, (long) key.length, valLenSeg, err);
 			Native.checkError(err);
 
 			if (MemorySegment.NULL.equals(valPtr)) return null;
@@ -268,7 +268,7 @@ public final class OptimisticTransactionDB implements AutoCloseable {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
 			MemorySegment k = Native.toNative(arena, key);
-			MH_DELETE.invokeExact(baseDb, writeOpts, k, (long) key.length, err);
+			MH_DELETE.invokeExact(baseDb, writeOpts.ptr, k, (long) key.length, err);
 			Native.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("delete failed", t);

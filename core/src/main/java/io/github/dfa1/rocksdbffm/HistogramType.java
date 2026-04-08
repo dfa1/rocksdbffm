@@ -1,9 +1,7 @@
 package io.github.dfa1.rocksdbffm;
 
-/**
- * Histogram types for RocksDB statistics.
- * Corresponds to {@code enum Histograms} in {@code rocksdb/statistics.h}.
- */
+/// Histogram types for RocksDB statistics.
+/// Corresponds to `enum Histograms` in `rocksdb/statistics.h`.
 public enum HistogramType {
 	DB_GET(0),
 	DB_WRITE(1),
@@ -78,7 +76,8 @@ public enum HistogramType {
 		this.value = value;
 	}
 
-	public int getValue() {
+	// don't expose the raw value
+	int getValue() {
 		return value;
 	}
 }

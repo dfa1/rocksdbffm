@@ -9,30 +9,26 @@ import java.nio.file.Path;
 import java.util.Optional;
 import java.util.OptionalLong;
 
-/**
- * FFM wrapper for a RocksDB secondary instance ({@code rocksdb_t*} opened via
- * {@code rocksdb_open_as_secondary}).
- *
- * <p>A secondary instance is a <em>read-only replica</em> of a primary database.
- * It tails the primary's WAL and MANIFEST files from a dedicated
- * {@code secondaryPath} directory. Call {@link #tryCatchUpWithPrimary()} to
- * apply any new writes that the primary has flushed since the last catch-up.
- *
- * <p>Write operations are not available on a secondary instance; attempting a
- * write via the underlying {@code rocksdb_t*} would return an error from RocksDB.
- *
- * <pre>{@code
- * // Primary (already open elsewhere)
- * try (Options opts = Options.newOptions().setCreateIfMissing(true);
- *      SecondaryDB secondary = SecondaryDB.open(opts, primaryPath, secondaryPath)) {
- *
- *     // Catch up with whatever the primary has written
- *     secondary.tryCatchUpWithPrimary();
- *
- *     byte[] value = secondary.get("key".getBytes());
- * }
- * }</pre>
- */
+/// FFM wrapper for a RocksDB secondary instance (`rocksdb_t*` opened via
+/// `rocksdb_open_as_secondary`).
+///
+/// A secondary instance is a _read-only replica_ of a primary database.
+/// It tails the primary's WAL and MANIFEST files from a dedicated
+/// `secondaryPath` directory. Call [#tryCatchUpWithPrimary()] to
+/// apply any new writes that the primary has flushed since the last catch-up.
+///
+/// Write operations are not available on a secondary instance; attempting a
+/// write via the underlying `rocksdb_t*` would return an error from RocksDB.
+///
+/// ```
+/// // Primary (already open elsewhere)
+/// try (Options opts = Options.newOptions().setCreateIfMissing(true);
+///      SecondaryDB secondary = SecondaryDB.open(opts, primaryPath, secondaryPath)) {
+///     // Catch up with whatever the primary has written
+///     secondary.tryCatchUpWithPrimary();
+///     byte[] value = secondary.get("key".getBytes());
+/// }
+/// ```
 public final class SecondaryDB extends NativeObject {
 
 	// -----------------------------------------------------------------------
@@ -116,15 +112,13 @@ public final class SecondaryDB extends NativeObject {
 	// Factory
 	// -----------------------------------------------------------------------
 
-	/**
-	 * Opens a secondary instance of the RocksDB database at {@code primaryPath}.
-	 *
-	 * @param dbOptions     options (caller retains ownership); {@code createIfMissing}
-	 *                      is typically {@code false} for a secondary
-	 * @param primaryPath   path to the primary database directory
-	 * @param secondaryPath a dedicated directory for this secondary's own MANIFEST/WAL
-	 *                      tails; created automatically if it does not exist
-	 */
+	/// Opens a secondary instance of the RocksDB database at `primaryPath`.
+	///
+	/// @param dbOptions     options (caller retains ownership); `createIfMissing`
+	///                      is typically `false` for a secondary
+	/// @param primaryPath   path to the primary database directory
+	/// @param secondaryPath a dedicated directory for this secondary's own MANIFEST/WAL
+	///                      tails; created automatically if it does not exist
 	public static SecondaryDB open(Options dbOptions, Path primaryPath, Path secondaryPath) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
@@ -145,13 +139,11 @@ public final class SecondaryDB extends NativeObject {
 	// Catch-up
 	// -----------------------------------------------------------------------
 
-	/**
-	 * Tries to catch up with the primary by reading and applying any new records
-	 * from the primary's WAL and newly flushed SST files.
-	 *
-	 * <p>This is a best-effort operation; the secondary may still lag the primary
-	 * if the primary has not yet flushed a write.
-	 */
+	/// Tries to catch up with the primary by reading and applying any new records
+	/// from the primary's WAL and newly flushed SST files.
+	///
+	/// This is a best-effort operation; the secondary may still lag the primary
+	/// if the primary has not yet flushed a write.
 	public void tryCatchUpWithPrimary() {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
@@ -166,10 +158,8 @@ public final class SecondaryDB extends NativeObject {
 	// Read operations
 	// -----------------------------------------------------------------------
 
-	/**
-	 * Returns the value for {@code key}, or {@code null} if the key does not exist.
-	 * Uses PinnableSlice to avoid an intermediate copy from the block cache.
-	 */
+	/// Returns the value for `key`, or `null` if the key does not exist.
+	/// Uses PinnableSlice to avoid an intermediate copy from the block cache.
 	public byte[] get(byte[] key) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
@@ -194,10 +184,8 @@ public final class SecondaryDB extends NativeObject {
 		}
 	}
 
-	/**
-	 * Returns the value for {@code key} using the supplied {@link ReadOptions}
-	 * (e.g. for snapshot-pinned reads), or {@code null} if the key does not exist.
-	 */
+	/// Returns the value for `key` using the supplied [ReadOptions]
+	/// (e.g. for snapshot-pinned reads), or `null` if the key does not exist.
 	public byte[] get(ReadOptions readOptions, byte[] key) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
@@ -226,17 +214,13 @@ public final class SecondaryDB extends NativeObject {
 	// Iterator
 	// -----------------------------------------------------------------------
 
-	/**
-	 * Returns a new iterator over the secondary's current view.
-	 * Call {@link #tryCatchUpWithPrimary()} first if you need the latest data.
-	 */
+	/// Returns a new iterator over the secondary's current view.
+	/// Call [#tryCatchUpWithPrimary()] first if you need the latest data.
 	public RocksIterator newIterator() {
 		return RocksIterator.create(ptr(), readOpts.ptr());
 	}
 
-	/**
-	 * Returns a new iterator using the supplied {@link ReadOptions}.
-	 */
+	/// Returns a new iterator using the supplied [ReadOptions].
 	public RocksIterator newIterator(ReadOptions readOptions) {
 		return RocksIterator.create(ptr(), readOptions.ptr());
 	}
@@ -245,10 +229,8 @@ public final class SecondaryDB extends NativeObject {
 	// Snapshot
 	// -----------------------------------------------------------------------
 
-	/**
-	 * Creates a point-in-time snapshot of the secondary's current view.
-	 * Must be closed after use.
-	 */
+	/// Creates a point-in-time snapshot of the secondary's current view.
+	/// Must be closed after use.
 	public Snapshot getSnapshot() {
 		try {
 			MemorySegment snapPtr = (MemorySegment) MH_CREATE_SNAPSHOT.invokeExact(ptr());
@@ -262,9 +244,7 @@ public final class SecondaryDB extends NativeObject {
 	// DB Properties
 	// -----------------------------------------------------------------------
 
-	/**
-	 * @see RocksDB#getProperty(Property)
-	 */
+	/// @see RocksDB#getProperty(Property)
 	public Optional<String> getProperty(Property property) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment propSeg = arena.allocateFrom(property.propertyName());
@@ -280,9 +260,7 @@ public final class SecondaryDB extends NativeObject {
 		}
 	}
 
-	/**
-	 * @see RocksDB#getLongProperty(Property)
-	 */
+	/// @see RocksDB#getLongProperty(Property)
 	public OptionalLong getLongProperty(Property property) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment propSeg = arena.allocateFrom(property.propertyName());

@@ -5,9 +5,7 @@ import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 
-/**
- * FFM wrapper for rocksdb_statistics_histogram_data_t.
- */
+/// FFM wrapper for \`rocksdb\_statistics\_histogram\_data\_t\`.
 public final class StatisticsHistogramData extends NativeObject {
 
 	// rocksdb_statistics_histogram_data_create(void) -> rocksdb_statistics_histogram_data_t*

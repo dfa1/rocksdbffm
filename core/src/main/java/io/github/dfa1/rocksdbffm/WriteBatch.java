@@ -7,13 +7,11 @@ import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 import java.nio.ByteBuffer;
 
-/**
- * FFM wrapper for rocksdb_writebatch_t.
- * Accumulates put/delete operations and commits them atomically via RocksDB.write().
- * <p>
- * Note: rocksdb_writebatch_put/delete have no errptr — they are infallible at
- * the C level. Only rocksdb_write (on the DB) can fail.
- */
+/// FFM wrapper for rocksdb\_writebatch\_t.
+/// Accumulates put/delete operations and commits them atomically via RocksDB.write().
+///
+/// Note: rocksdb\_writebatch\_put/delete have no errptr — they are infallible at
+/// the C level. Only rocksdb\_write (on the DB) can fail.
 public final class WriteBatch extends NativeObject {
 
 	// rocksdb_writebatch_create(void) -> rocksdb_writebatch_t*
@@ -116,9 +114,7 @@ public final class WriteBatch extends NativeObject {
 		}
 	}
 
-	/**
-	 * Queues a merge operand for {@code key}. Slow path: copies key/value.
-	 */
+	/// Queues a merge operand for `key`. Slow path: copies key/value.
 	public void merge(byte[] key, byte[] value) {
 		try (Arena arena = Arena.ofConfined()) {
 			MH_MERGE.invokeExact(ptr(),
@@ -129,9 +125,7 @@ public final class WriteBatch extends NativeObject {
 		}
 	}
 
-	/**
-	 * Queues a merge operand for {@code key}. Zero-copy for direct buffers.
-	 */
+	/// Queues a merge operand for `key`. Zero-copy for direct buffers.
 	public void merge(ByteBuffer key, ByteBuffer value) {
 		try {
 			MH_MERGE.invokeExact(ptr(),
@@ -142,9 +136,7 @@ public final class WriteBatch extends NativeObject {
 		}
 	}
 
-	/**
-	 * Queues a merge operand for {@code key}. Zero-copy.
-	 */
+	/// Queues a merge operand for `key`. Zero-copy.
 	public void merge(MemorySegment key, MemorySegment value) {
 		try {
 			MH_MERGE.invokeExact(ptr(),
@@ -155,9 +147,7 @@ public final class WriteBatch extends NativeObject {
 		}
 	}
 
-	/**
-	 * Queues a range tombstone for [{@code startKey}, {@code endKey}). Slow path: copies keys.
-	 */
+	/// Queues a range tombstone for [`startKey`, `endKey`). Slow path: copies keys.
 	public void deleteRange(byte[] startKey, byte[] endKey) {
 		try (Arena arena = Arena.ofConfined()) {
 			MH_DELETE_RANGE.invokeExact(ptr(),
@@ -168,9 +158,7 @@ public final class WriteBatch extends NativeObject {
 		}
 	}
 
-	/**
-	 * Queues a range tombstone for [{@code startKey}, {@code endKey}). Zero-copy for direct buffers.
-	 */
+	/// Queues a range tombstone for [`startKey`, `endKey`). Zero-copy for direct buffers.
 	public void deleteRange(ByteBuffer startKey, ByteBuffer endKey) {
 		try {
 			MH_DELETE_RANGE.invokeExact(ptr(),
@@ -181,9 +169,7 @@ public final class WriteBatch extends NativeObject {
 		}
 	}
 
-	/**
-	 * Queues a range tombstone for [{@code startKey}, {@code endKey}). Zero-copy.
-	 */
+	/// Queues a range tombstone for [`startKey`, `endKey`). Zero-copy.
 	public void deleteRange(MemorySegment startKey, MemorySegment endKey) {
 		try {
 			MH_DELETE_RANGE.invokeExact(ptr(),

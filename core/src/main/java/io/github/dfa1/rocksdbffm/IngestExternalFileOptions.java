@@ -5,17 +5,15 @@ import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 
-/**
- * FFM wrapper for rocksdb_ingestexternalfileoptions_t.
- *
- * <p>Controls the behaviour of {@link RocksDB#ingestExternalFile}.
- *
- * <pre>{@code
- * try (var opts = IngestExternalFileOptions.newIngestExternalFileOptions().setMoveFiles(true)) {
- *     db.ingestExternalFile(List.of(sstPath), opts);
- * }
- * }</pre>
- */
+/// FFM wrapper for `rocksdb_ingestexternalfileoptions_t`.
+///
+/// Controls the behavior of [RocksDB#ingestExternalFile].
+///
+/// ```
+/// try (var opts = IngestExternalFileOptions.newIngestExternalFileOptions().setMoveFiles(true)) {
+///     db.ingestExternalFile(List.of(sstPath), opts);
+/// }
+/// ```
 public final class IngestExternalFileOptions extends NativeObject {
 
 	// rocksdb_ingestexternalfileoptions_create(void) -> rocksdb_ingestexternalfileoptions_t*
@@ -80,11 +78,9 @@ public final class IngestExternalFileOptions extends NativeObject {
 		}
 	}
 
-	/**
-	 * If {@code true}, the SST files are moved rather than copied into the DB directory.
-	 *
-	 * @return {@code this} for chaining
-	 */
+	/// If `true`, the SST files are moved rather than copied into the DB directory.
+	///
+	/// @return `this` for chaining
 	public IngestExternalFileOptions setMoveFiles(boolean moveFiles) {
 		try {
 			MH_SET_MOVE_FILES.invokeExact(ptr(), moveFiles ? (byte) 1 : (byte) 0);
@@ -94,11 +90,9 @@ public final class IngestExternalFileOptions extends NativeObject {
 		}
 	}
 
-	/**
-	 * If {@code true} (default), snapshot consistency is enforced during ingest.
-	 *
-	 * @return {@code this} for chaining
-	 */
+	/// If `true` (default), snapshot consistency is enforced during ingest.
+	///
+	/// @return `this` for chaining
 	public IngestExternalFileOptions setSnapshotConsistency(boolean snapshotConsistency) {
 		try {
 			MH_SET_SNAPSHOT_CONSISTENCY.invokeExact(ptr(), snapshotConsistency ? (byte) 1 : (byte) 0);
@@ -108,11 +102,9 @@ public final class IngestExternalFileOptions extends NativeObject {
 		}
 	}
 
-	/**
-	 * If {@code true} (default), allows assigning a global sequence number to ingested files.
-	 *
-	 * @return {@code this} for chaining
-	 */
+	/// If `true` (default), allows assigning a global sequence number to ingested files.
+	///
+	/// @return `this` for chaining
 	public IngestExternalFileOptions setAllowGlobalSeqno(boolean allowGlobalSeqno) {
 		try {
 			MH_SET_ALLOW_GLOBAL_SEQNO.invokeExact(ptr(), allowGlobalSeqno ? (byte) 1 : (byte) 0);
@@ -122,11 +114,9 @@ public final class IngestExternalFileOptions extends NativeObject {
 		}
 	}
 
-	/**
-	 * If {@code true} (default), allows a blocking flush before ingest if needed.
-	 *
-	 * @return {@code this} for chaining
-	 */
+	/// If `true` (default), allows a blocking flush before ingest if needed.
+	///
+	/// @return `this` for chaining
 	public IngestExternalFileOptions setAllowBlockingFlush(boolean allowBlockingFlush) {
 		try {
 			MH_SET_ALLOW_BLOCKING_FLUSH.invokeExact(ptr(), allowBlockingFlush ? (byte) 1 : (byte) 0);
@@ -136,12 +126,10 @@ public final class IngestExternalFileOptions extends NativeObject {
 		}
 	}
 
-	/**
-	 * If {@code true}, ingest files behind existing data (at the bottommost level).
-	 * Requires {@code allow_ingest_behind} to be set on the DB options.
-	 *
-	 * @return {@code this} for chaining
-	 */
+	/// If `true`, ingest files behind existing data (at the bottommost level).
+	/// Requires `allow_ingest_behind` to be set on the DB options.
+	///
+	/// @return `this` for chaining
 	public IngestExternalFileOptions setIngestBehind(boolean ingestBehind) {
 		try {
 			MH_SET_INGEST_BEHIND.invokeExact(ptr(), ingestBehind ? (byte) 1 : (byte) 0);
@@ -151,11 +139,9 @@ public final class IngestExternalFileOptions extends NativeObject {
 		}
 	}
 
-	/**
-	 * If {@code true}, fails if the file cannot be placed at the bottommost level.
-	 *
-	 * @return {@code this} for chaining
-	 */
+	/// If `true`, fails if the file cannot be placed at the bottommost level.
+	///
+	/// @return `this` for chaining
 	public IngestExternalFileOptions setFailIfNotBottommostLevel(boolean failIfNotBottommostLevel) {
 		try {
 			MH_SET_FAIL_IF_NOT_BOTTOMMOST_LEVEL.invokeExact(ptr(), failIfNotBottommostLevel ? (byte) 1 : (byte) 0);

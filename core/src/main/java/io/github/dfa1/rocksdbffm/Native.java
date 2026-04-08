@@ -10,11 +10,9 @@ import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 
-/**
- * Centralized utility for RocksDB native operations.
- * Handles symbol lookup, error checking, and common memory patterns.
- * NB: this is package private
- */
+/// Centralized utility for RocksDB native operations.
+/// Handles symbol lookup, error checking, and common memory patterns.
+/// NB: this is package private
 final class Native {
 
 	// rocksdb_free(void* ptr) -> void
@@ -25,20 +23,16 @@ final class Native {
 		// no instances
 	}
 
-	/**
-	 * Creates a pre-zeroed error holder in the given arena.
-	 * Use this for RocksDB C calls that take {@code char** errptr}.
-	 */
+	/// Creates a pre-zeroed error holder in the given arena.
+	/// Use this for RocksDB C calls that take `char** errptr`.
 	public static MemorySegment errHolder(Arena arena) {
 		MemorySegment holder = arena.allocate(ValueLayout.ADDRESS);
 		holder.set(ValueLayout.ADDRESS, 0, MemorySegment.NULL);
 		return holder;
 	}
 
-	/**
-	 * Copies {@code bytes} into a new native memory segment allocated from {@code arena}.
-	 * No null-terminator is appended; use the byte length when passing to C functions.
-	 */
+	/// Copies `bytes` into a new native memory segment allocated from `arena`.
+	/// No null-terminator is appended; use the byte length when passing to C functions.
 	public static MemorySegment toNative(Arena arena, byte[] bytes) {
 		MemorySegment seg = arena.allocate(bytes.length);
 		// TODO: check if this is better seg.copyFrom(MemorySegment.ofArray(bytes));
@@ -46,21 +40,17 @@ final class Native {
 		return seg;
 	}
 
-	/**
-	 * Frees a malloc'd pointer returned by the RocksDB C API.
-	 */
+	/// Frees a malloc'd pointer returned by the RocksDB C API.
 	public static void free(MemorySegment ptr) {
 		try {
 			MH_FREE.invokeExact(ptr);
 		} catch (Throwable ignored) {
-			// Best effort to free
+			// ignore errors as this is used in destructor-like code
 		}
 	}
 
-	/**
-	 * Checks if the error holder contains a non-NULL pointer.
-	 * If so, throws a {@link RocksDBException} and frees the C string.
-	 */
+	/// Checks if the error holder contains a non-NULL pointer.
+	/// If so, throws a [RocksDBException] and frees the C string.
 	public static void checkError(MemorySegment errHolder) {
 		MemorySegment errPtr = errHolder.get(ValueLayout.ADDRESS, 0);
 		if (!MemorySegment.NULL.equals(errPtr)) {

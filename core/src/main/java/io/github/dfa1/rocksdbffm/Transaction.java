@@ -6,19 +6,17 @@ import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 
-/**
- * FFM wrapper for rocksdb_transaction_t.
- *
- * <p>Obtained via {@link TransactionDB#beginTransaction}. Always close after use
- * (either committed or rolled back) to free the native object.
- *
- * <pre>{@code
- * try (Transaction txn = txnDb.beginTransaction(writeOptions)) {
- *     txn.put("key".getBytes(), "value".getBytes());
- *     txn.commit();
- * }
- * }</pre>
- */
+/// FFM wrapper for `rocksdb_transaction_t`.
+///
+/// Obtained via [TransactionDB#beginTransaction]. Always close after use
+/// (either committed or rolled back) to free the native object.
+///
+/// ```
+/// try (Transaction txn = txnDb.beginTransaction(writeOptions)) {
+///     txn.put("key".getBytes(), "value".getBytes());
+///     txn.commit();
+/// }
+/// ```
 public final class Transaction extends NativeObject {
 
 	// rocksdb_transaction_commit(rocksdb_transaction_t* txn, char** errptr) -> void
@@ -108,9 +106,7 @@ public final class Transaction extends NativeObject {
 				FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 	}
 
-	/**
-	 * Package-private: created by TransactionDB.
-	 */
+	/// Package-private: created by TransactionDB.
 	Transaction(MemorySegment ptr) {
 		super(ptr);
 	}
@@ -119,9 +115,7 @@ public final class Transaction extends NativeObject {
 	// Write operations
 	// -----------------------------------------------------------------------
 
-	/**
-	 * Stages a put inside this transaction. Slow path: allocates native memory for key/value.
-	 */
+	/// Stages a put inside this transaction. Slow path: allocates native memory for key/value.
 	public void put(byte[] key, byte[] value) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
@@ -134,9 +128,7 @@ public final class Transaction extends NativeObject {
 		}
 	}
 
-	/**
-	 * Stages a delete inside this transaction. Slow path: allocates native memory for key.
-	 */
+	/// Stages a delete inside this transaction. Slow path: allocates native memory for key.
 	public void delete(byte[] key) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
@@ -152,12 +144,10 @@ public final class Transaction extends NativeObject {
 	// Read operations
 	// -----------------------------------------------------------------------
 
-	/**
-	 * Reads the value for {@code key} within this transaction, using PinnableSlice
-	 * to avoid an intermediate copy. Returns {@code null} if not found.
-	 *
-	 * <p>Slow path: allocates native memory for the key.
-	 */
+	/// Reads the value for `key` within this transaction, using PinnableSlice
+	/// to avoid an intermediate copy. Returns `null` if not found.
+	///
+	/// Slow path: allocates native memory for the key.
 	public byte[] get(ReadOptions readOptions, byte[] key) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
@@ -183,12 +173,10 @@ public final class Transaction extends NativeObject {
 		}
 	}
 
-	/**
-	 * Reads the value for {@code key} and acquires a pessimistic lock on it for
-	 * the duration of this transaction. Returns {@code null} if not found.
-	 *
-	 * @param exclusive if true, acquires an exclusive (write) lock; otherwise a shared (read) lock
-	 */
+	/// Reads the value for `key` and acquires a pessimistic lock on it for
+	/// the duration of this transaction. Returns `null` if not found.
+	///
+	/// @param exclusive if true, acquires an exclusive (write) lock; otherwise a shared (read) lock
 	public byte[] getForUpdate(ReadOptions readOptions, byte[] key, boolean exclusive) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
@@ -218,11 +206,9 @@ public final class Transaction extends NativeObject {
 	// Snapshot
 	// -----------------------------------------------------------------------
 
-	/**
-	 * Returns the snapshot associated with this transaction, or {@code null} if none
-	 * was set via {@link TransactionOptions}.
-	 * The returned snapshot must be closed after use (freed via {@code rocksdb_free}).
-	 */
+	/// Returns the snapshot associated with this transaction, or `null` if none
+	/// was set via [TransactionOptions].
+	/// The returned snapshot must be closed after use (freed via `rocksdb_free`).
 	public Snapshot getSnapshot() {
 		try {
 			MemorySegment snapPtr = (MemorySegment) MH_GET_SNAPSHOT.invokeExact(ptr());
@@ -239,9 +225,7 @@ public final class Transaction extends NativeObject {
 	// Transaction control
 	// -----------------------------------------------------------------------
 
-	/**
-	 * Commits all staged operations in this transaction.
-	 */
+	/// Commits all staged operations in this transaction.
 	public void commit() {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
@@ -252,9 +236,7 @@ public final class Transaction extends NativeObject {
 		}
 	}
 
-	/**
-	 * Rolls back all staged operations in this transaction.
-	 */
+	/// Rolls back all staged operations in this transaction.
 	public void rollback() {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
@@ -265,9 +247,7 @@ public final class Transaction extends NativeObject {
 		}
 	}
 
-	/**
-	 * Records a savepoint. Rollback can return to this point via {@link #rollbackToSavePoint()}.
-	 */
+	/// Records a savepoint. Rollback can return to this point via [#rollbackToSavePoint()].
 	public void setSavePoint() {
 		try {
 			MH_SET_SAVEPOINT.invokeExact(ptr());
@@ -276,9 +256,7 @@ public final class Transaction extends NativeObject {
 		}
 	}
 
-	/**
-	 * Rolls back to the most recent savepoint set by {@link #setSavePoint()}.
-	 */
+	/// Rolls back to the most recent savepoint set by [#setSavePoint()].
 	public void rollbackToSavePoint() {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
@@ -289,17 +267,11 @@ public final class Transaction extends NativeObject {
 		}
 	}
 
-	/**
-	 * Destroys the native transaction object. Does <em>not</em> commit or rollback;
-	 * call {@link #commit()} or {@link #rollback()} first.
-	 */
+	/// Destroys the native transaction object. Does _not_ commit or rollback;
+	/// call [#commit()] or [#rollback()] first.
 	@Override
 	protected void tryClose(MemorySegment ptr) throws Throwable {
 		MH_DESTROY.invokeExact(ptr);
 	}
-
-	// -----------------------------------------------------------------------
-	// Helpers
-	// -----------------------------------------------------------------------
 
 }

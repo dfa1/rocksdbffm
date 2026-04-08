@@ -5,9 +5,7 @@ import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 
-/**
- * FFM wrapper for rocksdb_writeoptions_t.
- */
+/// FFM wrapper for rocksdb\_writeoptions\_t.
 public final class WriteOptions extends NativeObject {
 
 	// rocksdb_writeoptions_create(void) -> rocksdb_writeoptions_t*

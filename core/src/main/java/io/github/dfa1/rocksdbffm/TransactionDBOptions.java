@@ -5,9 +5,7 @@ import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 
-/**
- * FFM wrapper for rocksdb_transactiondb_options_t.
- */
+/// FFM wrapper for `rocksdb_transactiondb_options_t`.
 public final class TransactionDBOptions extends NativeObject {
 
 	// rocksdb_transactiondb_options_create(void) -> rocksdb_transactiondb_options_t*
@@ -47,9 +45,7 @@ public final class TransactionDBOptions extends NativeObject {
 		}
 	}
 
-	/**
-	 * Maximum number of locks held simultaneously. Default: -1 (unlimited).
-	 */
+	/// Maximum number of locks held simultaneously. Default: -1 (unlimited).
 	public TransactionDBOptions setMaxNumLocks(long maxNumLocks) {
 		try {
 			MH_SET_MAX_NUM_LOCKS.invokeExact(ptr(), maxNumLocks);
@@ -59,9 +55,7 @@ public final class TransactionDBOptions extends NativeObject {
 		return this;
 	}
 
-	/**
-	 * Number of sub-lock-tables. Increasing reduces lock contention. Default: 16.
-	 */
+	/// Number of sub-lock-tables. Increasing reduces lock contention. Default: 16.
 	public TransactionDBOptions setNumStripes(long numStripes) {
 		try {
 			MH_SET_NUM_STRIPES.invokeExact(ptr(), numStripes);

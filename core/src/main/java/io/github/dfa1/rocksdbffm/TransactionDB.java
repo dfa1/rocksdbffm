@@ -9,23 +9,19 @@ import java.nio.file.Path;
 import java.util.Optional;
 import java.util.OptionalLong;
 
-/**
- * FFM wrapper for rocksdb_transactiondb_t — a RocksDB database with pessimistic
- * (locking) transaction support.
- *
- * <pre>{@code
- * try (TransactionDBOptions txnDbOpts = TransactionDBOptions.newTransactionDBOptions();
- *      Options opts = Options.newOptions().setCreateIfMissing(true);
- *      TransactionDB db = TransactionDB.open(opts, txnDbOpts, path)) {
- *
- *     try (WriteOptions wo = WriteOptions.newWriteOptions();
- *          Transaction txn = db.beginTransaction(wo)) {
- *         txn.put("key".getBytes(), "value".getBytes());
- *         txn.commit();
- *     }
- * }
- * }</pre>
- */
+/// FFM wrapper for `rocksdb_transactiondb_t` — a RocksDB database with pessimistic
+/// (locking) transaction support.
+/// ```
+/// try (TransactionDBOptions txnDbOpts = TransactionDBOptions.newTransactionDBOptions();
+///      Options opts = Options.newOptions().setCreateIfMissing(true);
+///      TransactionDB db = TransactionDB.open(opts, txnDbOpts, path)) {
+///     try (WriteOptions wo = WriteOptions.newWriteOptions();
+///          Transaction txn = db.beginTransaction(wo)) {
+///         txn.put("key".getBytes(), "value".getBytes());
+///         txn.commit();
+///     }
+/// }
+/// ```
 public final class TransactionDB extends NativeObject {
 
 	// -----------------------------------------------------------------------
@@ -136,10 +132,8 @@ public final class TransactionDB extends NativeObject {
 	// Factory
 	// -----------------------------------------------------------------------
 
-	/**
-	 * Opens a TransactionDB at {@code path}.
-	 * The caller retains ownership of {@code dbOptions} and {@code txnDbOptions}.
-	 */
+	/// Opens a TransactionDB at `path`.
+	/// The caller retains ownership of `dbOptions` and `txnDbOptions`.
 	public static TransactionDB open(Options dbOptions, TransactionDBOptions txnDbOptions, Path path) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
@@ -160,10 +154,8 @@ public final class TransactionDB extends NativeObject {
 	// Flush
 	// -----------------------------------------------------------------------
 
-	/**
-	 * Flushes all memtable data to SST files on disk.
-	 * Blocks until the flush completes when {@link FlushOptions#isWait()} is {@code true}.
-	 */
+	/// Flushes all memtable data to SST files on disk.
+	/// Blocks until the flush completes when [FlushOptions#isWait()] is `true`.
 	public void flush(FlushOptions flushOptions) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
@@ -174,11 +166,9 @@ public final class TransactionDB extends NativeObject {
 		}
 	}
 
-	/**
-	 * Flushes the WAL (write-ahead log) to disk.
-	 *
-	 * @param sync if {@code true}, performs an {@code fsync} after writing
-	 */
+	/// Flushes the WAL (write-ahead log) to disk.
+	///
+	/// @param sync if `true`, performs an `fsync` after writing
 	public void flushWal(boolean sync) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
@@ -193,10 +183,8 @@ public final class TransactionDB extends NativeObject {
 	// Snapshot
 	// -----------------------------------------------------------------------
 
-	/**
-	 * Creates a snapshot of the current TransactionDB state.
-	 * The returned snapshot must be closed after use.
-	 */
+	/// Creates a snapshot of the current TransactionDB state.
+	/// The returned snapshot must be closed after use.
 	public Snapshot getSnapshot() {
 		try {
 			MemorySegment snapPtr = (MemorySegment) MH_CREATE_SNAPSHOT.invokeExact(ptr());
@@ -210,19 +198,15 @@ public final class TransactionDB extends NativeObject {
 	// Transaction API
 	// -----------------------------------------------------------------------
 
-	/**
-	 * Begins a new transaction using the supplied write options and default
-	 * transaction options.
-	 */
+	/// Begins a new transaction using the supplied write options and default
+	/// transaction options.
 	public Transaction beginTransaction(WriteOptions writeOptions) {
 		try (TransactionOptions txnOpts = TransactionOptions.newTransactionOptions()) {
 			return beginTransaction(writeOptions, txnOpts);
 		}
 	}
 
-	/**
-	 * Begins a new transaction using the supplied write options and transaction options.
-	 */
+	/// Begins a new transaction using the supplied write options and transaction options.
 	public Transaction beginTransaction(WriteOptions writeOptions, TransactionOptions txnOptions) {
 		try {
 			MemorySegment txnPtr = (MemorySegment) MH_BEGIN.invokeExact(
@@ -237,9 +221,7 @@ public final class TransactionDB extends NativeObject {
 	// Direct (non-transactional) operations
 	// -----------------------------------------------------------------------
 
-	/**
-	 * Direct put, bypassing any active transaction. Slow path: allocates native memory.
-	 */
+	/// Direct put, bypassing any active transaction. Slow path: allocates native memory.
 	public void put(byte[] key, byte[] value) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
@@ -252,9 +234,7 @@ public final class TransactionDB extends NativeObject {
 		}
 	}
 
-	/**
-	 * Direct get with explicit ReadOptions (e.g. for snapshot-pinned reads). Returns {@code null} if not found.
-	 */
+	/// Direct get with explicit ReadOptions (e.g. for snapshot-pinned reads). Returns `null` if not found.
 	public byte[] get(ReadOptions readOptions, byte[] key) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
@@ -279,9 +259,7 @@ public final class TransactionDB extends NativeObject {
 		}
 	}
 
-	/**
-	 * Direct get, reading committed data only. Returns {@code null} if not found. Slow path.
-	 */
+	/// Direct get, reading committed data only. Returns `null` if not found. Slow path.
 	public byte[] get(byte[] key) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
@@ -310,9 +288,7 @@ public final class TransactionDB extends NativeObject {
 	// DB Properties
 	// -----------------------------------------------------------------------
 
-	/**
-	 * @see RocksDB#getProperty(Property)
-	 */
+	/// @see RocksDB#getProperty(Property)
 	public Optional<String> getProperty(Property property) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment propSeg = arena.allocateFrom(property.propertyName());
@@ -328,9 +304,7 @@ public final class TransactionDB extends NativeObject {
 		}
 	}
 
-	/**
-	 * @see RocksDB#getLongProperty(Property)
-	 */
+	/// @see RocksDB#getLongProperty(Property)
 	public OptionalLong getLongProperty(Property property) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment propSeg = arena.allocateFrom(property.propertyName());
@@ -345,9 +319,7 @@ public final class TransactionDB extends NativeObject {
 		}
 	}
 
-	/**
-	 * Direct delete, bypassing any active transaction. Slow path.
-	 */
+	/// Direct delete, bypassing any active transaction. Slow path.
 	public void delete(byte[] key) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);

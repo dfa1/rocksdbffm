@@ -5,9 +5,7 @@ import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 
-/**
- * FFM wrapper for rocksdb_transaction_options_t.
- */
+/// FFM wrapper for rocksdb\_transaction\_options\_t.
 public final class TransactionOptions extends NativeObject {
 
 	// rocksdb_transaction_options_create(void) -> rocksdb_transaction_options_t*
@@ -53,10 +51,8 @@ public final class TransactionOptions extends NativeObject {
 		}
 	}
 
-	/**
-	 * If true, a snapshot is taken at the start of each transaction.
-	 * Default: false.
-	 */
+	/// If true, a snapshot is taken at the start of each transaction.
+	/// Default: false.
 	public TransactionOptions setSetSnapshot(boolean value) {
 		try {
 			MH_SET_SET_SNAPSHOT.invokeExact(ptr(), value ? (byte) 1 : (byte) 0);
@@ -66,10 +62,8 @@ public final class TransactionOptions extends NativeObject {
 		return this;
 	}
 
-	/**
-	 * If true, the transaction will detect deadlocks and return an error
-	 * instead of waiting. Default: false.
-	 */
+	/// If true, the transaction will detect deadlocks and return an error
+	/// instead of waiting. Default: false.
 	public TransactionOptions setDeadlockDetect(boolean value) {
 		try {
 			MH_SET_DEADLOCK_DETECT.invokeExact(ptr(), value ? (byte) 1 : (byte) 0);
@@ -79,10 +73,8 @@ public final class TransactionOptions extends NativeObject {
 		return this;
 	}
 
-	/**
-	 * Timeout (in milliseconds) to wait for a lock. {@code -1} means wait forever,
-	 * {@code 0} means fail immediately if a lock is not available. Default: -1.
-	 */
+	/// Timeout (in milliseconds) to wait for a lock. `-1` means wait forever,
+	/// `0` means fail immediately if a lock is not available. Default: -1.
 	public TransactionOptions setLockTimeout(long lockTimeout) {
 		try {
 			MH_SET_LOCK_TIMEOUT.invokeExact(ptr(), lockTimeout);

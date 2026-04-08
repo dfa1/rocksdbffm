@@ -5,13 +5,11 @@ import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 
-/**
- * Base class for RocksDB block cache implementations (LRU, HyperClock).
- *
- * <p>Wraps a {@code rocksdb_cache_t*}. Pass to
- * {@link BlockBasedTableOptions#setBlockCache(Cache)} to share a single cache
- * across multiple column families or DB instances.
- */
+/// Base class for RocksDB block cache implementations (LRU, HyperClock).
+///
+/// Wraps a `rocksdb_cache_t*`. Pass to
+/// [BlockBasedTableOptions#setBlockCache(Cache)] to share a single cache
+/// across multiple column families or DB instances.
 public abstract class Cache extends NativeObject {
 
 	// rocksdb_cache_destroy(rocksdb_cache_t* cache) -> void
@@ -46,9 +44,7 @@ public abstract class Cache extends NativeObject {
 		super(ptr);
 	}
 
-	/**
-	 * Dynamically resizes the cache. Excess entries are evicted as needed.
-	 */
+	/// Dynamically resizes the cache. Excess entries are evicted as needed.
 	public void setCapacity(MemorySize capacity) {
 		try {
 			MH_SET_CAPACITY.invokeExact(ptr(), capacity.toBytes());

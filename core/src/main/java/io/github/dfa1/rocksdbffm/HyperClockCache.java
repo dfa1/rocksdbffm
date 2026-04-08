@@ -5,22 +5,20 @@ import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 
-/**
- * HyperClock block cache ({@code rocksdb_cache_t}).
- *
- * <p>A lock-free cache with better multi-threaded scalability than LRU. Requires an
- * {@code estimatedEntryCharge} hint: the expected average size of a cached block. Use
- * {@link MemorySize#ZERO} to let RocksDB pick a default.
- *
- * <pre>{@code
- * try (HyperClockCache cache = HyperClockCache.newHyperClockCache(
- *         MemorySize.ofMB(256), MemorySize.ofKB(8))) {
- *     BlockBasedTableOptions tbl = BlockBasedTableOptions.newBlockBasedTableOptions()
- *         .setBlockCache(cache);
- *     ...
- * }
- * }</pre>
- */
+/// HyperClock block cache (`rocksdb_cache_t`).
+///
+/// A lock-free cache with better multi-threaded scalability than LRU. Requires an
+/// `estimatedEntryCharge` hint: the expected average size of a cached block. Use
+/// [MemorySize#ZERO] to let RocksDB pick a default.
+///
+/// ```
+/// try (HyperClockCache cache = HyperClockCache.newHyperClockCache(
+///         MemorySize.ofMB(256), MemorySize.ofKB(8))) {
+///     BlockBasedTableOptions tbl = BlockBasedTableOptions.newBlockBasedTableOptions()
+///         .setBlockCache(cache);
+///     ...
+/// }
+/// ```
 public final class HyperClockCache extends Cache {
 
 	// rocksdb_hyper_clock_cache_options_create(size_t capacity, size_t estimated_entry_charge) -> rocksdb_hyper_clock_cache_options_t*
@@ -60,13 +58,11 @@ public final class HyperClockCache extends Cache {
 		super(ptr);
 	}
 
-	/**
-	 * Creates a HyperClockCache.
-	 *
-	 * @param capacity              total cache capacity
-	 * @param estimatedEntryCharge  expected average size of a cached block; use
-	 *                              {@link MemorySize#ZERO} to let RocksDB choose
-	 */
+	/// Creates a HyperClockCache.
+	///
+	/// @param capacity              total cache capacity
+	/// @param estimatedEntryCharge  expected average size of a cached block; use
+	///                              [MemorySize#ZERO] to let RocksDB choose
 	public static HyperClockCache newHyperClockCache(
 			MemorySize capacity, MemorySize estimatedEntryCharge) {
 		try {
@@ -77,15 +73,13 @@ public final class HyperClockCache extends Cache {
 		}
 	}
 
-	/**
-	 * Creates a HyperClockCache with an explicit shard count.
-	 *
-	 * @param capacity              total cache capacity
-	 * @param estimatedEntryCharge  expected average size of a cached block; use
-	 *                              {@link MemorySize#ZERO} to let RocksDB choose
-	 * @param numShardBits          number of shard bits ({@code shards = 1 << numShardBits});
-	 *                              pass {@code -1} to let RocksDB choose automatically
-	 */
+	/// Creates a HyperClockCache with an explicit shard count.
+	///
+	/// @param capacity              total cache capacity
+	/// @param estimatedEntryCharge  expected average size of a cached block; use
+	///                              [MemorySize#ZERO] to let RocksDB choose
+	/// @param numShardBits          number of shard bits (`shards = 1 << numShardBits`);
+	///                              pass `-1` to let RocksDB choose automatically
 	public static HyperClockCache newHyperClockCache(
 			MemorySize capacity, MemorySize estimatedEntryCharge, int numShardBits) {
 		MemorySegment opts = null;

@@ -5,18 +5,16 @@ import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 
-/**
- * FFM wrapper for rocksdb_flushoptions_t.
- *
- * <p>Controls the behaviour of {@link RocksDB#flush(FlushOptions)} and
- * {@link TransactionDB#flush(FlushOptions)}.
- *
- * <pre>{@code
- * try (FlushOptions fo = FlushOptions.newFlushOptions().setWait(true)) {
- *     db.flush(fo);
- * }
- * }</pre>
- */
+/// FFM wrapper for `rocksdb_flushoptions_t`.
+///
+/// Controls the behavior of [RocksDB#flush(FlushOptions)] and
+/// [TransactionDB#flush(FlushOptions)].
+///
+/// ```
+/// try (FlushOptions fo = FlushOptions.newFlushOptions().setWait(true)) {
+///     db.flush(fo);
+/// }
+/// ```
 public final class FlushOptions extends NativeObject {
 
 	// rocksdb_flushoptions_create(void) -> rocksdb_flushoptions_t*
@@ -48,9 +46,7 @@ public final class FlushOptions extends NativeObject {
 		super(ptr);
 	}
 
-	/**
-	 * Creates FlushOptions with {@code wait = true} (the default).
-	 */
+	/// Creates FlushOptions with `wait = true` (the default).
 	public static FlushOptions newFlushOptions() {
 		try {
 			return new FlushOptions((MemorySegment) MH_CREATE.invokeExact());
@@ -59,12 +55,10 @@ public final class FlushOptions extends NativeObject {
 		}
 	}
 
-	/**
-	 * If {@code true} (default), {@code flush()} blocks until the memtable flush
-	 * completes. If {@code false}, the flush is submitted asynchronously.
-	 *
-	 * @return {@code this} for chaining
-	 */
+	/// If `true` (default), `flush()` blocks until the memtable flush
+	/// completes. If `false`, the flush is submitted asynchronously.
+	///
+	/// @return `this` for chaining
 	public FlushOptions setWait(boolean wait) {
 		try {
 			MH_SET_WAIT.invokeExact(ptr(), wait ? (byte) 1 : (byte) 0);
@@ -74,9 +68,7 @@ public final class FlushOptions extends NativeObject {
 		}
 	}
 
-	/**
-	 * Returns whether flush waits for completion.
-	 */
+	/// Returns whether flush waits for completion.
 	public boolean isWait() {
 		try {
 			return ((byte) MH_GET_WAIT.invokeExact(ptr())) != 0;

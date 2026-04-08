@@ -5,17 +5,14 @@ import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 
-/**
- * LRU block cache ({@code rocksdb_cache_t}).
- *
- * <pre>{@code
- * try (LRUCache cache = LRUCache.newLRUCache(MemorySize.ofMB(64))) {
- *     BlockBasedTableOptions tbl = BlockBasedTableOptions.newBlockBasedTableOptions()
- *         .setBlockCache(cache);
- *     ...
- * }
- * }</pre>
- */
+/// LRU block cache (`rocksdb_cache_t`).
+/// ```
+/// try (LRUCache cache = LRUCache.newLRUCache(MemorySize.ofMB(64))) {
+///     BlockBasedTableOptions tbl = BlockBasedTableOptions.newBlockBasedTableOptions()
+///         .setBlockCache(cache);
+///     ...
+/// }
+/// ```
 public final class LRUCache extends Cache {
 
 	// rocksdb_cache_create_lru(size_t capacity) -> rocksdb_cache_t*

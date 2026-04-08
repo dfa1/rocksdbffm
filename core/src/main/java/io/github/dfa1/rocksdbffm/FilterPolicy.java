@@ -5,23 +5,21 @@ import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 
-/**
- * FFM wrapper for rocksdb_filterpolicy_t.
- *
- * <p>Use inside a try-with-resources block. If the policy is passed to
- * {@link BlockBasedTableOptions#setFilterPolicy(FilterPolicy)}, ownership
- * transfers to RocksDB's internal reference counting and {@link #close()}
- * becomes a no-op — it is safe (and recommended) to still call it via
- * try-with-resources.
- *
- * <pre>{@code
- * try (var filter = FilterPolicy.newBloom(10);
- *      var tbl = new BlockBasedTableConfig().setFilterPolicy(filter);
- *      var opts = Options.newOptions().setCreateIfMissing(true).setTableFormatConfig(tbl)) {
- *     // filter.close() called automatically — no-op because ownership transferred
- * }
- * }</pre>
- */
+/// FFM wrapper for `rocksdb_filterpolicy_t`.
+///
+/// Use inside a try-with-resources block. If the policy is passed to
+/// [BlockBasedTableOptions#setFilterPolicy(FilterPolicy)], ownership
+/// transfers to RocksDB's internal reference counting and [#close()]
+/// becomes a no-op — it is safe (and recommended) to still call it via
+/// try-with-resources.
+///
+/// ```
+/// try (var filter = FilterPolicy.newBloom(10);
+///      var tbl = new BlockBasedTableConfig().setFilterPolicy(filter);
+///      var opts = Options.newOptions().setCreateIfMissing(true).setTableFormatConfig(tbl)) {
+///     // filter.close() called automatically — no-op because ownership transferred
+/// }
+/// ```
 public final class FilterPolicy extends NativeObject {
 
 	// rocksdb_filterpolicy_create_bloom(double bits_per_key) -> rocksdb_filterpolicy_t*
@@ -48,10 +46,8 @@ public final class FilterPolicy extends NativeObject {
 		super(ptr);
 	}
 
-	/**
-	 * Creates a Bloom filter with the given number of bits per key.
-	 * Typical value: {@code 10} (≈1% false-positive rate).
-	 */
+	/// Creates a Bloom filter with the given number of bits per key.
+	/// Typical value: `10` (≈1% false-positive rate).
 	public static FilterPolicy newBloom(double bitsPerKey) {
 		try {
 			return new FilterPolicy((MemorySegment) MH_CREATE_BLOOM.invokeExact(bitsPerKey));
@@ -60,11 +56,9 @@ public final class FilterPolicy extends NativeObject {
 		}
 	}
 
-	/**
-	 * Creates a Ribbon filter (successor to Bloom, better space efficiency at
-	 * similar query cost). Uses {@code bloomEquivalentBitsPerKey} to set the
-	 * target false-positive rate equivalent to a Bloom filter at that setting.
-	 */
+	/// Creates a Ribbon filter (successor to Bloom, better space efficiency at
+	/// similar query cost). Uses `bloomEquivalentBitsPerKey` to set the
+	/// target false-positive rate equivalent to a Bloom filter at that setting.
 	public static FilterPolicy newRibbon(double bloomEquivalentBitsPerKey) {
 		try {
 			return new FilterPolicy((MemorySegment) MH_CREATE_RIBBON.invokeExact(bloomEquivalentBitsPerKey));

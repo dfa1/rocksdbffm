@@ -1,8 +1,6 @@
 package io.github.dfa1.rocksdbffm;
 
-/**
- * Statistics levels for RocksDB.
- */
+/// Statistics levels for RocksDB.
 public enum StatsLevel {
 	DISABLE_ALL(0),
 	EXCEPT_TICKERS(0),
@@ -18,6 +16,7 @@ public enum StatsLevel {
 		this.value = value;
 	}
 
+	// don't expose this
 	int getValue() {
 		return value;
 	}

@@ -5,9 +5,7 @@ import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 
-/**
- * FFM wrapper for rocksdb_readoptions_t.
- */
+/// FFM wrapper for \`rocksdb\_readoptions\_t\`.
 public final class ReadOptions extends NativeObject {
 
 	// rocksdb_readoptions_create(void) -> rocksdb_readoptions_t*
@@ -24,7 +22,6 @@ public final class ReadOptions extends NativeObject {
 		MH_DESTROY = RocksDB.lookup("rocksdb_readoptions_destroy",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
-		// void rocksdb_readoptions_set_snapshot(ro*, snap*)
 		MH_SET_SNAPSHOT = RocksDB.lookup("rocksdb_readoptions_set_snapshot",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 	}
@@ -41,13 +38,11 @@ public final class ReadOptions extends NativeObject {
 		}
 	}
 
-	/**
-	 * Pins reads to the given snapshot, providing a consistent point-in-time view.
-	 * The snapshot must remain open for the lifetime of these read options.
-	 * Pass {@code null} to clear a previously set snapshot.
-	 *
-	 * @return {@code this} for chaining
-	 */
+	/// Pins reads to the given snapshot, providing a consistent point-in-time view.
+	/// The snapshot must remain open for the lifetime of these read options.
+	/// Pass `null` to clear a previously set snapshot.
+	///
+	/// @return `this` for chaining
 	public ReadOptions setSnapshot(Snapshot snapshot) {
 		try {
 			MemorySegment snapPtr = (snapshot == null) ? MemorySegment.NULL : snapshot.ptr();

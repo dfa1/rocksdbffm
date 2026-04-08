@@ -5,12 +5,10 @@ import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 
-/**
- * FFM wrapper for {@code rocksdb_optimistictransaction_options_t}.
- *
- * <p>Unlike pessimistic {@link TransactionOptions}, there is no deadlock detection
- * or lock timeout — conflicts are detected at {@link Transaction#commit()} time.
- */
+/// FFM wrapper for `rocksdb_optimistictransaction_options_t`.
+///
+/// Unlike pessimistic [TransactionOptions], there is no deadlock detection
+/// or lock timeout — conflicts are detected at [Transaction#commit()] time.
 public final class OptimisticTransactionOptions extends NativeObject {
 
 	// rocksdb_optimistictransaction_options_create(void) -> rocksdb_optimistictransaction_options_t*
@@ -45,12 +43,10 @@ public final class OptimisticTransactionOptions extends NativeObject {
 		}
 	}
 
-	/**
-	 * If {@code true}, a snapshot is taken at the start of the transaction.
-	 * The transaction will then check whether any keys it reads or writes
-	 * have been modified since that snapshot when {@link Transaction#commit()} is called.
-	 * Default: {@code false}.
-	 */
+	/// If `true`, a snapshot is taken at the start of the transaction.
+	/// The transaction will then check whether any keys it reads or writes
+	/// have been modified since that snapshot when [Transaction#commit()] is called.
+	/// Default: `false`.
 	public OptimisticTransactionOptions setSetSnapshot(boolean value) {
 		try {
 			MH_SET_SET_SNAPSHOT.invokeExact(ptr(), value ? (byte) 1 : (byte) 0);

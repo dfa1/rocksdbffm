@@ -3,14 +3,12 @@ package io.github.dfa1.rocksdbffm;
 import java.lang.foreign.MemorySegment;
 import java.util.concurrent.atomic.AtomicReference;
 
-/**
- * Base class for all Java wrappers around native RocksDB pointers.
- *
- * <p>Holds the native pointer in an {@link AtomicReference}. On {@link #close()},
- * the reference is atomically swapped to {@link MemorySegment#NULL}, ensuring
- * {@link #tryClose(MemorySegment)} is called exactly once even under
- * concurrent or repeated close() calls.
- */
+/// Base class for all Java wrappers around native RocksDB pointers.
+///
+/// Holds the native pointer in an [AtomicReference]. On [#close()],
+/// the reference is atomically swapped to [MemorySegment#NULL], ensuring
+/// [#tryClose(MemorySegment)] is called exactly once even under
+/// concurrent or repeated close() calls.
 public abstract class NativeObject implements AutoCloseable {
 
 	private final AtomicReference<MemorySegment> owningPointer;
@@ -19,11 +17,9 @@ public abstract class NativeObject implements AutoCloseable {
 		this.owningPointer = new AtomicReference<>(owningPointer);
 	}
 
-	/**
-	 * Returns the current native pointer.
-	 *
-	 * @throws IllegalStateException if this object has been closed or its ownership transferred
-	 */
+	/// Returns the current native pointer.
+	///
+	/// @throws IllegalStateException if this object has been closed or its ownership transferred
 	public final MemorySegment ptr() {
 		MemorySegment p = owningPointer.get();
 		if (MemorySegment.NULL.equals(p)) {
@@ -54,9 +50,7 @@ public abstract class NativeObject implements AutoCloseable {
 		owningPointer.set(MemorySegment.NULL);
 	}
 
-	/**
-	 * Called exactly once with the non-NULL pointer when this object is closed.
-	 * Implementations must release the native resource.
-	 */
+	/// Called exactly once with the non-NULL pointer when this object is closed.
+	/// Implementations must release the native resource.
 	protected abstract void tryClose(MemorySegment ptr) throws Throwable;
 }

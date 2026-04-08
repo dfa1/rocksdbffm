@@ -5,9 +5,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
 
-/**
- * Shared constants and helpers used by both {@link FfmBenchmark} and {@link JniBenchmark}.
- */
+/// Shared constants and helpers used by both [FfmBenchmark] and [JniBenchmark].
 final class TestData {
 
 	static final int BATCH_SIZE = 100;

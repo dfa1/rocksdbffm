@@ -9,20 +9,16 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/**
- * Runs FFM and JNI benchmarks back-to-back and prints a comparison table.
- *
- * <pre>{@code
- * ./scripts/benchmark.sh
- * }</pre>
- *
- * <p>Tiers compared:
- * <ul>
- *   <li>byte[]       — FFM vs JNI</li>
- *   <li>ByteBuffer   — FFM vs JNI</li>
- *   <li>MemorySegment — FFM only (no JNI equivalent)</li>
- * </ul>
- */
+/// Runs FFM and JNI benchmarks back-to-back and prints a comparison table.
+/// ```
+/// ./scripts/benchmark.sh
+/// ```
+///
+/// Tiers compared:
+///
+///   - byte[]       — FFM vs JNI
+///   - ByteBuffer   — FFM vs JNI
+///   - MemorySegment — FFM only (no JNI equivalent)
 public class BenchmarkRunner {
 
 	// Display order drives LABELS iteration — ROW_ORDER is unused (LABELS is LinkedHashMap)

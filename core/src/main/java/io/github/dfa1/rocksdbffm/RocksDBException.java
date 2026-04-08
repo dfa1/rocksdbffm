@@ -10,15 +10,14 @@ public class RocksDBException extends RuntimeException {
 		super(message, cause);
 	}
 
-	/**
-	 * Re-throws {@code t} as-is if it is already a {@link RocksDBException},
-	 * otherwise wraps it. Use at the bottom of every {@code catch (Throwable t)} block:
-	 * <pre>{@code
-	 * } catch (Throwable t) {
-	 *     throw RocksDBException.wrap("operation failed", t);
-	 * }
-	 * }</pre>
-	 */
+	/// Re-throws `t` as-is if it is already a [RocksDBException],
+	/// otherwise wraps it. Use at the bottom of every `catch (Throwable t)` block:
+	/// <pre>
+	/// <code><jbr-internal-inline></jbr-internal-inline></code> catch (Throwable t) {
+	///     throw RocksDBException.wrap("operation failed", t);
+	/// }
+	/// }
+	/// </pre>
 	public static RocksDBException wrap(String message, Throwable t) {
 		return (t instanceof RocksDBException r) ? r : new RocksDBException(message, t);
 	}

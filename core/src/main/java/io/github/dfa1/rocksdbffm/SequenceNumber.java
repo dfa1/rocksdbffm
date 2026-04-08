@@ -1,20 +1,19 @@
 package io.github.dfa1.rocksdbffm;
 
-/**
- * Immutable value object representing a RocksDB sequence number.
- *
- * <p>Every write to RocksDB is stamped with a monotonically increasing sequence
- * number. Snapshots expose their sequence number so callers can reason about
- * relative ordering of database states:
- * <pre>{@code
- * try (Snapshot s1 = db.getSnapshot()) {
- *     db.put(key, value);
- *     try (Snapshot s2 = db.getSnapshot()) {
- *         assert s2.sequenceNumber().isAfter(s1.sequenceNumber());
- *     }
- * }
- * }</pre>
- */
+/// Immutable value object representing a RocksDB sequence number.
+///
+/// Every write to RocksDB is stamped with a monotonically increasing sequence
+/// number. Snapshots expose their sequence number so callers can reason about
+/// relative ordering of database states:
+///
+/// ```
+/// try (Snapshot s1 = db.getSnapshot()) {
+///     db.put(key, value);
+///     try (Snapshot s2 = db.getSnapshot()) {
+///         assert s2.sequenceNumber().isAfter(s1.sequenceNumber());
+///     }
+/// }
+/// ```
 public final class SequenceNumber implements Comparable<SequenceNumber> {
 
 	private final long value;
@@ -26,30 +25,22 @@ public final class SequenceNumber implements Comparable<SequenceNumber> {
 		this.value = value;
 	}
 
-	/**
-	 * Wraps a raw sequence number returned by the native API.
-	 */
+	/// Wraps a raw sequence number returned by the native API.
 	public static SequenceNumber of(long value) {
 		return new SequenceNumber(value);
 	}
 
-	/**
-	 * Returns the raw {@code uint64_t} value, for passing to native calls.
-	 */
+	/// Returns the raw `uint64_t` value, for passing to native calls.
 	public long toLong() {
 		return value;
 	}
 
-	/**
-	 * Returns true if this sequence number is strictly after {@code other}.
-	 */
+	/// Returns true if this sequence number is strictly after `other`.
 	public boolean isAfter(SequenceNumber other) {
 		return this.value > other.value;
 	}
 
-	/**
-	 * Returns true if this sequence number is strictly before {@code other}.
-	 */
+	/// Returns true if this sequence number is strictly before `other`.
 	public boolean isBefore(SequenceNumber other) {
 		return this.value < other.value;
 	}

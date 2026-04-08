@@ -5,19 +5,18 @@ import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 
-/**
- * FFM wrapper for rocksdb_options_t.
- *
- * <p>Usage:
- * <pre>{@code
- * try (Options opts = Options.newOptions().setCreateIfMissing(true)) {
- *     RocksDB db = RocksDB.open(opts, path);
- * }
- * }</pre>
- *
- * <p>Note: the Options object must remain open until after RocksDB.open() returns;
- * it can be closed immediately after that call.
- */
+/// FFM wrapper for \`rocksdb\_options\_t\`.
+///
+/// Usage:
+///
+/// ```
+/// try (Options opts = Options.newOptions().setCreateIfMissing(true)) {
+///     RocksDB db = RocksDB.open(opts, path);
+/// }
+/// ```
+///
+/// Note: the Options object must remain open until after RocksDB.open() returns;
+/// it can be closed immediately after that call.
 public final class Options extends NativeObject {
 
 	// rocksdb_options_create(void) -> rocksdb_options_t*
@@ -105,10 +104,8 @@ public final class Options extends NativeObject {
 		}
 	}
 
-	/**
-	 * If true, the database will be created if it does not already exist.
-	 * Default: false (same as RocksDB C++ default).
-	 */
+	/// If true, the database will be created if it does not already exist.
+	/// Default: false (same as RocksDB C++ default).
 	public Options setCreateIfMissing(boolean value) {
 		try {
 			MH_SET_CREATE_IF_MISSING.invokeExact(ptr(), value ? (byte) 1 : (byte) 0);
@@ -126,9 +123,7 @@ public final class Options extends NativeObject {
 		}
 	}
 
-	/**
-	 * Enables statistics gathering for this DB.
-	 */
+	/// Enables statistics gathering for this DB.
 	public Options enableStatistics() {
 		try {
 			MH_ENABLE_STATISTICS.invokeExact(ptr());
@@ -192,12 +187,10 @@ public final class Options extends NativeObject {
 	}
 
 
-	/**
-	 * Sets the compression algorithm for all levels.
-	 * Use {@link RocksDB#getSupportedCompressions()} to check which types are available.
-	 *
-	 * @return {@code this} for chaining
-	 */
+	/// Sets the compression algorithm for all levels.
+	/// Use [RocksDB#getSupportedCompressions()] to check which types are available.
+	///
+	/// @return `this` for chaining
 	public Options setCompression(CompressionType type) {
 		try {
 			MH_SET_COMPRESSION.invokeExact(ptr(), type.value);
@@ -207,9 +200,7 @@ public final class Options extends NativeObject {
 		}
 	}
 
-	/**
-	 * Returns the compression algorithm configured for this Options.
-	 */
+	/// Returns the compression algorithm configured for this Options.
 	public CompressionType getCompression() {
 		try {
 			return CompressionType.fromValue((int) MH_GET_COMPRESSION.invokeExact(ptr()));
@@ -218,10 +209,8 @@ public final class Options extends NativeObject {
 		}
 	}
 
-	/**
-	 * Configures block-based table format for this DB.
-	 * RocksDB copies the config internally; {@code tableConfig} may be closed after this call.
-	 */
+	/// Configures block-based table format for this DB.
+	/// RocksDB copies the config internally; `tableConfig` may be closed after this call.
 	public Options setTableFormatConfig(BlockBasedTableOptions tableConfig) {
 		try {
 			MH_SET_BLOCK_BASED_TABLE_FACTORY.invokeExact(ptr(), tableConfig.ptr());

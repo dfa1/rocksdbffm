@@ -9,13 +9,11 @@ import java.nio.file.Path;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/**
- * Verifies that passing null to any public API method raises a Java exception
- * rather than crashing the JVM via a native SIGSEGV.
- * <p>
- * The test suite completing successfully IS the proof: a JVM crash would abort
- * the test process entirely rather than reporting a failure.
- */
+/// Verifies that passing null to any public API method raises a Java exception
+/// rather than crashing the JVM via a native SIGSEGV.
+///
+/// The test suite completing successfully IS the proof: a JVM crash would abort
+/// the test process entirely rather than reporting a failure.
 class NullSafetyTest {
 
 	// -----------------------------------------------------------------------

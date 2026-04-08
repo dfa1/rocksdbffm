@@ -9,28 +9,25 @@ import java.nio.file.Path;
 import java.util.Optional;
 import java.util.OptionalLong;
 
-/**
- * FFM wrapper for {@code rocksdb_optimistictransactiondb_t} — a RocksDB database with
- * optimistic (lock-free) transaction support.
- *
- * <p>Optimistic transactions do <em>not</em> acquire locks on read. Instead, conflicts
- * are detected at {@link Transaction#commit()} time. If another writer has modified a
- * key that this transaction read or wrote since the transaction began,
- * {@link Transaction#commit()} throws {@link RocksDBException} (status "busy").
- * The caller should then abort and retry.
- *
- * <pre>{@code
- * try (Options opts = Options.newOptions().setCreateIfMissing(true);
- *      OptimisticTransactionDB db = OptimisticTransactionDB.open(opts, path)) {
- *
- *     try (WriteOptions wo = WriteOptions.newWriteOptions();
- *          Transaction txn = db.beginTransaction(wo)) {
- *         txn.put("key".getBytes(), "value".getBytes());
- *         txn.commit(); // throws RocksDBException if conflict detected
- *     }
- * }
- * }</pre>
- */
+/// FFM wrapper for `rocksdb_optimistictransactiondb_t` — a RocksDB database with
+/// optimistic (lock-free) transaction support.
+///
+/// Optimistic transactions do _not_ acquire locks on read. Instead, conflicts
+/// are detected at [Transaction#commit()] time. If another writer has modified a
+/// key that this transaction read or wrote since the transaction began,
+/// [Transaction#commit()] throws [RocksDBException] (status "busy").
+/// The caller should then abort and retry.
+///
+/// ```
+/// try (Options opts = Options.newOptions().setCreateIfMissing(true);
+///      OptimisticTransactionDB db = OptimisticTransactionDB.open(opts, path)) {
+///     try (WriteOptions wo = WriteOptions.newWriteOptions();
+///          Transaction txn = db.beginTransaction(wo)) {
+///         txn.put("key".getBytes(), "value".getBytes());
+///         txn.commit(); // throws RocksDBException if conflict detected
+///     }
+/// }
+/// ```
 public final class OptimisticTransactionDB extends NativeObject {
 
 	// -----------------------------------------------------------------------
@@ -155,10 +152,8 @@ public final class OptimisticTransactionDB extends NativeObject {
 	// Factory
 	// -----------------------------------------------------------------------
 
-	/**
-	 * Opens an OptimisticTransactionDB at {@code path}.
-	 * The caller retains ownership of {@code dbOptions}.
-	 */
+	/// Opens an OptimisticTransactionDB at `path`.
+	/// The caller retains ownership of `dbOptions`.
 	public static OptimisticTransactionDB open(Options dbOptions, Path path) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
@@ -179,20 +174,16 @@ public final class OptimisticTransactionDB extends NativeObject {
 	// Transaction API
 	// -----------------------------------------------------------------------
 
-	/**
-	 * Begins a new optimistic transaction using the supplied write options and
-	 * default {@link OptimisticTransactionOptions}.
-	 */
+	/// Begins a new optimistic transaction using the supplied write options and
+	/// default [OptimisticTransactionOptions].
 	public Transaction beginTransaction(WriteOptions writeOptions) {
 		try (OptimisticTransactionOptions txnOpts = OptimisticTransactionOptions.newOptimisticTransactionOptions()) {
 			return beginTransaction(writeOptions, txnOpts);
 		}
 	}
 
-	/**
-	 * Begins a new optimistic transaction using the supplied write options and
-	 * transaction options.
-	 */
+	/// Begins a new optimistic transaction using the supplied write options and
+	/// transaction options.
 	public Transaction beginTransaction(WriteOptions writeOptions, OptimisticTransactionOptions txnOptions) {
 		try {
 			MemorySegment txnPtr = (MemorySegment) MH_BEGIN.invokeExact(
@@ -207,9 +198,7 @@ public final class OptimisticTransactionDB extends NativeObject {
 	// Direct (non-transactional) operations via base DB
 	// -----------------------------------------------------------------------
 
-	/**
-	 * Direct put, bypassing any active transaction. Slow path: allocates native memory.
-	 */
+	/// Direct put, bypassing any active transaction. Slow path: allocates native memory.
 	public void put(byte[] key, byte[] value) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
@@ -222,9 +211,7 @@ public final class OptimisticTransactionDB extends NativeObject {
 		}
 	}
 
-	/**
-	 * Direct get with explicit ReadOptions (e.g. for snapshot-pinned reads). Returns {@code null} if not found.
-	 */
+	/// Direct get with explicit ReadOptions (e.g. for snapshot-pinned reads). Returns `null` if not found.
 	public byte[] get(ReadOptions readOptions, byte[] key) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
@@ -248,9 +235,7 @@ public final class OptimisticTransactionDB extends NativeObject {
 		}
 	}
 
-	/**
-	 * Direct get, reading committed data only. Returns {@code null} if not found. Slow path.
-	 */
+	/// Direct get, reading committed data only. Returns `null` if not found. Slow path.
 	public byte[] get(byte[] key) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
@@ -274,9 +259,7 @@ public final class OptimisticTransactionDB extends NativeObject {
 		}
 	}
 
-	/**
-	 * Direct delete, bypassing any active transaction. Slow path.
-	 */
+	/// Direct delete, bypassing any active transaction. Slow path.
 	public void delete(byte[] key) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
@@ -292,10 +275,8 @@ public final class OptimisticTransactionDB extends NativeObject {
 	// Snapshot
 	// -----------------------------------------------------------------------
 
-	/**
-	 * Creates a snapshot of the current DB state.
-	 * The returned snapshot must be closed after use.
-	 */
+	/// Creates a snapshot of the current DB state.
+	/// The returned snapshot must be closed after use.
 	public Snapshot getSnapshot() {
 		try {
 			MemorySegment snapPtr = (MemorySegment) MH_CREATE_SNAPSHOT.invokeExact(baseDb);
@@ -309,9 +290,7 @@ public final class OptimisticTransactionDB extends NativeObject {
 	// Flush
 	// -----------------------------------------------------------------------
 
-	/**
-	 * Flushes all memtable data to SST files on disk.
-	 */
+	/// Flushes all memtable data to SST files on disk.
 	public void flush(FlushOptions flushOptions) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
@@ -322,11 +301,9 @@ public final class OptimisticTransactionDB extends NativeObject {
 		}
 	}
 
-	/**
-	 * Flushes the WAL (write-ahead log) to disk.
-	 *
-	 * @param sync if {@code true}, performs an {@code fsync} after writing
-	 */
+	/// Flushes the WAL (write-ahead log) to disk.
+	///
+	/// @param sync if `true`, performs an `fsync` after writing
 	public void flushWal(boolean sync) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
@@ -341,9 +318,7 @@ public final class OptimisticTransactionDB extends NativeObject {
 	// DB Properties
 	// -----------------------------------------------------------------------
 
-	/**
-	 * @see RocksDB#getProperty(Property)
-	 */
+	/// @see RocksDB#getProperty(Property)
 	public Optional<String> getProperty(Property property) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment propSeg = arena.allocateFrom(property.propertyName());
@@ -359,9 +334,7 @@ public final class OptimisticTransactionDB extends NativeObject {
 		}
 	}
 
-	/**
-	 * @see RocksDB#getLongProperty(Property)
-	 */
+	/// @see RocksDB#getLongProperty(Property)
 	public OptionalLong getLongProperty(Property property) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment propSeg = arena.allocateFrom(property.propertyName());

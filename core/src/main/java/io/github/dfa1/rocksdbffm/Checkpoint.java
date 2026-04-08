@@ -7,28 +7,24 @@ import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 import java.nio.file.Path;
 
-/**
- * FFM wrapper for rocksdb_checkpoint_t.
- *
- * <p>A checkpoint is a consistent, point-in-time snapshot of the database
- * written to a new directory. The resulting directory is a valid RocksDB
- * database that can be opened read-only without any recovery.
- *
- * <pre>{@code
- * try (var db = RocksDB.open(dir);
- *      var cp = Checkpoint.create(db)) {
- *
- *     cp.exportTo(checkpointDir1);
- *     db.put("k".getBytes(), "v2".getBytes());
- *     cp.exportTo(checkpointDir2);  // second checkpoint, later state
- * }
- *
- * // Each checkpoint directory is an independent read-only database
- * try (var snap = RocksDB.openReadOnly(checkpointDir1)) {
- *     snap.get("k".getBytes()); // returns value at checkpoint time
- * }
- * }</pre>
- */
+/// FFM wrapper for `rocksdb_checkpoint_t`.
+///
+/// A checkpoint is a consistent, point-in-time snapshot of the database
+/// written to a new directory. The resulting directory is a valid RocksDB
+/// database that can be opened read-only without any recovery.
+///
+/// ```
+/// try (var db = RocksDB.open(dir);
+///      var cp = Checkpoint.create(db)) {
+///     cp.exportTo(checkpointDir1);
+///     db.put("k".getBytes(), "v2".getBytes());
+///     cp.exportTo(checkpointDir2);  // second checkpoint, later state
+/// }
+/// // Each checkpoint directory is an independent read-only database
+/// try (var snap = RocksDB.openReadOnly(checkpointDir1)) {
+///     snap.get("k".getBytes()); // returns value at checkpoint time
+/// }
+/// ```
 public final class Checkpoint extends NativeObject {
 
 	// rocksdb_checkpoint_object_create(rocksdb_t* db, char** errptr) -> rocksdb_checkpoint_t*
@@ -63,11 +59,9 @@ public final class Checkpoint extends NativeObject {
 		super(ptr);
 	}
 
-	/**
-	 * Creates a checkpoint object bound to {@code db}.
-	 * The checkpoint object may be reused to export multiple snapshots.
-	 * Close it when done — this does not affect the database or any exported checkpoints.
-	 */
+	/// Creates a checkpoint object bound to `db`.
+	/// The checkpoint object may be reused to export multiple snapshots.
+	/// Close it when done — this does not affect the database or any exported checkpoints.
 	public static Checkpoint newCheckpoint(RocksDB db) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
@@ -79,19 +73,17 @@ public final class Checkpoint extends NativeObject {
 		}
 	}
 
-	/**
-	 * Exports a consistent snapshot of the database to {@code checkpointDir}.
-	 * The directory must not exist yet — RocksDB creates it.
-	 *
-	 * <p>The exported directory is a fully valid RocksDB database. Open it with
-	 * {@link RocksDB#openReadOnly(Path)} for read-only access.
-	 *
-	 * @param checkpointDir   target directory (must not exist)
-	 * @param logSizeForFlush if the WAL is larger than this threshold (in bytes),
-	 *                        it is flushed to SST files before the checkpoint is taken.
-	 *                        Pass {@code 0} to always flush; pass {@code Long.MAX_VALUE}
-	 *                        to never flush (use WAL as-is).
-	 */
+	/// Exports a consistent snapshot of the database to `checkpointDir`.
+	/// The directory must not exist yet — RocksDB creates it.
+	///
+	/// The exported directory is a fully valid RocksDB database. Open it with
+	/// [RocksDB#openReadOnly(Path)] for read-only access.
+	///
+	/// @param checkpointDir   target directory (must not exist)
+	/// @param logSizeForFlush if the WAL is larger than this threshold (in bytes),
+	///                        it is flushed to SST files before the checkpoint is taken.
+	///                        Pass `0` to always flush; pass `Long.MAX_VALUE`
+	///                        to never flush (use WAL as-is).
 	// TODO: expose MemorySize for logSizeForFlush
 	public void exportTo(Path checkpointDir, long logSizeForFlush) {
 		try (Arena arena = Arena.ofConfined()) {
@@ -104,10 +96,8 @@ public final class Checkpoint extends NativeObject {
 		}
 	}
 
-	/**
-	 * Exports a consistent snapshot to {@code checkpointDir}, flushing the WAL
-	 * first (equivalent to {@code exportTo(dir, 0)}).
-	 */
+	/// Exports a consistent snapshot to `checkpointDir`, flushing the WAL
+	/// first (equivalent to `exportTo(dir, 0)`).
 	public void exportTo(Path checkpointDir) {
 		exportTo(checkpointDir, 0L);
 	}

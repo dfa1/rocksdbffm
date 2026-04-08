@@ -1,19 +1,18 @@
 package io.github.dfa1.rocksdbffm;
 
-/**
- * Immutable value object representing a non-negative quantity of memory.
- *
- * <p>Use the named factory methods to make the unit explicit at the call site:
- * <pre>{@code
- * new LRUCache(MemorySize.ofMB(64))          // unambiguous
- * tbl.setBlockSize(MemorySize.ofKB(16))      // no raw-long guesswork
- * }</pre>
- *
- * <p>The constructor rejects negative values at construction time — an invalid
- * {@code MemorySize} cannot be created and therefore cannot be passed anywhere.
- * This follows the <em>parse, don't validate</em> principle: constraints are
- * structural, not procedural.
- */
+/// Immutable value object representing a non-negative quantity of memory.
+///
+/// Use the named factory methods to make the unit explicit at the call site:
+///
+/// ```
+/// new LRUCache(MemorySize.ofMB(64))          // unambiguous
+/// tbl.setBlockSize(MemorySize.ofKB(16))      // no raw-long guesswork
+/// ```
+///
+/// The constructor rejects negative values at construction time — an invalid
+/// `MemorySize` cannot be created and therefore cannot be passed anywhere.
+/// This follows the _parse, don't validate_ principle: constraints are
+/// structural, not procedural.
 public final class MemorySize implements Comparable<MemorySize> {
 
 	private static final long KB = 1024L;
@@ -55,9 +54,7 @@ public final class MemorySize implements Comparable<MemorySize> {
 	// Accessors
 	// -----------------------------------------------------------------------
 
-	/**
-	 * Returns the value in bytes, for passing to native calls.
-	 */
+	/// Returns the value in bytes, for passing to native calls.
 	public long toBytes() {
 		return bytes;
 	}
@@ -80,10 +77,8 @@ public final class MemorySize implements Comparable<MemorySize> {
 		return Long.hashCode(bytes);
 	}
 
-	/**
-	 * Returns a human-readable string in the largest unit that divides evenly,
-	 * e.g. {@code "64 MB"}, {@code "16 KB"}, {@code "1536 B"}.
-	 */
+	/// Returns a human-readable string in the largest unit that divides evenly,
+	/// e.g. `"64 MB"`, `"16 KB"`, `"1536 B"`.
 	@Override
 	public String toString() {
 		if (bytes == 0) {

@@ -1,62 +1,46 @@
 package io.github.dfa1.rocksdbffm;
 
-/**
- * Compression algorithms supported by the RocksDB C API.
- *
- * <p>Integer values match the {@code rocksdb_*_compression} constants in {@code rocksdb/c.h}.
- *
- * <p>Not every algorithm is available in every RocksDB build — use
- * {@link RocksDB#getSupportedCompressions()} to query which types are compiled in at runtime.
- *
- * <pre>{@code
- * try (Options opts = Options.newOptions().setCompression(CompressionType.LZ4)) { ... }
- * }</pre>
- */
+/// Compression algorithms supported by the RocksDB C API.
+///
+/// Integer values match the `rocksdb_*_compression` constants in `rocksdb/c.h`.
+///
+/// Not every algorithm is available in every RocksDB build — use
+/// [RocksDB#getSupportedCompressions()] to query which types are compiled in at runtime.
+///
+/// ```
+/// try (Options opts = Options.newOptions().setCompression(CompressionType.LZ4)) { ... }
+/// ```
 public enum CompressionType {
 
-	/**
-	 * No compression. Always supported.
-	 */
+	/// No compression. Always supported.
 	NO_COMPRESSION(0),
 
-	/**
-	 * Snappy compression.
-	 */
+	/// Snappy compression.
+	/// TODO: not supported yet
 	SNAPPY(1),
 
-	/**
-	 * zlib compression.
-	 */
+	/// zlib compression.
+	/// TODO: not supported yet
 	ZLIB(2),
 
-	/**
-	 * bzip2 compression.
-	 */
+	/// bzip2 compression.
+	/// TODO: not supported yet
 	BZLIB2(3),
 
-	/**
-	 * LZ4 compression.
-	 */
+	/// LZ4 compression.
 	LZ4(4),
 
-	/**
-	 * LZ4HC (high-compression) compression.
-	 */
+	/// LZ4HC (high-compression) compression.
 	LZ4HC(5),
 
-	/**
-	 * Xpress compression (Windows only).
-	 */
+	/// Express compression (Windows only).
+	/// TODO: not supported yet
 	XPRESS(6),
 
-	/**
-	 * Zstandard compression.
-	 */
+	/// Zstandard compression.
 	ZSTD(7);
 
-	/**
-	 * C API integer constant — package-private for use by {@link Options}.
-	 */
+	/// C API integer constant — package-private for use by [Options].
 	final int value;
 
 	CompressionType(int value) {

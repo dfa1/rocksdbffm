@@ -5,17 +5,15 @@ import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 
-/**
- * FFM wrapper for {@code rocksdb_compactoptions_t}.
- *
- * <p>Used with {@link RocksDB#compactRange(CompactOptions, byte[], byte[])}.
- *
- * <pre>{@code
- * try (var opts = new CompactOptions().setChangeLevel(true).setTargetLevel(2)) {
- *     db.compactRange(opts, null, null);
- * }
- * }</pre>
- */
+/// FFM wrapper for `rocksdb_compactoptions_t`.
+///
+/// Used with [RocksDB#compactRange(CompactOptions, byte\[\], byte\[\])].
+///
+/// ```
+/// try (var opts = new CompactOptions().setChangeLevel(true).setTargetLevel(2)) {
+///     db.compactRange(opts, null, null);
+/// }
+/// ```
 public final class CompactOptions extends NativeObject {
 
 	// rocksdb_compactoptions_create(void) -> rocksdb_compactoptions_t*
@@ -93,10 +91,8 @@ public final class CompactOptions extends NativeObject {
 		return new CompactOptions(result);
 	}
 
-	/**
-	 * If {@code true}, no other manual compaction will run in parallel.
-	 * Default: {@code true}.
-	 */
+	/// If `true`, no other manual compaction will run in parallel.
+	/// Default: `true`.
 	public CompactOptions setExclusiveManualCompaction(boolean value) {
 		try {
 			MH_SET_EXCLUSIVE.invokeExact(ptr(), value ? (byte) 1 : (byte) 0);
@@ -114,10 +110,8 @@ public final class CompactOptions extends NativeObject {
 		}
 	}
 
-	/**
-	 * If {@code true}, the compaction will compact all data at the bottommost level.
-	 * Default: {@code false}.
-	 */
+	/// If `true`, the compaction will compact all data at the bottommost level.
+	/// Default: `false`.
 	public CompactOptions setBottommostLevelCompaction(boolean value) {
 		try {
 			MH_SET_BOTTOMMOST.invokeExact(ptr(), value ? (byte) 1 : (byte) 0);
@@ -135,11 +129,9 @@ public final class CompactOptions extends NativeObject {
 		}
 	}
 
-	/**
-	 * If {@code true}, compacted output will be moved to the level set by
-	 * {@link #setTargetLevel(int)}.
-	 * Default: {@code false}.
-	 */
+	/// If `true`, compacted output will be moved to the level set by
+	/// [#setTargetLevel(int)].
+	/// Default: `false`.
 	public CompactOptions setChangeLevel(boolean value) {
 		try {
 			MH_SET_CHANGE_LEVEL.invokeExact(ptr(), value ? (byte) 1 : (byte) 0);
@@ -157,10 +149,8 @@ public final class CompactOptions extends NativeObject {
 		}
 	}
 
-	/**
-	 * Target output level for the compaction when {@link #setChangeLevel(boolean)} is
-	 * {@code true}. {@code -1} means the bottommost level. Default: {@code -1}.
-	 */
+	/// Target output level for the compaction when [#setChangeLevel(boolean)] is
+	/// `true`. `-1` means the bottommost level. Default: `-1`.
 	public CompactOptions setTargetLevel(int level) {
 		try {
 			MH_SET_TARGET_LEVEL.invokeExact(ptr(), level);

@@ -7,26 +7,24 @@ import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 import java.nio.file.Path;
 
-/**
- * FFM wrapper for rocksdb_sstfilewriter_t.
- *
- * <p>Writes key-value pairs in sorted order into an SST file on disk, which can
- * then be ingested into a live database via {@link RocksDB#ingestExternalFile}.
- *
- * <p>Keys must be written in strictly ascending order (bytewise by default).
- *
- * <pre>{@code
- * Path sstPath = dir.resolve("data.sst");
- * try (var opts = Options.newOptions();
- *      var writer = SstFileWriter.newSstFileWriter(opts)) {
- *     writer.open(sstPath);
- *     writer.put("aaa".getBytes(), "val1".getBytes());
- *     writer.put("bbb".getBytes(), "val2".getBytes());
- *     writer.finish();
- * }
- * db.ingestExternalFile(List.of(sstPath));
- * }</pre>
- */
+/// FFM wrapper for `rocksdb_sstfilewriter_t`.
+///
+/// Writes key-value pairs in sorted order into an SST file on disk, which can
+/// then be ingested into a live database via [RocksDB#ingestExternalFile].
+///
+/// Keys must be written in strictly ascending order (bytewise by default).
+///
+/// ```
+/// Path sstPath = dir.resolve("data.sst");
+/// try (var opts = Options.newOptions();
+///      var writer = SstFileWriter.newSstFileWriter(opts)) {
+///     writer.open(sstPath);
+///     writer.put("aaa".getBytes(), "val1".getBytes());
+///     writer.put("bbb".getBytes(), "val2".getBytes());
+///     writer.finish();
+/// }
+/// db.ingestExternalFile(List.of(sstPath));
+/// ```
 public final class SstFileWriter extends NativeObject {
 
 	// rocksdb_envoptions_create(void) -> rocksdb_envoptions_t*
@@ -116,9 +114,7 @@ public final class SstFileWriter extends NativeObject {
 		super(ptr);
 	}
 
-	/**
-	 * Creates an SST file writer using the given DB options (comparator, compression, etc.).
-	 */
+	/// Creates an SST file writer using the given DB options (comparator, compression, etc.).
 	public static SstFileWriter newSstFileWriter(Options options) {
 		try {
 			MemorySegment envOpts = (MemorySegment) MH_ENVOPTIONS_CREATE.invokeExact();
@@ -132,10 +128,8 @@ public final class SstFileWriter extends NativeObject {
 		}
 	}
 
-	/**
-	 * Opens a new SST file at the given path for writing.
-	 * Call {@link #finish()} to finalize the file before ingesting.
-	 */
+	/// Opens a new SST file at the given path for writing.
+	/// Call [#finish()] to finalize the file before ingesting.
 	public void open(Path path) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
@@ -147,9 +141,7 @@ public final class SstFileWriter extends NativeObject {
 		}
 	}
 
-	/**
-	 * Appends a put entry. Keys must be added in strictly ascending order.
-	 */
+	/// Appends a put entry. Keys must be added in strictly ascending order.
 	public void put(byte[] key, byte[] value) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
@@ -165,9 +157,7 @@ public final class SstFileWriter extends NativeObject {
 		}
 	}
 
-	/**
-	 * Zero-copy {@link MemorySegment} overload of {@link #put(byte[], byte[])}.
-	 */
+	/// Zero-copy [MemorySegment] overload of [#put(byte\[\], byte\[\])].
 	public void put(MemorySegment key, MemorySegment value) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
@@ -181,9 +171,7 @@ public final class SstFileWriter extends NativeObject {
 		}
 	}
 
-	/**
-	 * Appends a delete tombstone entry. Keys must be added in strictly ascending order.
-	 */
+	/// Appends a delete tombstone entry. Keys must be added in strictly ascending order.
 	public void delete(byte[] key) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
@@ -195,9 +183,7 @@ public final class SstFileWriter extends NativeObject {
 		}
 	}
 
-	/**
-	 * Zero-copy {@link MemorySegment} overload of {@link #delete(byte[])}.
-	 */
+	/// Zero-copy [MemorySegment] overload of [#delete(byte\[\])].
 	public void delete(MemorySegment key) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
@@ -208,10 +194,8 @@ public final class SstFileWriter extends NativeObject {
 		}
 	}
 
-	/**
-	 * Appends a delete-range tombstone covering {@code [beginKey, endKey)}.
-	 * Keys must be added in strictly ascending order.
-	 */
+	/// Appends a delete-range tombstone covering `[beginKey, endKey)`.
+	/// Keys must be added in strictly ascending order.
 	public void deleteRange(byte[] beginKey, byte[] endKey) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
@@ -227,9 +211,7 @@ public final class SstFileWriter extends NativeObject {
 		}
 	}
 
-	/**
-	 * Appends a merge entry. Keys must be added in strictly ascending order.
-	 */
+	/// Appends a merge entry. Keys must be added in strictly ascending order.
 	public void merge(byte[] key, byte[] value) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
@@ -245,10 +227,8 @@ public final class SstFileWriter extends NativeObject {
 		}
 	}
 
-	/**
-	 * Finalizes the SST file. Must be called after all entries have been written.
-	 * The file is now ready for ingestion via {@link RocksDB#ingestExternalFile}.
-	 */
+	/// Finalizes the SST file. Must be called after all entries have been written.
+	/// The file is now ready for ingestion via [RocksDB#ingestExternalFile].
 	public void finish() {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
@@ -259,9 +239,7 @@ public final class SstFileWriter extends NativeObject {
 		}
 	}
 
-	/**
-	 * Returns the size of the current (or most recently finished) SST file in bytes.
-	 */
+	/// Returns the size of the current (or most recently finished) SST file in bytes.
 	public long fileSize() {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment sizeSeg = arena.allocate(ValueLayout.JAVA_LONG);

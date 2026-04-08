@@ -7,22 +7,20 @@ import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 import java.nio.ByteBuffer;
 
-/**
- * FFM wrapper for rocksdb_iterator_t.
- *
- * <p>Obtain via {@link RocksDB#newIterator()} or {@link RocksDB#newIterator(ReadOptions)}.
- * Always close after use.
- *
- * <pre>{@code
- * try (RocksIterator it = db.newIterator()) {
- *     for (it.seekToFirst(); it.isValid(); it.next()) {
- *         byte[] key   = it.key();
- *         byte[] value = it.value();
- *     }
- *     it.checkError();
- * }
- * }</pre>
- */
+/// FFM wrapper for \`rocksdb\_iterator\_t\`.
+///
+/// Obtain via [RocksDB#newIterator()] or [RocksDB#newIterator(ReadOptions)].
+/// Always close after use.
+///
+/// ```
+/// try (RocksIterator it = db.newIterator()) {
+///     for (it.seekToFirst(); it.isValid(); it.next()) {
+///         byte[] key   = it.key();
+///         byte[] value = it.value();
+///     }
+///     it.checkError();
+/// }
+/// ```
 public final class RocksIterator extends NativeObject {
 
 	// rocksdb_create_iterator(rocksdb_t* db, const rocksdb_readoptions_t* options) -> rocksdb_iterator_t*
@@ -104,18 +102,14 @@ public final class RocksIterator extends NativeObject {
 	private final Arena lenArena;
 	private final MemorySegment lenSegment;
 
-	/**
-	 * Package-private: created via {@link #create}.
-	 */
+	/// Package-private: created via [#create].
 	private RocksIterator(MemorySegment ptr) {
 		super(ptr);
 		this.lenArena = Arena.ofConfined();
 		this.lenSegment = lenArena.allocate(ValueLayout.JAVA_LONG);
 	}
 
-	/**
-	 * Package-private factory called by RocksDB.
-	 */
+	/// Package-private factory called by RocksDB.
 	static RocksIterator create(MemorySegment dbPtr, MemorySegment readOptions) {
 		try {
 			MemorySegment iterPtr = (MemorySegment) MH_CREATE.invokeExact(dbPtr, readOptions);
@@ -129,9 +123,7 @@ public final class RocksIterator extends NativeObject {
 	// Positioning
 	// -----------------------------------------------------------------------
 
-	/**
-	 * Positions the iterator at the first key in the database.
-	 */
+	/// Positions the iterator at the first key in the database.
 	public void seekToFirst() {
 		try {
 			MH_SEEK_TO_FIRST.invokeExact(ptr());
@@ -140,9 +132,7 @@ public final class RocksIterator extends NativeObject {
 		}
 	}
 
-	/**
-	 * Positions the iterator at the last key in the database.
-	 */
+	/// Positions the iterator at the last key in the database.
 	public void seekToLast() {
 		try {
 			MH_SEEK_TO_LAST.invokeExact(ptr());
@@ -151,9 +141,7 @@ public final class RocksIterator extends NativeObject {
 		}
 	}
 
-	/**
-	 * Positions the iterator at the first key &gt;= {@code target}. Slow path: copies key.
-	 */
+	/// Positions the iterator at the first key >= `target`. Slow path: copies key.
 	public void seek(byte[] target) {
 		try (Arena arena = Arena.ofConfined()) {
 			MH_SEEK.invokeExact(ptr(), Native.toNative(arena, target), (long) target.length);
@@ -162,9 +150,7 @@ public final class RocksIterator extends NativeObject {
 		}
 	}
 
-	/**
-	 * Positions the iterator at the first key &gt;= {@code target}. Zero-copy for direct buffers.
-	 */
+	/// Positions the iterator at the first key >= `target`. Zero-copy for direct buffers.
 	public void seek(ByteBuffer target) {
 		try {
 			MH_SEEK.invokeExact(ptr(), MemorySegment.ofBuffer(target), (long) target.remaining());
@@ -173,9 +159,7 @@ public final class RocksIterator extends NativeObject {
 		}
 	}
 
-	/**
-	 * Positions the iterator at the first key &gt;= {@code target}. Zero-copy.
-	 */
+	/// Positions the iterator at the first key >= `target`. Zero-copy.
 	public void seek(MemorySegment target) {
 		try {
 			MH_SEEK.invokeExact(ptr(), target, target.byteSize());
@@ -184,9 +168,7 @@ public final class RocksIterator extends NativeObject {
 		}
 	}
 
-	/**
-	 * Positions the iterator at the last key &lt;= {@code target}. Slow path: copies key.
-	 */
+	/// Positions the iterator at the last key <= `target`. Slow path: copies key.
 	public void seekForPrev(byte[] target) {
 		try (Arena arena = Arena.ofConfined()) {
 			MH_SEEK_FOR_PREV.invokeExact(ptr(), Native.toNative(arena, target), (long) target.length);
@@ -195,9 +177,7 @@ public final class RocksIterator extends NativeObject {
 		}
 	}
 
-	/**
-	 * Positions the iterator at the last key &lt;= {@code target}. Zero-copy for direct buffers.
-	 */
+	/// Positions the iterator at the last key <= `target`. Zero-copy for direct buffers.
 	public void seekForPrev(ByteBuffer target) {
 		try {
 			MH_SEEK_FOR_PREV.invokeExact(ptr(), MemorySegment.ofBuffer(target), (long) target.remaining());
@@ -206,9 +186,7 @@ public final class RocksIterator extends NativeObject {
 		}
 	}
 
-	/**
-	 * Positions the iterator at the last key &lt;= {@code target}. Zero-copy.
-	 */
+	/// Positions the iterator at the last key <= `target`. Zero-copy.
 	public void seekForPrev(MemorySegment target) {
 		try {
 			MH_SEEK_FOR_PREV.invokeExact(ptr(), target, target.byteSize());
@@ -217,9 +195,7 @@ public final class RocksIterator extends NativeObject {
 		}
 	}
 
-	/**
-	 * Moves to the next key. Only call when {@link #isValid()} is true.
-	 */
+	/// Moves to the next key. Only call when [#isValid()] is true.
 	public void next() {
 		try {
 			MH_NEXT.invokeExact(ptr());
@@ -228,9 +204,7 @@ public final class RocksIterator extends NativeObject {
 		}
 	}
 
-	/**
-	 * Moves to the previous key. Only call when {@link #isValid()} is true.
-	 */
+	/// Moves to the previous key. Only call when [#isValid()] is true.
 	public void prev() {
 		try {
 			MH_PREV.invokeExact(ptr());
@@ -243,9 +217,7 @@ public final class RocksIterator extends NativeObject {
 	// State
 	// -----------------------------------------------------------------------
 
-	/**
-	 * Returns true if the iterator is positioned at a valid key.
-	 */
+	/// Returns true if the iterator is positioned at a valid key.
 	public boolean isValid() {
 		try {
 			return ((byte) MH_VALID.invokeExact(ptr())) != 0;
@@ -254,11 +226,9 @@ public final class RocksIterator extends NativeObject {
 		}
 	}
 
-	/**
-	 * Checks for any I/O error encountered during iteration.
-	 * Always call after an iteration loop to detect background errors.
-	 * Throws {@link RocksDBException} if an error occurred.
-	 */
+	/// Checks for any I/O error encountered during iteration.
+	/// Always call after an iteration loop to detect background errors.
+	/// Throws [RocksDBException] if an error occurred.
 	public void checkError() {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
@@ -269,10 +239,8 @@ public final class RocksIterator extends NativeObject {
 		}
 	}
 
-	/**
-	 * Refreshes the iterator to reflect the latest DB state after mutations.
-	 * Repositions to the same key if it still exists.
-	 */
+	/// Refreshes the iterator to reflect the latest DB state after mutations.
+	/// Repositions to the same key if it still exists.
 	public void refresh() {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
@@ -287,11 +255,9 @@ public final class RocksIterator extends NativeObject {
 	// Key/Value access — MemorySegment (zero-copy, valid until next navigation call)
 	// -----------------------------------------------------------------------
 
-	/**
-	 * Returns a zero-copy view of the current key.
-	 * The returned segment is only valid until the next positioning call.
-	 * Only call when {@link #isValid()} is true.
-	 */
+	/// Returns a zero-copy view of the current key.
+	/// The returned segment is only valid until the next positioning call.
+	/// Only call when [#isValid()] is true.
 	public MemorySegment keySegment() {
 		try {
 			MemorySegment data = (MemorySegment) MH_KEY.invokeExact(ptr(), lenSegment);
@@ -301,11 +267,9 @@ public final class RocksIterator extends NativeObject {
 		}
 	}
 
-	/**
-	 * Returns a zero-copy view of the current value.
-	 * The returned segment is only valid until the next positioning call.
-	 * Only call when {@link #isValid()} is true.
-	 */
+	/// Returns a zero-copy view of the current value.
+	/// The returned segment is only valid until the next positioning call.
+	/// Only call when [#isValid()] is true.
 	public MemorySegment valueSegment() {
 		try {
 			MemorySegment data = (MemorySegment) MH_VALUE.invokeExact(ptr(), lenSegment);
@@ -319,10 +283,8 @@ public final class RocksIterator extends NativeObject {
 	// Key/Value access — ByteBuffer (single copy into caller's buffer)
 	// -----------------------------------------------------------------------
 
-	/**
-	 * Copies the current key into {@code dst}. Returns the actual key length.
-	 * Only call when {@link #isValid()} is true.
-	 */
+	/// Copies the current key into `dst`. Returns the actual key length.
+	/// Only call when [#isValid()] is true.
 	public int key(ByteBuffer dst) {
 		try {
 			MemorySegment data = (MemorySegment) MH_KEY.invokeExact(ptr(), lenSegment);
@@ -336,10 +298,8 @@ public final class RocksIterator extends NativeObject {
 		}
 	}
 
-	/**
-	 * Copies the current value into {@code dst}. Returns the actual value length.
-	 * Only call when {@link #isValid()} is true.
-	 */
+	/// Copies the current value into `dst`. Returns the actual value length.
+	/// Only call when [#isValid()] is true.
 	public int value(ByteBuffer dst) {
 		try {
 			MemorySegment data = (MemorySegment) MH_VALUE.invokeExact(ptr(), lenSegment);
@@ -357,11 +317,9 @@ public final class RocksIterator extends NativeObject {
 	// Key/Value access — byte[] (convenience, always copies)
 	// -----------------------------------------------------------------------
 
-	/**
-	 * Returns a copy of the current key as a byte array.
-	 * Slower than the MemorySegment or ByteBuffer variants due to heap allocation.
-	 * Only call when {@link #isValid()} is true.
-	 */
+	/// Returns a copy of the current key as a byte array.
+	/// Slower than the MemorySegment or ByteBuffer variants due to heap allocation.
+	/// Only call when [#isValid()] is true.
 	public byte[] key() {
 		try {
 			MemorySegment data = (MemorySegment) MH_KEY.invokeExact(ptr(), lenSegment);
@@ -371,11 +329,9 @@ public final class RocksIterator extends NativeObject {
 		}
 	}
 
-	/**
-	 * Returns a copy of the current value as a byte array.
-	 * Slower than the MemorySegment or ByteBuffer variants due to heap allocation.
-	 * Only call when {@link #isValid()} is true.
-	 */
+	/// Returns a copy of the current value as a byte array.
+	/// Slower than the MemorySegment or ByteBuffer variants due to heap allocation.
+	/// Only call when [#isValid()] is true.
 	public byte[] value() {
 		try {
 			MemorySegment data = (MemorySegment) MH_VALUE.invokeExact(ptr(), lenSegment);

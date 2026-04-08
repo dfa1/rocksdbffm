@@ -7,11 +7,11 @@ import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 import java.nio.ByteBuffer;
 
-/// FFM wrapper for rocksdb\_writebatch\_t.
+/// FFM wrapper for `rocksdb_writebatch_t`.
 /// Accumulates put/delete operations and commits them atomically via RocksDB.write().
 ///
-/// Note: rocksdb\_writebatch\_put/delete have no errptr — they are infallible at
-/// the C level. Only rocksdb\_write (on the DB) can fail.
+/// Note: `rocksdb_writebatch\put/delete` have no `errptr` — they are infallible at
+/// the C level. Only `rocksdb_write` (on the DB) can fail.
 public final class WriteBatch extends NativeObject {
 
 	// rocksdb_writebatch_create(void) -> rocksdb_writebatch_t*

@@ -5,7 +5,7 @@ import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 
-/// FFM wrapper for \`rocksdb\_readoptions\_t\`.
+/// FFM wrapper for `rocksdb_readoptions_t`.
 public final class ReadOptions extends NativeObject {
 
 	// rocksdb_readoptions_create(void) -> rocksdb_readoptions_t*

@@ -5,14 +5,14 @@ import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 
-/// FFM wrapper for rocksdb\_block\_based\_table\_options\_t.
+/// FFM wrapper for `rocksdb_block_based_table_options_t`.
 ///
 /// Configure and pass to [Options#setTableFormatConfig(BlockBasedTableOptions)].
 /// `BlockBasedTableConfig` may be closed once the options have been applied —
 /// RocksDB internally copies everything it needs.
 ///
 /// ```
-/// try (LRUCache cache = LRUCache.newLRUCache(MemorySize.ofBytes(64 << 20));
+/// try (LRUCache cache = LRUCache.newLRUCache(MemorySize.ofMB(64));
 ///      BlockBasedTableConfig tbl = new BlockBasedTableConfig()
 ///          .setBlockSize(16 * 1024)
 ///          .setFilterPolicy(FilterPolicy.newBloom(10))
@@ -195,8 +195,8 @@ public final class BlockBasedTableOptions extends NativeObject {
 		return this;
 	}
 
-	/// Sets the index type. Default: [IndexType#BINARY\_SEARCH].
-	/// Use [IndexType#TWO\_LEVEL\_INDEX\_SEARCH] for very large SSTs.
+	/// Sets the index type. Default: [IndexType#BINARY_SEARCH].
+	/// Use [IndexType#TWO_LEVEL_INDEX_SEARCH] for very large SSTs.
 	public BlockBasedTableOptions setIndexType(IndexType indexType) {
 		try {
 			MH_SET_INDEX_TYPE.invokeExact(ptr(), indexType.value);

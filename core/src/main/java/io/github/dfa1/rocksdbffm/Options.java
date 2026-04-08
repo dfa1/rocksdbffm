@@ -5,7 +5,7 @@ import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 
-/// FFM wrapper for \`rocksdb\_options\_t\`.
+/// FFM wrapper for `rocksdb_options_t`.
 ///
 /// Usage:
 ///

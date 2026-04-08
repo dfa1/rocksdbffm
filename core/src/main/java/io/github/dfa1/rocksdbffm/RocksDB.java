@@ -429,8 +429,8 @@ public final class RocksDB extends NativeObject {
 	// Get
 	// -----------------------------------------------------------------------
 
-	/// Get via PinnableSlice: pins data directly from the block cache,
-	/// avoiding the intermediate std::string copy that rocksdb\_get performs.
+	/// Get via `PinnableSlice`: pins data directly from the block cache,
+	/// avoiding the intermediate std::string copy that `rocksdb_get` performs.
 	public byte[] get(byte[] key) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);

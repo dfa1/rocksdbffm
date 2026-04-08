@@ -37,7 +37,7 @@ public enum Property {
 	LEVEL_STATS("rocksdb.levelstats", Type.STRING),
 	/// Detailed block-cache entry statistics.
 	BLOCK_CACHE_ENTRY_STATS("rocksdb.block-cache-entry-stats", Type.STRING),
-	/// Same as [#BLOCK\_CACHE\_ENTRY\_STATS] but skips full recalculation.
+	/// Same as [#BLOCK_CACHE_ENTRY_STATS] but skips full recalculation.
 	FAST_BLOCK_CACHE_ENTRY_STATS("rocksdb.fast-block-cache-entry-stats", Type.STRING),
 	/// Aggregated table properties across all SST files.
 	AGGREGATED_TABLE_PROPERTIES("rocksdb.aggregated-table-properties", Type.STRING),

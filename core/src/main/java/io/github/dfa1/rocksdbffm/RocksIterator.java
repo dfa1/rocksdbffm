@@ -7,7 +7,7 @@ import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 import java.nio.ByteBuffer;
 
-/// FFM wrapper for \`rocksdb\_iterator\_t\`.
+/// FFM wrapper for `rocksdb_iterator_t`.
 ///
 /// Obtain via [RocksDB#newIterator()] or [RocksDB#newIterator(ReadOptions)].
 /// Always close after use.

@@ -41,7 +41,7 @@ public final class Snapshot extends NativeObject {
 		// TODO: rocksdb_free is declared a lot of times
 	}
 
-	/// DB pointer used to release the snapshot; NULL signals that rocksdb\_free
+	/// DB pointer used to release the snapshot; NULL signals that `rocksdb_free`
 	/// should be used instead (transaction snapshot ownership model).
 	private final MemorySegment dbPtr;
 

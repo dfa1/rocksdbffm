@@ -191,7 +191,7 @@ public final class BlockBasedTableOptions extends NativeObject {
 	 * Sets a custom block cache. The {@code cache} object remains owned by the caller
 	 * and can be shared across multiple table configs.
 	 */
-	public BlockBasedTableOptions setBlockCache(LRUCache cache) {
+	public BlockBasedTableOptions setBlockCache(Cache cache) {
 		try {
 			MH_SET_BLOCK_CACHE.invokeExact(ptr(), cache.ptr());
 		} catch (Throwable t) {

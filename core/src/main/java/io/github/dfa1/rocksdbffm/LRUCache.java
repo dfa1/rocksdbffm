@@ -6,57 +6,24 @@ import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 
 /**
- * FFM wrapper for rocksdb_cache_t (LRU block cache).
- *
- * <p>Pass to {@link BlockBasedTableOptions#setBlockCache(LRUCache)} to share a single
- * cache across multiple column families or DB instances.
+ * LRU block cache ({@code rocksdb_cache_t}).
  *
  * <pre>{@code
  * try (LRUCache cache = LRUCache.newLRUCache(MemorySize.ofMB(64))) {
- *     BlockBasedTableConfig tbl = new BlockBasedTableConfig()
+ *     BlockBasedTableOptions tbl = BlockBasedTableOptions.newBlockBasedTableOptions()
  *         .setBlockCache(cache);
  *     ...
  * }
  * }</pre>
  */
-public final class LRUCache extends NativeObject {
+public final class LRUCache extends Cache {
 
 	// rocksdb_cache_create_lru(size_t capacity) -> rocksdb_cache_t*
 	private static final MethodHandle MH_CREATE;
-	// rocksdb_cache_destroy(rocksdb_cache_t* cache) -> void
-	private static final MethodHandle MH_DESTROY;
-	// rocksdb_cache_set_capacity(rocksdb_cache_t* cache, size_t capacity) -> void
-	private static final MethodHandle MH_SET_CAPACITY;
-	// rocksdb_cache_get_capacity(const rocksdb_cache_t* cache) -> size_t
-	private static final MethodHandle MH_GET_CAPACITY;
-	// rocksdb_cache_get_usage(const rocksdb_cache_t* cache) -> size_t
-	private static final MethodHandle MH_GET_USAGE;
-	// rocksdb_cache_get_pinned_usage(const rocksdb_cache_t* cache) -> size_t
-	private static final MethodHandle MH_GET_PINNED_USAGE;
 
 	static {
-		// rocksdb_cache_t* rocksdb_cache_create_lru(size_t capacity)
 		MH_CREATE = RocksDB.lookup("rocksdb_cache_create_lru",
 				FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
-
-		MH_DESTROY = RocksDB.lookup("rocksdb_cache_destroy",
-				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
-
-		// void rocksdb_cache_set_capacity(cache*, size_t)
-		MH_SET_CAPACITY = RocksDB.lookup("rocksdb_cache_set_capacity",
-				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
-
-		// size_t rocksdb_cache_get_capacity(cache*)
-		MH_GET_CAPACITY = RocksDB.lookup("rocksdb_cache_get_capacity",
-				FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
-
-		// size_t rocksdb_cache_get_usage(cache*)
-		MH_GET_USAGE = RocksDB.lookup("rocksdb_cache_get_usage",
-				FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
-
-		// size_t rocksdb_cache_get_pinned_usage(cache*)
-		MH_GET_PINNED_USAGE = RocksDB.lookup("rocksdb_cache_get_pinned_usage",
-				FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
 	}
 
 	private LRUCache(MemorySegment ptr) {
@@ -69,45 +36,5 @@ public final class LRUCache extends NativeObject {
 		} catch (Throwable t) {
 			throw new RocksDBException("LRUCache create failed", t);
 		}
-	}
-
-	/**
-	 * Dynamically resizes the cache. Excess entries are evicted as needed.
-	 */
-	public void setCapacity(MemorySize capacity) {
-		try {
-			MH_SET_CAPACITY.invokeExact(ptr(), capacity.toBytes());
-		} catch (Throwable t) {
-			throw new RocksDBException("setCapacity failed", t);
-		}
-	}
-
-	public MemorySize getCapacity() {
-		try {
-			return MemorySize.ofBytes((long) MH_GET_CAPACITY.invokeExact(ptr()));
-		} catch (Throwable t) {
-			throw new RocksDBException("getCapacity failed", t);
-		}
-	}
-
-	public MemorySize getUsage() {
-		try {
-			return MemorySize.ofBytes((long) MH_GET_USAGE.invokeExact(ptr()));
-		} catch (Throwable t) {
-			throw new RocksDBException("getUsage failed", t);
-		}
-	}
-
-	public MemorySize getPinnedUsage() {
-		try {
-			return MemorySize.ofBytes((long) MH_GET_PINNED_USAGE.invokeExact(ptr()));
-		} catch (Throwable t) {
-			throw new RocksDBException("getPinnedUsage failed", t);
-		}
-	}
-
-	@Override
-	protected void tryClose(MemorySegment ptr) throws Throwable {
-		MH_DESTROY.invokeExact(ptr);
 	}
 }

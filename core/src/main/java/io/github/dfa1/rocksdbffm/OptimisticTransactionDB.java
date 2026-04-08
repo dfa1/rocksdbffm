@@ -34,60 +34,54 @@ public final class OptimisticTransactionDB extends NativeObject {
 	// Method handles
 	// -----------------------------------------------------------------------
 
-	// rocksdb_optimistictransactiondb_open(const rocksdb_options_t* options, const char* name, char** errptr) -> rocksdb_optimistictransactiondb_t*
+	/// `rocksdb_optimistictransactiondb_t* rocksdb_optimistictransactiondb_open(const rocksdb_options_t* options, const char* name, char** errptr);`
 	private static final MethodHandle MH_OPEN;
-	// rocksdb_optimistictransactiondb_close(rocksdb_optimistictransactiondb_t* otxn_db) -> void
+	/// `void rocksdb_optimistictransactiondb_close(rocksdb_optimistictransactiondb_t* otxn_db);`
 	private static final MethodHandle MH_CLOSE;
-	// rocksdb_optimistictransaction_begin(rocksdb_optimistictransactiondb_t* otxn_db, const rocksdb_writeoptions_t* write_options, const rocksdb_optimistictransaction_options_t* otxn_options, rocksdb_transaction_t* old_txn) -> rocksdb_transaction_t*
+	/// `rocksdb_transaction_t* rocksdb_optimistictransaction_begin(rocksdb_optimistictransactiondb_t* otxn_db, const rocksdb_writeoptions_t* write_options, const rocksdb_optimistictransaction_options_t* otxn_options, rocksdb_transaction_t* old_txn);`
 	private static final MethodHandle MH_BEGIN;
-	// rocksdb_optimistictransactiondb_get_base_db(rocksdb_optimistictransactiondb_t* otxn_db) -> rocksdb_t*
+	/// `rocksdb_t* rocksdb_optimistictransactiondb_get_base_db(rocksdb_optimistictransactiondb_t* otxn_db);`
 	private static final MethodHandle MH_GET_BASE_DB;
-	// rocksdb_optimistictransactiondb_close_base_db(rocksdb_t* base_db) -> void
+	/// `void rocksdb_optimistictransactiondb_close_base_db(rocksdb_t* base_db);`
 	private static final MethodHandle MH_CLOSE_BASE_DB;
 
 	// Direct (non-transactional) ops via base rocksdb_t*
-	// rocksdb_put(rocksdb_t* db, const rocksdb_writeoptions_t* options, const char* key, size_t keylen, const char* val, size_t vallen, char** errptr) -> void
+	/// `void rocksdb_put(rocksdb_t* db, const rocksdb_writeoptions_t* options, const char* key, size_t keylen, const char* val, size_t vallen, char** errptr);`
 	private static final MethodHandle MH_PUT;
-	// rocksdb_delete(rocksdb_t* db, const rocksdb_writeoptions_t* options, const char* key, size_t keylen, char** errptr) -> void
+	/// `void rocksdb_delete(rocksdb_t* db, const rocksdb_writeoptions_t* options, const char* key, size_t keylen, char** errptr);`
 	private static final MethodHandle MH_DELETE;
-	// rocksdb_get(rocksdb_t* db, const rocksdb_readoptions_t* options, const char* key, size_t keylen, size_t* vallen, char** errptr) -> char*
+	/// `char* rocksdb_get(rocksdb_t* db, const rocksdb_readoptions_t* options, const char* key, size_t keylen, size_t* vallen, char** errptr);`
 	private static final MethodHandle MH_GET;
-	// rocksdb_create_snapshot(rocksdb_t* db) -> const rocksdb_snapshot_t*
+	/// `const rocksdb_snapshot_t* rocksdb_create_snapshot(rocksdb_t* db);`
 	private static final MethodHandle MH_CREATE_SNAPSHOT;
-	// rocksdb_flush(rocksdb_t* db, const rocksdb_flushoptions_t* options, char** errptr) -> void
+	/// `void rocksdb_flush(rocksdb_t* db, const rocksdb_flushoptions_t* options, char** errptr);`
 	private static final MethodHandle MH_FLUSH;
-	// rocksdb_flush_wal(rocksdb_t* db, unsigned char sync, char** errptr) -> void
+	/// `void rocksdb_flush_wal(rocksdb_t* db, unsigned char sync, char** errptr);`
 	private static final MethodHandle MH_FLUSH_WAL;
-	// rocksdb_property_value(rocksdb_t* db, const char* propname) -> char*
+	/// `char* rocksdb_property_value(rocksdb_t* db, const char* propname);`
 	private static final MethodHandle MH_PROPERTY_VALUE;
-	// rocksdb_property_int(rocksdb_t* db, const char* propname, uint64_t* out_val) -> int
+	/// `int rocksdb_property_int(rocksdb_t* db, const char* propname, uint64_t* out_val);`
 	private static final MethodHandle MH_PROPERTY_INT;
 
 	static {
-		// rocksdb_optimistictransactiondb_t* rocksdb_optimistictransactiondb_open(opts*, name*, errptr**)
 		MH_OPEN = RocksDB.lookup("rocksdb_optimistictransactiondb_open",
 				FunctionDescriptor.of(ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
-		// void rocksdb_optimistictransactiondb_close(otxn_db*)
 		MH_CLOSE = RocksDB.lookup("rocksdb_optimistictransactiondb_close",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
-		// rocksdb_transaction_t* rocksdb_optimistictransaction_begin(otxn_db*, wo*, otxn_opts*, old_txn*)
 		MH_BEGIN = RocksDB.lookup("rocksdb_optimistictransaction_begin",
 				FunctionDescriptor.of(ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
-		// rocksdb_t* rocksdb_optimistictransactiondb_get_base_db(otxn_db*)
 		MH_GET_BASE_DB = RocksDB.lookup("rocksdb_optimistictransactiondb_get_base_db",
 				FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
-		// void rocksdb_optimistictransactiondb_close_base_db(base_db*)
 		MH_CLOSE_BASE_DB = RocksDB.lookup("rocksdb_optimistictransactiondb_close_base_db",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
-		// void rocksdb_put(db*, wo*, key*, klen, val*, vlen, errptr**)
 		MH_PUT = RocksDB.lookup("rocksdb_put",
 				FunctionDescriptor.ofVoid(
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS,
@@ -95,37 +89,30 @@ public final class OptimisticTransactionDB extends NativeObject {
 						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
 						ValueLayout.ADDRESS));
 
-		// void rocksdb_delete(db*, wo*, key*, klen, errptr**)
 		MH_DELETE = RocksDB.lookup("rocksdb_delete",
 				FunctionDescriptor.ofVoid(
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
 						ValueLayout.ADDRESS));
 
-		// char* rocksdb_get(db*, ro*, key*, klen, size_t* vallen, errptr**)
 		MH_GET = RocksDB.lookup("rocksdb_get",
 				FunctionDescriptor.of(ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
-		// const rocksdb_snapshot_t* rocksdb_create_snapshot(db*)
 		MH_CREATE_SNAPSHOT = RocksDB.lookup("rocksdb_create_snapshot",
 				FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
-		// void rocksdb_flush(db*, flushopts*, errptr**)
 		MH_FLUSH = RocksDB.lookup("rocksdb_flush",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
-		// void rocksdb_flush_wal(db*, sync, errptr**)
 		MH_FLUSH_WAL = RocksDB.lookup("rocksdb_flush_wal",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_BYTE, ValueLayout.ADDRESS));
 
-		// char* rocksdb_property_value(db*, propname*)
 		MH_PROPERTY_VALUE = RocksDB.lookup("rocksdb_property_value",
 				FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
-		// int rocksdb_property_int(db*, propname*, uint64_t* out)
 		MH_PROPERTY_INT = RocksDB.lookup("rocksdb_property_int",
 				FunctionDescriptor.of(ValueLayout.JAVA_INT,
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));

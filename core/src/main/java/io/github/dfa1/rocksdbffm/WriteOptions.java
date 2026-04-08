@@ -8,9 +8,9 @@ import java.lang.invoke.MethodHandle;
 /// FFM wrapper for `rocksdb_writeoptions_t`.
 public final class WriteOptions extends NativeObject {
 
-	// rocksdb_writeoptions_create(void) -> rocksdb_writeoptions_t*
+	/// `rocksdb_writeoptions_t* rocksdb_writeoptions_create(void);`
 	private static final MethodHandle MH_CREATE;
-	// rocksdb_writeoptions_destroy(rocksdb_writeoptions_t*) -> void
+	/// `void rocksdb_writeoptions_destroy(rocksdb_writeoptions_t*);`
 	private static final MethodHandle MH_DESTROY;
 
 	static {

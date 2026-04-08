@@ -15,7 +15,7 @@ import java.lang.invoke.MethodHandle;
 /// ```
 public final class LRUCache extends Cache {
 
-	// rocksdb_cache_create_lru(size_t capacity) -> rocksdb_cache_t*
+	/// `rocksdb_cache_t* rocksdb_cache_create_lru(size_t capacity);`
 	private static final MethodHandle MH_CREATE;
 
 	static {

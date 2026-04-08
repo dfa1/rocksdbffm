@@ -14,21 +14,21 @@ import java.nio.ByteBuffer;
 /// the C level. Only `rocksdb_write` (on the DB) can fail.
 public final class WriteBatch extends NativeObject {
 
-	// rocksdb_writebatch_create(void) -> rocksdb_writebatch_t*
+	/// `rocksdb_writebatch_t* rocksdb_writebatch_create(void);`
 	private static final MethodHandle MH_CREATE;
-	// rocksdb_writebatch_destroy(rocksdb_writebatch_t*) -> void
+	/// `void rocksdb_writebatch_destroy(rocksdb_writebatch_t*);`
 	private static final MethodHandle MH_DESTROY;
-	// rocksdb_writebatch_put(rocksdb_writebatch_t*, const char* key, size_t klen, const char* val, size_t vlen) -> void
+	/// `void rocksdb_writebatch_put(rocksdb_writebatch_t*, const char* key, size_t klen, const char* val, size_t vlen);`
 	private static final MethodHandle MH_PUT;
-	// rocksdb_writebatch_delete(rocksdb_writebatch_t*, const char* key, size_t klen) -> void
+	/// `void rocksdb_writebatch_delete(rocksdb_writebatch_t*, const char* key, size_t klen);`
 	private static final MethodHandle MH_DELETE;
-	// rocksdb_writebatch_merge(rocksdb_writebatch_t*, const char* key, size_t klen, const char* val, size_t vlen) -> void
+	/// `void rocksdb_writebatch_merge(rocksdb_writebatch_t*, const char* key, size_t klen, const char* val, size_t vlen);`
 	private static final MethodHandle MH_MERGE;
-	// rocksdb_writebatch_delete_range(rocksdb_writebatch_t* b, const char* start_key, size_t start_key_len, const char* end_key, size_t end_key_len) -> void
+	/// `void rocksdb_writebatch_delete_range(rocksdb_writebatch_t* b, const char* start_key, size_t start_key_len, const char* end_key, size_t end_key_len);`
 	private static final MethodHandle MH_DELETE_RANGE;
-	// rocksdb_writebatch_clear(rocksdb_writebatch_t*) -> void
+	/// `void rocksdb_writebatch_clear(rocksdb_writebatch_t*);`
 	private static final MethodHandle MH_CLEAR;
-	// rocksdb_writebatch_count(rocksdb_writebatch_t*) -> int
+	/// `int rocksdb_writebatch_count(rocksdb_writebatch_t*);`
 	private static final MethodHandle MH_COUNT;
 
 	static {
@@ -38,27 +38,23 @@ public final class WriteBatch extends NativeObject {
 		MH_DESTROY = RocksDB.lookup("rocksdb_writebatch_destroy",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
-		// void rocksdb_writebatch_put(batch*, key*, klen, val*, vlen)
 		MH_PUT = RocksDB.lookup("rocksdb_writebatch_put",
 				FunctionDescriptor.ofVoid(
 						ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
 						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
 
-		// void rocksdb_writebatch_delete(batch*, key*, klen)
 		MH_DELETE = RocksDB.lookup("rocksdb_writebatch_delete",
 				FunctionDescriptor.ofVoid(
 						ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
 
-		// void rocksdb_writebatch_merge(batch*, key*, klen, val*, vlen)
 		MH_MERGE = RocksDB.lookup("rocksdb_writebatch_merge",
 				FunctionDescriptor.ofVoid(
 						ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
 						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
 
-		// void rocksdb_writebatch_delete_range(batch*, start*, slen, end*, elen)
 		MH_DELETE_RANGE = RocksDB.lookup("rocksdb_writebatch_delete_range",
 				FunctionDescriptor.ofVoid(
 						ValueLayout.ADDRESS,

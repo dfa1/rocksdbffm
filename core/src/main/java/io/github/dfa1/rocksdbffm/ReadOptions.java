@@ -8,11 +8,11 @@ import java.lang.invoke.MethodHandle;
 /// FFM wrapper for `rocksdb_readoptions_t`.
 public final class ReadOptions extends NativeObject {
 
-	// rocksdb_readoptions_create(void) -> rocksdb_readoptions_t*
+	/// `rocksdb_readoptions_t* rocksdb_readoptions_create(void);`
 	private static final MethodHandle MH_CREATE;
-	// rocksdb_readoptions_destroy(rocksdb_readoptions_t*) -> void
+	/// `void rocksdb_readoptions_destroy(rocksdb_readoptions_t*);`
 	private static final MethodHandle MH_DESTROY;
-	// rocksdb_readoptions_set_snapshot(rocksdb_readoptions_t*, const rocksdb_snapshot_t*) -> void
+	/// `void rocksdb_readoptions_set_snapshot(rocksdb_readoptions_t*, const rocksdb_snapshot_t*);`
 	private static final MethodHandle MH_SET_SNAPSHOT;
 
 	static {

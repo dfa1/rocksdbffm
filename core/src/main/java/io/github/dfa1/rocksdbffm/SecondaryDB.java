@@ -35,27 +35,26 @@ public final class SecondaryDB extends NativeObject {
 	// Method handles
 	// -----------------------------------------------------------------------
 
-	// rocksdb_open_as_secondary(const rocksdb_options_t* options, const char* name, const char* secondary_path, char** errptr) -> rocksdb_t*
+	/// `rocksdb_t* rocksdb_open_as_secondary(const rocksdb_options_t* options, const char* name, const char* secondary_path, char** errptr);`
 	private static final MethodHandle MH_OPEN;
-	// rocksdb_close(rocksdb_t* db) -> void
+	/// `void rocksdb_close(rocksdb_t* db);`
 	private static final MethodHandle MH_CLOSE;
-	// rocksdb_try_catch_up_with_primary(rocksdb_t* db, char** errptr) -> void
+	/// `void rocksdb_try_catch_up_with_primary(rocksdb_t* db, char** errptr);`
 	private static final MethodHandle MH_CATCH_UP;
-	// rocksdb_get_pinned(rocksdb_t* db, const rocksdb_readoptions_t* options, const char* key, size_t keylen, char** errptr) -> rocksdb_pinnableslice_t*
+	/// `rocksdb_pinnableslice_t* rocksdb_get_pinned(rocksdb_t* db, const rocksdb_readoptions_t* options, const char* key, size_t keylen, char** errptr);`
 	private static final MethodHandle MH_GET_PINNED;
-	// rocksdb_pinnableslice_value(const rocksdb_pinnableslice_t* t, size_t* vlen) -> const char*
+	/// `const char* rocksdb_pinnableslice_value(const rocksdb_pinnableslice_t* t, size_t* vlen);`
 	private static final MethodHandle MH_PINNABLESLICE_VALUE;
-	// rocksdb_pinnableslice_destroy(rocksdb_pinnableslice_t* v) -> void
+	/// `void rocksdb_pinnableslice_destroy(rocksdb_pinnableslice_t* v);`
 	private static final MethodHandle MH_PINNABLESLICE_DESTROY;
-	// rocksdb_create_snapshot(rocksdb_t* db) -> const rocksdb_snapshot_t*
+	/// `const rocksdb_snapshot_t* rocksdb_create_snapshot(rocksdb_t* db);`
 	private static final MethodHandle MH_CREATE_SNAPSHOT;
-	// rocksdb_property_value(rocksdb_t* db, const char* propname) -> char*
+	/// `char* rocksdb_property_value(rocksdb_t* db, const char* propname);`
 	private static final MethodHandle MH_PROPERTY_VALUE;
-	// rocksdb_property_int(rocksdb_t* db, const char* propname, uint64_t* out_val) -> int
+	/// `int rocksdb_property_int(rocksdb_t* db, const char* propname, uint64_t* out_val);`
 	private static final MethodHandle MH_PROPERTY_INT;
 
 	static {
-		// rocksdb_t* rocksdb_open_as_secondary(opts*, primary_path*, secondary_path*, errptr**)
 		MH_OPEN = RocksDB.lookup("rocksdb_open_as_secondary",
 				FunctionDescriptor.of(ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS,
@@ -64,27 +63,22 @@ public final class SecondaryDB extends NativeObject {
 		MH_CLOSE = RocksDB.lookup("rocksdb_close",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
-		// void rocksdb_try_catch_up_with_primary(db*, errptr**)
 		MH_CATCH_UP = RocksDB.lookup("rocksdb_try_catch_up_with_primary",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
-		// rocksdb_pinnableslice_t* rocksdb_get_pinned(db*, ro*, key*, klen, errptr**)
 		MH_GET_PINNED = RocksDB.lookup("rocksdb_get_pinned",
 				FunctionDescriptor.of(ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
 						ValueLayout.ADDRESS));
 
-		// const char* rocksdb_pinnableslice_value(slice*, size_t* vlen)
 		MH_PINNABLESLICE_VALUE = RocksDB.lookup("rocksdb_pinnableslice_value",
 				FunctionDescriptor.of(ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
-		// void rocksdb_pinnableslice_destroy(slice*)
 		MH_PINNABLESLICE_DESTROY = RocksDB.lookup("rocksdb_pinnableslice_destroy",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
-		// const rocksdb_snapshot_t* rocksdb_create_snapshot(db*)
 		MH_CREATE_SNAPSHOT = RocksDB.lookup("rocksdb_create_snapshot",
 				FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 

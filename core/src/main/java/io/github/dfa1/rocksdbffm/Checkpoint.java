@@ -27,22 +27,19 @@ import java.nio.file.Path;
 /// ```
 public final class Checkpoint extends NativeObject {
 
-	// rocksdb_checkpoint_object_create(rocksdb_t* db, char** errptr) -> rocksdb_checkpoint_t*
+	/// `rocksdb_checkpoint_t* rocksdb_checkpoint_object_create(rocksdb_t* db, char** errptr);`
 	private static final MethodHandle MH_CREATE;
-	// rocksdb_checkpoint_create(rocksdb_checkpoint_t* checkpoint, const char* checkpoint_dir, uint64_t log_size_for_flush, char** errptr) -> void
+	/// `void rocksdb_checkpoint_create(rocksdb_checkpoint_t* checkpoint, const char* checkpoint_dir, uint64_t log_size_for_flush, char** errptr);`
 	private static final MethodHandle MH_EXPORT;
-	// rocksdb_checkpoint_object_destroy(rocksdb_checkpoint_t* checkpoint) -> void
+	/// `void rocksdb_checkpoint_object_destroy(rocksdb_checkpoint_t* checkpoint);`
 	private static final MethodHandle MH_DESTROY;
 
 	static {
-		// rocksdb_checkpoint_t* rocksdb_checkpoint_object_create(rocksdb_t* db, char** errptr)
 		MH_CREATE = RocksDB.lookup("rocksdb_checkpoint_object_create",
 				FunctionDescriptor.of(ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS,   // db
 						ValueLayout.ADDRESS)); // errptr
 
-		// void rocksdb_checkpoint_create(rocksdb_checkpoint_t*, const char* dir,
-		//                                uint64_t log_size_for_flush, char** errptr)
 		MH_EXPORT = RocksDB.lookup("rocksdb_checkpoint_create",
 				FunctionDescriptor.ofVoid(
 						ValueLayout.ADDRESS,   // checkpoint
@@ -50,7 +47,6 @@ public final class Checkpoint extends NativeObject {
 						ValueLayout.JAVA_LONG, // log_size_for_flush
 						ValueLayout.ADDRESS)); // errptr
 
-		// void rocksdb_checkpoint_object_destroy(rocksdb_checkpoint_t*)
 		MH_DESTROY = RocksDB.lookup("rocksdb_checkpoint_object_destroy",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 	}

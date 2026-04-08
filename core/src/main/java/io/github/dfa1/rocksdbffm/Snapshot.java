@@ -25,9 +25,9 @@ import java.lang.invoke.MethodHandle;
 /// ```
 public final class Snapshot extends NativeObject {
 
-	// rocksdb_snapshot_get_sequence_number(const rocksdb_snapshot_t* snapshot) -> uint64_t
+	/// `uint64_t rocksdb_snapshot_get_sequence_number(const rocksdb_snapshot_t* snapshot);`
 	private static final MethodHandle MH_SEQUENCE_NUMBER;
-	// rocksdb_release_snapshot(rocksdb_t* db, const rocksdb_snapshot_t* snapshot) -> void
+	/// `void rocksdb_release_snapshot(rocksdb_t* db, const rocksdb_snapshot_t* snapshot);`
 	private static final MethodHandle MH_RELEASE;
 	// rocksdb_free(ptr*) — for Transaction snapshots
 

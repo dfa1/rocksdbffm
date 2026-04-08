@@ -16,21 +16,21 @@ import java.lang.invoke.MethodHandle;
 /// ```
 public final class IngestExternalFileOptions extends NativeObject {
 
-	// rocksdb_ingestexternalfileoptions_create(void) -> rocksdb_ingestexternalfileoptions_t*
+	/// `rocksdb_ingestexternalfileoptions_t* rocksdb_ingestexternalfileoptions_create(void);`
 	private static final MethodHandle MH_CREATE;
-	// rocksdb_ingestexternalfileoptions_destroy(rocksdb_ingestexternalfileoptions_t* opt) -> void
+	/// `void rocksdb_ingestexternalfileoptions_destroy(rocksdb_ingestexternalfileoptions_t* opt);`
 	private static final MethodHandle MH_DESTROY;
-	// rocksdb_ingestexternalfileoptions_set_move_files(rocksdb_ingestexternalfileoptions_t* opt, unsigned char move_files) -> void
+	/// `void rocksdb_ingestexternalfileoptions_set_move_files(rocksdb_ingestexternalfileoptions_t* opt, unsigned char move_files);`
 	private static final MethodHandle MH_SET_MOVE_FILES;
-	// rocksdb_ingestexternalfileoptions_set_snapshot_consistency(rocksdb_ingestexternalfileoptions_t* opt, unsigned char snapshot_consistency) -> void
+	/// `void rocksdb_ingestexternalfileoptions_set_snapshot_consistency(rocksdb_ingestexternalfileoptions_t* opt, unsigned char snapshot_consistency);`
 	private static final MethodHandle MH_SET_SNAPSHOT_CONSISTENCY;
-	// rocksdb_ingestexternalfileoptions_set_allow_global_seqno(rocksdb_ingestexternalfileoptions_t* opt, unsigned char allow_global_seqno) -> void
+	/// `void rocksdb_ingestexternalfileoptions_set_allow_global_seqno(rocksdb_ingestexternalfileoptions_t* opt, unsigned char allow_global_seqno);`
 	private static final MethodHandle MH_SET_ALLOW_GLOBAL_SEQNO;
-	// rocksdb_ingestexternalfileoptions_set_allow_blocking_flush(rocksdb_ingestexternalfileoptions_t* opt, unsigned char allow_blocking_flush) -> void
+	/// `void rocksdb_ingestexternalfileoptions_set_allow_blocking_flush(rocksdb_ingestexternalfileoptions_t* opt, unsigned char allow_blocking_flush);`
 	private static final MethodHandle MH_SET_ALLOW_BLOCKING_FLUSH;
-	// rocksdb_ingestexternalfileoptions_set_ingest_behind(rocksdb_ingestexternalfileoptions_t* opt, unsigned char ingest_behind) -> void
+	/// `void rocksdb_ingestexternalfileoptions_set_ingest_behind(rocksdb_ingestexternalfileoptions_t* opt, unsigned char ingest_behind);`
 	private static final MethodHandle MH_SET_INGEST_BEHIND;
-	// rocksdb_ingestexternalfileoptions_set_fail_if_not_bottommost_level(rocksdb_ingestexternalfileoptions_t* opt, unsigned char fail_if_not_bottommost_level) -> void
+	/// `void rocksdb_ingestexternalfileoptions_set_fail_if_not_bottommost_level(rocksdb_ingestexternalfileoptions_t* opt, unsigned char fail_if_not_bottommost_level);`
 	private static final MethodHandle MH_SET_FAIL_IF_NOT_BOTTOMMOST_LEVEL;
 
 	static {
@@ -40,27 +40,21 @@ public final class IngestExternalFileOptions extends NativeObject {
 		MH_DESTROY = RocksDB.lookup("rocksdb_ingestexternalfileoptions_destroy",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
-		// void rocksdb_ingestexternalfileoptions_set_move_files(opts*, unsigned char)
 		MH_SET_MOVE_FILES = RocksDB.lookup("rocksdb_ingestexternalfileoptions_set_move_files",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_BYTE));
 
-		// void rocksdb_ingestexternalfileoptions_set_snapshot_consistency(opts*, unsigned char)
 		MH_SET_SNAPSHOT_CONSISTENCY = RocksDB.lookup("rocksdb_ingestexternalfileoptions_set_snapshot_consistency",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_BYTE));
 
-		// void rocksdb_ingestexternalfileoptions_set_allow_global_seqno(opts*, unsigned char)
 		MH_SET_ALLOW_GLOBAL_SEQNO = RocksDB.lookup("rocksdb_ingestexternalfileoptions_set_allow_global_seqno",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_BYTE));
 
-		// void rocksdb_ingestexternalfileoptions_set_allow_blocking_flush(opts*, unsigned char)
 		MH_SET_ALLOW_BLOCKING_FLUSH = RocksDB.lookup("rocksdb_ingestexternalfileoptions_set_allow_blocking_flush",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_BYTE));
 
-		// void rocksdb_ingestexternalfileoptions_set_ingest_behind(opts*, unsigned char)
 		MH_SET_INGEST_BEHIND = RocksDB.lookup("rocksdb_ingestexternalfileoptions_set_ingest_behind",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_BYTE));
 
-		// void rocksdb_ingestexternalfileoptions_set_fail_if_not_bottommost_level(opts*, unsigned char)
 		MH_SET_FAIL_IF_NOT_BOTTOMMOST_LEVEL = RocksDB.lookup(
 				"rocksdb_ingestexternalfileoptions_set_fail_if_not_bottommost_level",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_BYTE));

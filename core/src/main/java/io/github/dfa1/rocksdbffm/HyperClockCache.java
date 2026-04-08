@@ -21,15 +21,15 @@ import java.lang.invoke.MethodHandle;
 /// ```
 public final class HyperClockCache extends Cache {
 
-	// rocksdb_hyper_clock_cache_options_create(size_t capacity, size_t estimated_entry_charge) -> rocksdb_hyper_clock_cache_options_t*
+	/// `rocksdb_hyper_clock_cache_options_t* rocksdb_hyper_clock_cache_options_create(size_t capacity, size_t estimated_entry_charge);`
 	private static final MethodHandle MH_OPTS_CREATE;
-	// rocksdb_hyper_clock_cache_options_destroy(rocksdb_hyper_clock_cache_options_t*) -> void
+	/// `void rocksdb_hyper_clock_cache_options_destroy(rocksdb_hyper_clock_cache_options_t*);`
 	private static final MethodHandle MH_OPTS_DESTROY;
-	// rocksdb_hyper_clock_cache_options_set_num_shard_bits(rocksdb_hyper_clock_cache_options_t*, int) -> void
+	/// `void rocksdb_hyper_clock_cache_options_set_num_shard_bits(rocksdb_hyper_clock_cache_options_t*, int);`
 	private static final MethodHandle MH_OPTS_SET_NUM_SHARD_BITS;
-	// rocksdb_cache_create_hyper_clock(size_t capacity, size_t estimated_entry_charge) -> rocksdb_cache_t*
+	/// `rocksdb_cache_t* rocksdb_cache_create_hyper_clock(size_t capacity, size_t estimated_entry_charge);`
 	private static final MethodHandle MH_CREATE;
-	// rocksdb_cache_create_hyper_clock_opts(const rocksdb_hyper_clock_cache_options_t*) -> rocksdb_cache_t*
+	/// `rocksdb_cache_t* rocksdb_cache_create_hyper_clock_opts(const rocksdb_hyper_clock_cache_options_t*);`
 	private static final MethodHandle MH_CREATE_OPTS;
 
 	static {

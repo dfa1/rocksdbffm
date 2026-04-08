@@ -11,11 +11,11 @@ import java.lang.invoke.MethodHandle;
 /// or lock timeout — conflicts are detected at [Transaction#commit()] time.
 public final class OptimisticTransactionOptions extends NativeObject {
 
-	// rocksdb_optimistictransaction_options_create(void) -> rocksdb_optimistictransaction_options_t*
+	/// `rocksdb_optimistictransaction_options_t* rocksdb_optimistictransaction_options_create(void);`
 	private static final MethodHandle MH_CREATE;
-	// rocksdb_optimistictransaction_options_destroy(rocksdb_optimistictransaction_options_t* opt) -> void
+	/// `void rocksdb_optimistictransaction_options_destroy(rocksdb_optimistictransaction_options_t* opt);`
 	private static final MethodHandle MH_DESTROY;
-	// rocksdb_optimistictransaction_options_set_set_snapshot(rocksdb_optimistictransaction_options_t* opt, unsigned char v) -> void
+	/// `void rocksdb_optimistictransaction_options_set_set_snapshot(rocksdb_optimistictransaction_options_t* opt, unsigned char v);`
 	private static final MethodHandle MH_SET_SET_SNAPSHOT;
 
 	static {
@@ -25,7 +25,6 @@ public final class OptimisticTransactionOptions extends NativeObject {
 		MH_DESTROY = RocksDB.lookup("rocksdb_optimistictransaction_options_destroy",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
-		// void rocksdb_optimistictransaction_options_set_set_snapshot(opt*, unsigned char v)
 		MH_SET_SET_SNAPSHOT = RocksDB.lookup(
 				"rocksdb_optimistictransaction_options_set_set_snapshot",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_BYTE));

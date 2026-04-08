@@ -12,15 +12,15 @@ import java.lang.invoke.MethodHandle;
 /// across multiple column families or DB instances.
 public abstract class Cache extends NativeObject {
 
-	// rocksdb_cache_destroy(rocksdb_cache_t* cache) -> void
+	/// `void rocksdb_cache_destroy(rocksdb_cache_t* cache);`
 	private static final MethodHandle MH_DESTROY;
-	// rocksdb_cache_set_capacity(rocksdb_cache_t* cache, size_t capacity) -> void
+	/// `void rocksdb_cache_set_capacity(rocksdb_cache_t* cache, size_t capacity);`
 	private static final MethodHandle MH_SET_CAPACITY;
-	// rocksdb_cache_get_capacity(const rocksdb_cache_t* cache) -> size_t
+	/// `size_t rocksdb_cache_get_capacity(const rocksdb_cache_t* cache);`
 	private static final MethodHandle MH_GET_CAPACITY;
-	// rocksdb_cache_get_usage(const rocksdb_cache_t* cache) -> size_t
+	/// `size_t rocksdb_cache_get_usage(const rocksdb_cache_t* cache);`
 	private static final MethodHandle MH_GET_USAGE;
-	// rocksdb_cache_get_pinned_usage(const rocksdb_cache_t* cache) -> size_t
+	/// `size_t rocksdb_cache_get_pinned_usage(const rocksdb_cache_t* cache);`
 	private static final MethodHandle MH_GET_PINNED_USAGE;
 
 	static {

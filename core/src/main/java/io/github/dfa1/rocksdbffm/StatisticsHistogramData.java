@@ -8,27 +8,27 @@ import java.lang.invoke.MethodHandle;
 /// FFM wrapper for `rocksdb_statistics_histogram_data_t`.
 public final class StatisticsHistogramData extends NativeObject {
 
-	// rocksdb_statistics_histogram_data_create(void) -> rocksdb_statistics_histogram_data_t*
+	/// `rocksdb_statistics_histogram_data_t* rocksdb_statistics_histogram_data_create(void);`
 	private static final MethodHandle MH_CREATE;
-	// rocksdb_statistics_histogram_data_destroy(rocksdb_statistics_histogram_data_t* data) -> void
+	/// `void rocksdb_statistics_histogram_data_destroy(rocksdb_statistics_histogram_data_t* data);`
 	private static final MethodHandle MH_DESTROY;
-	// rocksdb_statistics_histogram_data_get_median(rocksdb_statistics_histogram_data_t* data) -> double
+	/// `double rocksdb_statistics_histogram_data_get_median(rocksdb_statistics_histogram_data_t* data);`
 	private static final MethodHandle MH_GET_MEDIAN;
-	// rocksdb_statistics_histogram_data_get_p95(rocksdb_statistics_histogram_data_t* data) -> double
+	/// `double rocksdb_statistics_histogram_data_get_p95(rocksdb_statistics_histogram_data_t* data);`
 	private static final MethodHandle MH_GET_P95;
-	// rocksdb_statistics_histogram_data_get_p99(rocksdb_statistics_histogram_data_t* data) -> double
+	/// `double rocksdb_statistics_histogram_data_get_p99(rocksdb_statistics_histogram_data_t* data);`
 	private static final MethodHandle MH_GET_P99;
-	// rocksdb_statistics_histogram_data_get_average(rocksdb_statistics_histogram_data_t* data) -> double
+	/// `double rocksdb_statistics_histogram_data_get_average(rocksdb_statistics_histogram_data_t* data);`
 	private static final MethodHandle MH_GET_AVERAGE;
-	// rocksdb_statistics_histogram_data_get_std_dev(rocksdb_statistics_histogram_data_t* data) -> double
+	/// `double rocksdb_statistics_histogram_data_get_std_dev(rocksdb_statistics_histogram_data_t* data);`
 	private static final MethodHandle MH_GET_STD_DEV;
-	// rocksdb_statistics_histogram_data_get_max(rocksdb_statistics_histogram_data_t* data) -> double
+	/// `double rocksdb_statistics_histogram_data_get_max(rocksdb_statistics_histogram_data_t* data);`
 	private static final MethodHandle MH_GET_MAX;
-	// rocksdb_statistics_histogram_data_get_count(rocksdb_statistics_histogram_data_t* data) -> uint64_t
+	/// `uint64_t rocksdb_statistics_histogram_data_get_count(rocksdb_statistics_histogram_data_t* data);`
 	private static final MethodHandle MH_GET_COUNT;
-	// rocksdb_statistics_histogram_data_get_sum(rocksdb_statistics_histogram_data_t* data) -> uint64_t
+	/// `uint64_t rocksdb_statistics_histogram_data_get_sum(rocksdb_statistics_histogram_data_t* data);`
 	private static final MethodHandle MH_GET_SUM;
-	// rocksdb_statistics_histogram_data_get_min(rocksdb_statistics_histogram_data_t* data) -> double
+	/// `double rocksdb_statistics_histogram_data_get_min(rocksdb_statistics_histogram_data_t* data);`
 	private static final MethodHandle MH_GET_MIN;
 
 	static {

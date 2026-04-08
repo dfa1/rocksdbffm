@@ -16,25 +16,25 @@ import java.lang.invoke.MethodHandle;
 /// ```
 public final class CompactOptions extends NativeObject {
 
-	// rocksdb_compactoptions_create(void) -> rocksdb_compactoptions_t*
+	/// `rocksdb_compactoptions_t* rocksdb_compactoptions_create(void);`
 	private static final MethodHandle MH_CREATE;
-	// rocksdb_compactoptions_destroy(rocksdb_compactoptions_t*) -> void
+	/// `void rocksdb_compactoptions_destroy(rocksdb_compactoptions_t*);`
 	private static final MethodHandle MH_DESTROY;
-	// rocksdb_compactoptions_set_exclusive_manual_compaction(rocksdb_compactoptions_t*, unsigned char) -> void
+	/// `void rocksdb_compactoptions_set_exclusive_manual_compaction(rocksdb_compactoptions_t*, unsigned char);`
 	private static final MethodHandle MH_SET_EXCLUSIVE;
-	// rocksdb_compactoptions_get_exclusive_manual_compaction(rocksdb_compactoptions_t*) -> unsigned char
+	/// `unsigned char rocksdb_compactoptions_get_exclusive_manual_compaction(rocksdb_compactoptions_t*);`
 	private static final MethodHandle MH_GET_EXCLUSIVE;
-	// rocksdb_compactoptions_set_bottommost_level_compaction(rocksdb_compactoptions_t*, unsigned char) -> void
+	/// `void rocksdb_compactoptions_set_bottommost_level_compaction(rocksdb_compactoptions_t*, unsigned char);`
 	private static final MethodHandle MH_SET_BOTTOMMOST;
-	// rocksdb_compactoptions_get_bottommost_level_compaction(rocksdb_compactoptions_t*) -> unsigned char
+	/// `unsigned char rocksdb_compactoptions_get_bottommost_level_compaction(rocksdb_compactoptions_t*);`
 	private static final MethodHandle MH_GET_BOTTOMMOST;
-	// rocksdb_compactoptions_set_change_level(rocksdb_compactoptions_t*, unsigned char) -> void
+	/// `void rocksdb_compactoptions_set_change_level(rocksdb_compactoptions_t*, unsigned char);`
 	private static final MethodHandle MH_SET_CHANGE_LEVEL;
-	// rocksdb_compactoptions_get_change_level(rocksdb_compactoptions_t*) -> unsigned char
+	/// `unsigned char rocksdb_compactoptions_get_change_level(rocksdb_compactoptions_t*);`
 	private static final MethodHandle MH_GET_CHANGE_LEVEL;
-	// rocksdb_compactoptions_set_target_level(rocksdb_compactoptions_t*, int) -> void
+	/// `void rocksdb_compactoptions_set_target_level(rocksdb_compactoptions_t*, int);`
 	private static final MethodHandle MH_SET_TARGET_LEVEL;
-	// rocksdb_compactoptions_get_target_level(rocksdb_compactoptions_t*) -> int
+	/// `int rocksdb_compactoptions_get_target_level(rocksdb_compactoptions_t*);`
 	private static final MethodHandle MH_GET_TARGET_LEVEL;
 
 	static {

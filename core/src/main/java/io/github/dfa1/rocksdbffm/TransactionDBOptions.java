@@ -8,13 +8,13 @@ import java.lang.invoke.MethodHandle;
 /// FFM wrapper for `rocksdb_transactiondb_options_t`.
 public final class TransactionDBOptions extends NativeObject {
 
-	// rocksdb_transactiondb_options_create(void) -> rocksdb_transactiondb_options_t*
+	/// `rocksdb_transactiondb_options_t* rocksdb_transactiondb_options_create(void);`
 	private static final MethodHandle MH_CREATE;
-	// rocksdb_transactiondb_options_destroy(rocksdb_transactiondb_options_t* opt) -> void
+	/// `void rocksdb_transactiondb_options_destroy(rocksdb_transactiondb_options_t* opt);`
 	private static final MethodHandle MH_DESTROY;
-	// rocksdb_transactiondb_options_set_max_num_locks(rocksdb_transactiondb_options_t* opt, int64_t max_num_locks) -> void
+	/// `void rocksdb_transactiondb_options_set_max_num_locks(rocksdb_transactiondb_options_t* opt, int64_t max_num_locks);`
 	private static final MethodHandle MH_SET_MAX_NUM_LOCKS;
-	// rocksdb_transactiondb_options_set_num_stripes(rocksdb_transactiondb_options_t* opt, size_t num_stripes) -> void
+	/// `void rocksdb_transactiondb_options_set_num_stripes(rocksdb_transactiondb_options_t* opt, size_t num_stripes);`
 	private static final MethodHandle MH_SET_NUM_STRIPES;
 
 	static {
@@ -24,11 +24,9 @@ public final class TransactionDBOptions extends NativeObject {
 		MH_DESTROY = RocksDB.lookup("rocksdb_transactiondb_options_destroy",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
-		// void rocksdb_transactiondb_options_set_max_num_locks(opt*, int64_t)
 		MH_SET_MAX_NUM_LOCKS = RocksDB.lookup("rocksdb_transactiondb_options_set_max_num_locks",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
 
-		// void rocksdb_transactiondb_options_set_num_stripes(opt*, size_t)
 		MH_SET_NUM_STRIPES = RocksDB.lookup("rocksdb_transactiondb_options_set_num_stripes",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
 	}

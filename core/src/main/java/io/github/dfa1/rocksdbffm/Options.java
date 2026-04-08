@@ -19,31 +19,31 @@ import java.lang.invoke.MethodHandle;
 /// it can be closed immediately after that call.
 public final class Options extends NativeObject {
 
-	// rocksdb_options_create(void) -> rocksdb_options_t*
+	/// `rocksdb_options_t* rocksdb_options_create(void);`
 	private static final MethodHandle MH_CREATE;
-	// rocksdb_options_destroy(rocksdb_options_t*) -> void
+	/// `void rocksdb_options_destroy(rocksdb_options_t*);`
 	private static final MethodHandle MH_DESTROY;
-	// rocksdb_options_set_create_if_missing(rocksdb_options_t*, unsigned char) -> void
+	/// `void rocksdb_options_set_create_if_missing(rocksdb_options_t*, unsigned char);`
 	private static final MethodHandle MH_SET_CREATE_IF_MISSING;
-	// rocksdb_options_get_create_if_missing(rocksdb_options_t*) -> unsigned char
+	/// `unsigned char rocksdb_options_get_create_if_missing(rocksdb_options_t*);`
 	private static final MethodHandle MH_GET_CREATE_IF_MISSING;
-	// rocksdb_options_set_block_based_table_factory(rocksdb_options_t* opt, rocksdb_block_based_table_options_t* table_options) -> void
+	/// `void rocksdb_options_set_block_based_table_factory(rocksdb_options_t* opt, rocksdb_block_based_table_options_t* table_options);`
 	private static final MethodHandle MH_SET_BLOCK_BASED_TABLE_FACTORY;
-	// rocksdb_options_enable_statistics(rocksdb_options_t*) -> void
+	/// `void rocksdb_options_enable_statistics(rocksdb_options_t*);`
 	private static final MethodHandle MH_ENABLE_STATISTICS;
-	// rocksdb_options_set_statistics_level(rocksdb_options_t*, int level) -> void
+	/// `void rocksdb_options_set_statistics_level(rocksdb_options_t*, int level);`
 	private static final MethodHandle MH_SET_STATISTICS_LEVEL;
-	// rocksdb_options_get_statistics_level(rocksdb_options_t*) -> int
+	/// `int rocksdb_options_get_statistics_level(rocksdb_options_t*);`
 	private static final MethodHandle MH_GET_STATISTICS_LEVEL;
-	// rocksdb_options_statistics_get_string(rocksdb_options_t* opt) -> char*
+	/// `char* rocksdb_options_statistics_get_string(rocksdb_options_t* opt);`
 	private static final MethodHandle MH_STATISTICS_GET_STRING;
-	// rocksdb_options_statistics_get_ticker_count(rocksdb_options_t* opt, uint32_t ticker_type) -> uint64_t
+	/// `uint64_t rocksdb_options_statistics_get_ticker_count(rocksdb_options_t* opt, uint32_t ticker_type);`
 	private static final MethodHandle MH_STATISTICS_GET_TICKER_COUNT;
-	// rocksdb_options_statistics_get_histogram_data(rocksdb_options_t* opt, uint32_t histogram_type, rocksdb_statistics_histogram_data_t* const data) -> void
+	/// `void rocksdb_options_statistics_get_histogram_data(rocksdb_options_t* opt, uint32_t histogram_type, rocksdb_statistics_histogram_data_t* const data);`
 	private static final MethodHandle MH_STATISTICS_GET_HISTOGRAM_DATA;
-	// rocksdb_options_set_compression(rocksdb_options_t*, int) -> void
+	/// `void rocksdb_options_set_compression(rocksdb_options_t*, int);`
 	private static final MethodHandle MH_SET_COMPRESSION;
-	// rocksdb_options_get_compression(rocksdb_options_t*) -> int
+	/// `int rocksdb_options_get_compression(rocksdb_options_t*);`
 	private static final MethodHandle MH_GET_COMPRESSION;
 
 	static {
@@ -59,7 +59,6 @@ public final class Options extends NativeObject {
 		MH_GET_CREATE_IF_MISSING = RocksDB.lookup("rocksdb_options_get_create_if_missing",
 				FunctionDescriptor.of(ValueLayout.JAVA_BYTE, ValueLayout.ADDRESS));
 
-		// void rocksdb_options_set_block_based_table_factory(opts*, block_based_table_options_t*)
 		MH_SET_BLOCK_BASED_TABLE_FACTORY = RocksDB.lookup(
 				"rocksdb_options_set_block_based_table_factory",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
@@ -82,11 +81,9 @@ public final class Options extends NativeObject {
 		MH_STATISTICS_GET_HISTOGRAM_DATA = RocksDB.lookup("rocksdb_options_statistics_get_histogram_data",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
 
-		// void rocksdb_options_set_compression(opts*, int)
 		MH_SET_COMPRESSION = RocksDB.lookup("rocksdb_options_set_compression",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
 
-		// int rocksdb_options_get_compression(opts*)
 		MH_GET_COMPRESSION = RocksDB.lookup("rocksdb_options_get_compression",
 				FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
 

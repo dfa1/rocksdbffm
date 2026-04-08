@@ -19,29 +19,29 @@ import java.lang.invoke.MethodHandle;
 /// ```
 public final class Transaction extends NativeObject {
 
-	// rocksdb_transaction_commit(rocksdb_transaction_t* txn, char** errptr) -> void
+	/// `void rocksdb_transaction_commit(rocksdb_transaction_t* txn, char** errptr);`
 	private static final MethodHandle MH_COMMIT;
-	// rocksdb_transaction_rollback(rocksdb_transaction_t* txn, char** errptr) -> void
+	/// `void rocksdb_transaction_rollback(rocksdb_transaction_t* txn, char** errptr);`
 	private static final MethodHandle MH_ROLLBACK;
-	// rocksdb_transaction_destroy(rocksdb_transaction_t* txn) -> void
+	/// `void rocksdb_transaction_destroy(rocksdb_transaction_t* txn);`
 	private static final MethodHandle MH_DESTROY;
-	// rocksdb_transaction_get_snapshot(rocksdb_transaction_t* txn) -> const rocksdb_snapshot_t*
+	/// `const rocksdb_snapshot_t* rocksdb_transaction_get_snapshot(rocksdb_transaction_t* txn);`
 	private static final MethodHandle MH_GET_SNAPSHOT;
-	// rocksdb_transaction_set_savepoint(rocksdb_transaction_t* txn) -> void
+	/// `void rocksdb_transaction_set_savepoint(rocksdb_transaction_t* txn);`
 	private static final MethodHandle MH_SET_SAVEPOINT;
-	// rocksdb_transaction_rollback_to_savepoint(rocksdb_transaction_t* txn, char** errptr) -> void
+	/// `void rocksdb_transaction_rollback_to_savepoint(rocksdb_transaction_t* txn, char** errptr);`
 	private static final MethodHandle MH_ROLLBACK_TO_SAVEPOINT;
-	// rocksdb_transaction_put(rocksdb_transaction_t* txn, const char* key, size_t klen, const char* val, size_t vlen, char** errptr) -> void
+	/// `void rocksdb_transaction_put(rocksdb_transaction_t* txn, const char* key, size_t klen, const char* val, size_t vlen, char** errptr);`
 	private static final MethodHandle MH_PUT;
-	// rocksdb_transaction_delete(rocksdb_transaction_t* txn, const char* key, size_t klen, char** errptr) -> void
+	/// `void rocksdb_transaction_delete(rocksdb_transaction_t* txn, const char* key, size_t klen, char** errptr);`
 	private static final MethodHandle MH_DELETE;
-	// rocksdb_transaction_get_pinned(rocksdb_transaction_t* txn, const rocksdb_readoptions_t* options, const char* key, size_t klen, char** errptr) -> rocksdb_pinnableslice_t*
+	/// `rocksdb_pinnableslice_t* rocksdb_transaction_get_pinned(rocksdb_transaction_t* txn, const rocksdb_readoptions_t* options, const char* key, size_t klen, char** errptr);`
 	private static final MethodHandle MH_GET_PINNED;
-	// rocksdb_transaction_get_for_update(rocksdb_transaction_t* txn, const rocksdb_readoptions_t* options, const char* key, size_t klen, size_t* vlen, unsigned char exclusive, char** errptr) -> char*
+	/// `char* rocksdb_transaction_get_for_update(rocksdb_transaction_t* txn, const rocksdb_readoptions_t* options, const char* key, size_t klen, size_t* vlen, unsigned char exclusive, char** errptr);`
 	private static final MethodHandle MH_GET_FOR_UPDATE;
-	// rocksdb_pinnableslice_value(const rocksdb_pinnableslice_t* t, size_t* vlen) -> const char*
+	/// `const char* rocksdb_pinnableslice_value(const rocksdb_pinnableslice_t* t, size_t* vlen);`
 	private static final MethodHandle MH_PINNABLESLICE_VALUE;
-	// rocksdb_pinnableslice_destroy(rocksdb_pinnableslice_t* v) -> void
+	/// `void rocksdb_pinnableslice_destroy(rocksdb_pinnableslice_t* v);`
 	private static final MethodHandle MH_PINNABLESLICE_DESTROY;
 
 	static {
@@ -54,15 +54,12 @@ public final class Transaction extends NativeObject {
 		MH_DESTROY = RocksDB.lookup("rocksdb_transaction_destroy",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
-		// void rocksdb_transaction_set_savepoint(txn*)
 		MH_SET_SAVEPOINT = RocksDB.lookup("rocksdb_transaction_set_savepoint",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
-		// void rocksdb_transaction_rollback_to_savepoint(txn*, errptr**)
 		MH_ROLLBACK_TO_SAVEPOINT = RocksDB.lookup("rocksdb_transaction_rollback_to_savepoint",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
-		// void rocksdb_transaction_put(txn*, key*, klen, val*, vlen, errptr**)
 		MH_PUT = RocksDB.lookup("rocksdb_transaction_put",
 				FunctionDescriptor.ofVoid(
 						ValueLayout.ADDRESS,
@@ -70,21 +67,18 @@ public final class Transaction extends NativeObject {
 						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
 						ValueLayout.ADDRESS));
 
-		// void rocksdb_transaction_delete(txn*, key*, klen, errptr**)
 		MH_DELETE = RocksDB.lookup("rocksdb_transaction_delete",
 				FunctionDescriptor.ofVoid(
 						ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
 						ValueLayout.ADDRESS));
 
-		// rocksdb_pinnableslice_t* rocksdb_transaction_get_pinned(txn*, ro*, key*, klen, errptr**)
 		MH_GET_PINNED = RocksDB.lookup("rocksdb_transaction_get_pinned",
 				FunctionDescriptor.of(ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
 						ValueLayout.ADDRESS));
 
-		// char* rocksdb_transaction_get_for_update(txn*, ro*, key*, klen, size_t* vlen, exclusive, errptr**)
 		MH_GET_FOR_UPDATE = RocksDB.lookup("rocksdb_transaction_get_for_update",
 				FunctionDescriptor.of(ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS,
@@ -100,7 +94,6 @@ public final class Transaction extends NativeObject {
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
 
-		// const rocksdb_snapshot_t* rocksdb_transaction_get_snapshot(txn*)
 		// Note: must be freed with rocksdb_free, not rocksdb_release_snapshot
 		MH_GET_SNAPSHOT = RocksDB.lookup("rocksdb_transaction_get_snapshot",
 				FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS));

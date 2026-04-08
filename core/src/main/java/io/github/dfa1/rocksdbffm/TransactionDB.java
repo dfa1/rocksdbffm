@@ -28,34 +28,33 @@ public final class TransactionDB extends NativeObject {
 	// Method handles
 	// -----------------------------------------------------------------------
 
-	// rocksdb_transactiondb_open(const rocksdb_options_t* options, const rocksdb_transactiondb_options_t* txn_db_options, const char* name, char** errptr) -> rocksdb_transactiondb_t*
+	/// `rocksdb_transactiondb_t* rocksdb_transactiondb_open(const rocksdb_options_t* options, const rocksdb_transactiondb_options_t* txn_db_options, const char* name, char** errptr);`
 	private static final MethodHandle MH_OPEN;
-	// rocksdb_transactiondb_close(rocksdb_transactiondb_t* txn_db) -> void
+	/// `void rocksdb_transactiondb_close(rocksdb_transactiondb_t* txn_db);`
 	private static final MethodHandle MH_CLOSE;
-	// rocksdb_transaction_begin(rocksdb_transactiondb_t* txn_db, const rocksdb_writeoptions_t* write_options, const rocksdb_transaction_options_t* txn_options, rocksdb_transaction_t* old_txn) -> rocksdb_transaction_t*
+	/// `rocksdb_transaction_t* rocksdb_transaction_begin(rocksdb_transactiondb_t* txn_db, const rocksdb_writeoptions_t* write_options, const rocksdb_transaction_options_t* txn_options, rocksdb_transaction_t* old_txn);`
 	private static final MethodHandle MH_BEGIN;
-	// rocksdb_transactiondb_create_snapshot(rocksdb_transactiondb_t* txn_db) -> const rocksdb_snapshot_t*
+	/// `const rocksdb_snapshot_t* rocksdb_transactiondb_create_snapshot(rocksdb_transactiondb_t* txn_db);`
 	private static final MethodHandle MH_CREATE_SNAPSHOT;
-	// rocksdb_transactiondb_flush(rocksdb_transactiondb_t* txn_db, const rocksdb_flushoptions_t* options, char** errptr) -> void
+	/// `void rocksdb_transactiondb_flush(rocksdb_transactiondb_t* txn_db, const rocksdb_flushoptions_t* options, char** errptr);`
 	private static final MethodHandle MH_FLUSH;
-	// rocksdb_transactiondb_flush_wal(rocksdb_transactiondb_t* txn_db, unsigned char sync, char** errptr) -> void
+	/// `void rocksdb_transactiondb_flush_wal(rocksdb_transactiondb_t* txn_db, unsigned char sync, char** errptr);`
 	private static final MethodHandle MH_FLUSH_WAL;
-	// rocksdb_transactiondb_property_value(rocksdb_transactiondb_t* db, const char* propname) -> char*
+	/// `char* rocksdb_transactiondb_property_value(rocksdb_transactiondb_t* db, const char* propname);`
 	private static final MethodHandle MH_PROPERTY_VALUE;
-	// rocksdb_transactiondb_property_int(rocksdb_transactiondb_t* db, const char* propname, uint64_t* out_val) -> int
+	/// `int rocksdb_transactiondb_property_int(rocksdb_transactiondb_t* db, const char* propname, uint64_t* out_val);`
 	private static final MethodHandle MH_PROPERTY_INT;
 
 	// Direct (non-transactional) operations on the TransactionDB
-	// rocksdb_transactiondb_put(rocksdb_transactiondb_t* txn_db, const rocksdb_writeoptions_t* options, const char* key, size_t klen, const char* val, size_t vlen, char** errptr) -> void
+	/// `void rocksdb_transactiondb_put(rocksdb_transactiondb_t* txn_db, const rocksdb_writeoptions_t* options, const char* key, size_t klen, const char* val, size_t vlen, char** errptr);`
 	private static final MethodHandle MH_PUT;
-	// rocksdb_transactiondb_delete(rocksdb_transactiondb_t* txn_db, const rocksdb_writeoptions_t* options, const char* key, size_t klen, char** errptr) -> void
+	/// `void rocksdb_transactiondb_delete(rocksdb_transactiondb_t* txn_db, const rocksdb_writeoptions_t* options, const char* key, size_t klen, char** errptr);`
 	private static final MethodHandle MH_DELETE;
-	// rocksdb_transactiondb_get(rocksdb_transactiondb_t* txn_db, const rocksdb_readoptions_t* options, const char* key, size_t klen, size_t* vlen, char** errptr) -> char*
+	/// `char* rocksdb_transactiondb_get(rocksdb_transactiondb_t* txn_db, const rocksdb_readoptions_t* options, const char* key, size_t klen, size_t* vlen, char** errptr);`
 	private static final MethodHandle MH_GET;
 
 
 	static {
-		// rocksdb_transactiondb_t* rocksdb_transactiondb_open(opts*, txnDbOpts*, name, errptr**)
 		MH_OPEN = RocksDB.lookup("rocksdb_transactiondb_open",
 				FunctionDescriptor.of(ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS,
@@ -64,13 +63,11 @@ public final class TransactionDB extends NativeObject {
 		MH_CLOSE = RocksDB.lookup("rocksdb_transactiondb_close",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
-		// rocksdb_transaction_t* rocksdb_transaction_begin(txndb*, wo*, txn_opts*, old_txn)
 		MH_BEGIN = RocksDB.lookup("rocksdb_transaction_begin",
 				FunctionDescriptor.of(ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
-		// void rocksdb_transactiondb_put(txndb*, wo*, key*, klen, val*, vlen, errptr**)
 		MH_PUT = RocksDB.lookup("rocksdb_transactiondb_put",
 				FunctionDescriptor.ofVoid(
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS,
@@ -78,14 +75,12 @@ public final class TransactionDB extends NativeObject {
 						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
 						ValueLayout.ADDRESS));
 
-		// void rocksdb_transactiondb_delete(txndb*, wo*, key*, klen, errptr**)
 		MH_DELETE = RocksDB.lookup("rocksdb_transactiondb_delete",
 				FunctionDescriptor.ofVoid(
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
 						ValueLayout.ADDRESS));
 
-		// char* rocksdb_transactiondb_get(txndb*, ro*, key*, klen, size_t* vallen, errptr**)
 		MH_GET = RocksDB.lookup("rocksdb_transactiondb_get",
 				FunctionDescriptor.of(ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS,
@@ -93,23 +88,18 @@ public final class TransactionDB extends NativeObject {
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
 
-		// const rocksdb_snapshot_t* rocksdb_transactiondb_create_snapshot(txndb*)
 		MH_CREATE_SNAPSHOT = RocksDB.lookup("rocksdb_transactiondb_create_snapshot",
 				FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
-		// void rocksdb_transactiondb_flush(txndb*, flushopts*, errptr**)
 		MH_FLUSH = RocksDB.lookup("rocksdb_transactiondb_flush",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
-		// void rocksdb_transactiondb_flush_wal(txndb*, sync, errptr**)
 		MH_FLUSH_WAL = RocksDB.lookup("rocksdb_transactiondb_flush_wal",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_BYTE, ValueLayout.ADDRESS));
 
-		// char* rocksdb_transactiondb_property_value(txndb*, propname)
 		MH_PROPERTY_VALUE = RocksDB.lookup("rocksdb_transactiondb_property_value",
 				FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
-		// int rocksdb_transactiondb_property_int(txndb*, propname, uint64_t* out_val)
 		MH_PROPERTY_INT = RocksDB.lookup("rocksdb_transactiondb_property_int",
 				FunctionDescriptor.of(ValueLayout.JAVA_INT,
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));

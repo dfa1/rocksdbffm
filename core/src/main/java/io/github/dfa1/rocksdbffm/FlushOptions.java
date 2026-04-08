@@ -17,13 +17,13 @@ import java.lang.invoke.MethodHandle;
 /// ```
 public final class FlushOptions extends NativeObject {
 
-	// rocksdb_flushoptions_create(void) -> rocksdb_flushoptions_t*
+	/// `rocksdb_flushoptions_t* rocksdb_flushoptions_create(void);`
 	private static final MethodHandle MH_CREATE;
-	// rocksdb_flushoptions_destroy(rocksdb_flushoptions_t*) -> void
+	/// `void rocksdb_flushoptions_destroy(rocksdb_flushoptions_t*);`
 	private static final MethodHandle MH_DESTROY;
-	// rocksdb_flushoptions_set_wait(rocksdb_flushoptions_t*, unsigned char) -> void
+	/// `void rocksdb_flushoptions_set_wait(rocksdb_flushoptions_t*, unsigned char);`
 	private static final MethodHandle MH_SET_WAIT;
-	// rocksdb_flushoptions_get_wait(rocksdb_flushoptions_t*) -> unsigned char
+	/// `unsigned char rocksdb_flushoptions_get_wait(rocksdb_flushoptions_t*);`
 	private static final MethodHandle MH_GET_WAIT;
 
 	static {
@@ -33,11 +33,9 @@ public final class FlushOptions extends NativeObject {
 		MH_DESTROY = RocksDB.lookup("rocksdb_flushoptions_destroy",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
-		// void rocksdb_flushoptions_set_wait(opts*, unsigned char)
 		MH_SET_WAIT = RocksDB.lookup("rocksdb_flushoptions_set_wait",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_BYTE));
 
-		// unsigned char rocksdb_flushoptions_get_wait(opts*)
 		MH_GET_WAIT = RocksDB.lookup("rocksdb_flushoptions_get_wait",
 				FunctionDescriptor.of(ValueLayout.JAVA_BYTE, ValueLayout.ADDRESS));
 	}

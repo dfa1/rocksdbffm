@@ -53,27 +53,27 @@ public final class BlockBasedTableOptions extends NativeObject {
 	// Method handles
 	// -----------------------------------------------------------------------
 
-	// rocksdb_block_based_options_create(void) -> rocksdb_block_based_table_options_t*
+	/// `rocksdb_block_based_table_options_t* rocksdb_block_based_options_create(void);`
 	private static final MethodHandle MH_CREATE;
-	// rocksdb_block_based_options_destroy(rocksdb_block_based_table_options_t* options) -> void
+	/// `void rocksdb_block_based_options_destroy(rocksdb_block_based_table_options_t* options);`
 	private static final MethodHandle MH_DESTROY;
-	// rocksdb_block_based_options_set_block_size(rocksdb_block_based_table_options_t* options, size_t block_size) -> void
+	/// `void rocksdb_block_based_options_set_block_size(rocksdb_block_based_table_options_t* options, size_t block_size);`
 	private static final MethodHandle MH_SET_BLOCK_SIZE;
-	// rocksdb_block_based_options_set_filter_policy(rocksdb_block_based_table_options_t* options, rocksdb_filterpolicy_t* filter_policy) -> void
+	/// `void rocksdb_block_based_options_set_filter_policy(rocksdb_block_based_table_options_t* options, rocksdb_filterpolicy_t* filter_policy);`
 	private static final MethodHandle MH_SET_FILTER_POLICY;
-	// rocksdb_block_based_options_set_no_block_cache(rocksdb_block_based_table_options_t* options, unsigned char no_block_cache) -> void
+	/// `void rocksdb_block_based_options_set_no_block_cache(rocksdb_block_based_table_options_t* options, unsigned char no_block_cache);`
 	private static final MethodHandle MH_SET_NO_BLOCK_CACHE;
-	// rocksdb_block_based_options_set_block_cache(rocksdb_block_based_table_options_t* options, rocksdb_cache_t* block_cache) -> void
+	/// `void rocksdb_block_based_options_set_block_cache(rocksdb_block_based_table_options_t* options, rocksdb_cache_t* block_cache);`
 	private static final MethodHandle MH_SET_BLOCK_CACHE;
-	// rocksdb_block_based_options_set_cache_index_and_filter_blocks(rocksdb_block_based_table_options_t*, unsigned char) -> void
+	/// `void rocksdb_block_based_options_set_cache_index_and_filter_blocks(rocksdb_block_based_table_options_t*, unsigned char);`
 	private static final MethodHandle MH_SET_CACHE_INDEX_AND_FILTER_BLOCKS;
-	// rocksdb_block_based_options_set_index_type(rocksdb_block_based_table_options_t*, int) -> void
+	/// `void rocksdb_block_based_options_set_index_type(rocksdb_block_based_table_options_t*, int);`
 	private static final MethodHandle MH_SET_INDEX_TYPE;
-	// rocksdb_block_based_options_set_format_version(rocksdb_block_based_table_options_t*, int) -> void
+	/// `void rocksdb_block_based_options_set_format_version(rocksdb_block_based_table_options_t*, int);`
 	private static final MethodHandle MH_SET_FORMAT_VERSION;
-	// rocksdb_block_based_options_set_whole_key_filtering(rocksdb_block_based_table_options_t*, unsigned char) -> void
+	/// `void rocksdb_block_based_options_set_whole_key_filtering(rocksdb_block_based_table_options_t*, unsigned char);`
 	private static final MethodHandle MH_SET_WHOLE_KEY_FILTERING;
-	// rocksdb_block_based_options_set_partition_filters(rocksdb_block_based_table_options_t* options, unsigned char partition_filters) -> void
+	/// `void rocksdb_block_based_options_set_partition_filters(rocksdb_block_based_table_options_t* options, unsigned char partition_filters);`
 	private static final MethodHandle MH_SET_PARTITION_FILTERS;
 
 	static {
@@ -83,41 +83,32 @@ public final class BlockBasedTableOptions extends NativeObject {
 		MH_DESTROY = RocksDB.lookup("rocksdb_block_based_options_destroy",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
-		// void rocksdb_block_based_options_set_block_size(opts*, size_t)
 		MH_SET_BLOCK_SIZE = RocksDB.lookup("rocksdb_block_based_options_set_block_size",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
 
-		// void rocksdb_block_based_options_set_filter_policy(opts*, filterpolicy_t*)
 		MH_SET_FILTER_POLICY = RocksDB.lookup("rocksdb_block_based_options_set_filter_policy",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
-		// void rocksdb_block_based_options_set_no_block_cache(opts*, unsigned char)
 		MH_SET_NO_BLOCK_CACHE = RocksDB.lookup("rocksdb_block_based_options_set_no_block_cache",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_BYTE));
 
-		// void rocksdb_block_based_options_set_block_cache(opts*, cache_t*)
 		MH_SET_BLOCK_CACHE = RocksDB.lookup("rocksdb_block_based_options_set_block_cache",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
-		// void rocksdb_block_based_options_set_cache_index_and_filter_blocks(opts*, unsigned char)
 		MH_SET_CACHE_INDEX_AND_FILTER_BLOCKS = RocksDB.lookup(
 				"rocksdb_block_based_options_set_cache_index_and_filter_blocks",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_BYTE));
 
-		// void rocksdb_block_based_options_set_index_type(opts*, int)
 		MH_SET_INDEX_TYPE = RocksDB.lookup("rocksdb_block_based_options_set_index_type",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
 
-		// void rocksdb_block_based_options_set_format_version(opts*, int)
 		MH_SET_FORMAT_VERSION = RocksDB.lookup("rocksdb_block_based_options_set_format_version",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
 
-		// void rocksdb_block_based_options_set_whole_key_filtering(opts*, unsigned char)
 		MH_SET_WHOLE_KEY_FILTERING = RocksDB.lookup(
 				"rocksdb_block_based_options_set_whole_key_filtering",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_BYTE));
 
-		// void rocksdb_block_based_options_set_partition_filters(opts*, unsigned char)
 		MH_SET_PARTITION_FILTERS = RocksDB.lookup(
 				"rocksdb_block_based_options_set_partition_filters",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_BYTE));

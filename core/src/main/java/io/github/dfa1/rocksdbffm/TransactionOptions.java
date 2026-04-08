@@ -8,15 +8,15 @@ import java.lang.invoke.MethodHandle;
 /// FFM wrapper for `rocksdb_transaction_options_t`.
 public final class TransactionOptions extends NativeObject {
 
-	// rocksdb_transaction_options_create(void) -> rocksdb_transaction_options_t*
+	/// `rocksdb_transaction_options_t* rocksdb_transaction_options_create(void);`
 	private static final MethodHandle MH_CREATE;
-	// rocksdb_transaction_options_destroy(rocksdb_transaction_options_t* opt) -> void
+	/// `void rocksdb_transaction_options_destroy(rocksdb_transaction_options_t* opt);`
 	private static final MethodHandle MH_DESTROY;
-	// rocksdb_transaction_options_set_set_snapshot(rocksdb_transaction_options_t* opt, unsigned char v) -> void
+	/// `void rocksdb_transaction_options_set_set_snapshot(rocksdb_transaction_options_t* opt, unsigned char v);`
 	private static final MethodHandle MH_SET_SET_SNAPSHOT;
-	// rocksdb_transaction_options_set_deadlock_detect(rocksdb_transaction_options_t* opt, unsigned char v) -> void
+	/// `void rocksdb_transaction_options_set_deadlock_detect(rocksdb_transaction_options_t* opt, unsigned char v);`
 	private static final MethodHandle MH_SET_DEADLOCK_DETECT;
-	// rocksdb_transaction_options_set_lock_timeout(rocksdb_transaction_options_t* opt, int64_t lock_timeout) -> void
+	/// `void rocksdb_transaction_options_set_lock_timeout(rocksdb_transaction_options_t* opt, int64_t lock_timeout);`
 	private static final MethodHandle MH_SET_LOCK_TIMEOUT;
 
 	static {
@@ -26,15 +26,12 @@ public final class TransactionOptions extends NativeObject {
 		MH_DESTROY = RocksDB.lookup("rocksdb_transaction_options_destroy",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
-		// void rocksdb_transaction_options_set_set_snapshot(opt*, unsigned char v)
 		MH_SET_SET_SNAPSHOT = RocksDB.lookup("rocksdb_transaction_options_set_set_snapshot",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_BYTE));
 
-		// void rocksdb_transaction_options_set_deadlock_detect(opt*, unsigned char v)
 		MH_SET_DEADLOCK_DETECT = RocksDB.lookup("rocksdb_transaction_options_set_deadlock_detect",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_BYTE));
 
-		// void rocksdb_transaction_options_set_lock_timeout(opt*, int64_t lock_timeout)
 		MH_SET_LOCK_TIMEOUT = RocksDB.lookup("rocksdb_transaction_options_set_lock_timeout",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
 	}

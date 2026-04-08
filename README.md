@@ -183,8 +183,4 @@ The project is open to contributions, particularly in the following areas:
   `db.put(arena, key, value)` / `db.get(arena, key)` / `db.delete(arena, key)`.
   Lets callers amortize arena create/destroy over a batch of calls instead of paying it per call.
 - RocksDB, OptimisticTransactionDB, TransactionDB reimplement the same get/put/delete methods
-- find a way to refactor that
-- some functions are mapping multiple times: document this for the AI
-- PinnableSlice
-- rocksdb_free
-- most likely others
+  - find a way to refactor that

@@ -3,6 +3,7 @@ package io.github.dfa1.rocksdbffm;
 /**
  * Ticker types for RocksDB statistics.
  * Corresponds to {@code enum Tickers} in {@code rocksdb/statistics.h}.
+ * NB: beware this must be regenerated every time a new version of rocksdb is imported (!)
  */
 public enum TickerType {
 	BLOCK_CACHE_MISS(0),

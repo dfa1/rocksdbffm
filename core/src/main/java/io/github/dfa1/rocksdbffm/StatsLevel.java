@@ -18,7 +18,7 @@ public enum StatsLevel {
 		this.value = value;
 	}
 
-	public int getValue() {
+	int getValue() {
 		return value;
 	}
 }

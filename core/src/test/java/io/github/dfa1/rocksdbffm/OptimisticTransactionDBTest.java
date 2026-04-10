@@ -3,6 +3,9 @@ package io.github.dfa1.rocksdbffm;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.lang.foreign.Arena;
+import java.lang.foreign.ValueLayout;
+import java.nio.ByteBuffer;
 import java.nio.file.Path;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -24,7 +27,7 @@ class OptimisticTransactionDBTest {
 	}
 
 	// -----------------------------------------------------------------------
-	// Direct (non-transactional) operations
+	// Direct (non-transactional) operations — byte[] tier
 	// -----------------------------------------------------------------------
 
 	@Test
@@ -64,6 +67,149 @@ class OptimisticTransactionDBTest {
 
 			// When / Then
 			assertThat(db.get("missing".getBytes())).isNull();
+		}
+	}
+
+	// -----------------------------------------------------------------------
+	// Direct (non-transactional) operations — ByteBuffer tier
+	// -----------------------------------------------------------------------
+
+	@Test
+	void put_and_get_byteBuffer(@TempDir Path dir) {
+		// Given
+		try (var opts = Options.newOptions().setCreateIfMissing(true);
+		     var db = OptimisticTransactionDB.open(opts, dir)) {
+
+			var key = ByteBuffer.allocateDirect(3);
+			key.put("key".getBytes()).flip();
+			var value = ByteBuffer.allocateDirect(5);
+			value.put("value".getBytes()).flip();
+
+			// When
+			db.put(key, value);
+
+			// Then
+			assertThat(db.get("key".getBytes())).isEqualTo("value".getBytes());
+		}
+	}
+
+	@Test
+	void get_byteBuffer_returnsValue(@TempDir Path dir) {
+		// Given
+		try (var opts = Options.newOptions().setCreateIfMissing(true);
+		     var db = OptimisticTransactionDB.open(opts, dir)) {
+			db.put("k".getBytes(), "v".getBytes());
+
+			var key = ByteBuffer.allocateDirect(1);
+			key.put("k".getBytes()).flip();
+			var out = ByteBuffer.allocateDirect(32);
+
+			// When
+			int len = db.get(key, out);
+
+			// Then
+			assertThat(len).isEqualTo(1);
+		}
+	}
+
+	@Test
+	void delete_byteBuffer_removesKey(@TempDir Path dir) {
+		// Given
+		try (var opts = Options.newOptions().setCreateIfMissing(true);
+		     var db = OptimisticTransactionDB.open(opts, dir)) {
+			db.put("k".getBytes(), "v".getBytes());
+
+			var key = ByteBuffer.allocateDirect(1);
+			key.put("k".getBytes()).flip();
+
+			// When
+			db.delete(key);
+
+			// Then
+			assertThat(db.get("k".getBytes())).isNull();
+		}
+	}
+
+	// -----------------------------------------------------------------------
+	// Direct (non-transactional) operations — MemorySegment tier
+	// -----------------------------------------------------------------------
+
+	@Test
+	void put_and_get_memorySegment(@TempDir Path dir) {
+		// Given
+		try (var opts = Options.newOptions().setCreateIfMissing(true);
+		     var db = OptimisticTransactionDB.open(opts, dir);
+		     Arena arena = Arena.ofConfined()) {
+
+			var key = arena.allocateFrom("seg-key");
+			var value = arena.allocateFrom("seg-val");
+
+			// When
+			db.put(key.asSlice(0, 7), value.asSlice(0, 7));
+
+			// Then
+			assertThat(db.get("seg-key".getBytes())).isEqualTo("seg-val".getBytes());
+		}
+	}
+
+	@Test
+	void get_memorySegment_returnsValue(@TempDir Path dir) {
+		// Given
+		try (var opts = Options.newOptions().setCreateIfMissing(true);
+		     var db = OptimisticTransactionDB.open(opts, dir);
+		     Arena arena = Arena.ofConfined()) {
+			db.put("k".getBytes(), "v".getBytes());
+
+			var key = arena.allocateFrom("k");
+			var out = arena.allocate(32);
+
+			// When
+			long len = db.get(key.asSlice(0, 1), out);
+
+			// Then
+			assertThat(len).isEqualTo(1);
+			assertThat(out.asSlice(0, 1).toArray(ValueLayout.JAVA_BYTE)).isEqualTo("v".getBytes());
+		}
+	}
+
+	@Test
+	void delete_memorySegment_removesKey(@TempDir Path dir) {
+		// Given
+		try (var opts = Options.newOptions().setCreateIfMissing(true);
+		     var db = OptimisticTransactionDB.open(opts, dir);
+		     Arena arena = Arena.ofConfined()) {
+			db.put("k".getBytes(), "v".getBytes());
+
+			var key = arena.allocateFrom("k");
+
+			// When
+			db.delete(key.asSlice(0, 1));
+
+			// Then
+			assertThat(db.get("k".getBytes())).isNull();
+		}
+	}
+
+	// -----------------------------------------------------------------------
+	// Iterator
+	// -----------------------------------------------------------------------
+
+	@Test
+	void newIterator_iteratesData(@TempDir Path dir) {
+		// Given
+		try (var opts = Options.newOptions().setCreateIfMissing(true);
+		     var db = OptimisticTransactionDB.open(opts, dir)) {
+			db.put("a".getBytes(), "1".getBytes());
+			db.put("b".getBytes(), "2".getBytes());
+
+			// When
+			try (var it = db.newIterator()) {
+				it.seekToFirst();
+
+				// Then
+				assertThat(it.isValid()).isTrue();
+				assertThat(it.key()).isEqualTo("a".getBytes());
+			}
 		}
 	}
 

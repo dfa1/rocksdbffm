@@ -21,7 +21,7 @@ class StatisticsTest {
 
 			assertThat(options.getStatisticsLevel()).isEqualTo(StatsLevel.ALL);
 
-			try (RocksDB db = RocksDB.open(options, tempDir)) {
+			try (ReadWriteDB db = RocksDB.open(options, tempDir)) {
 				db.put("key1".getBytes(), "value1".getBytes());
 				db.get("key1".getBytes());
 				db.get("key2".getBytes()); // miss

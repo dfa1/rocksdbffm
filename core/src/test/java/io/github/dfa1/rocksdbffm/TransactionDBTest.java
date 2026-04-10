@@ -3,6 +3,9 @@ package io.github.dfa1.rocksdbffm;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.lang.foreign.Arena;
+import java.lang.foreign.ValueLayout;
+import java.nio.ByteBuffer;
 import java.nio.file.Path;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -202,6 +205,118 @@ class TransactionDBTest {
 
 			// When
 			db.delete("k".getBytes());
+
+			// Then
+			assertThat(db.get("k".getBytes())).isNull();
+		}
+	}
+
+	// -----------------------------------------------------------------------
+	// direct operations — ByteBuffer tier
+	// -----------------------------------------------------------------------
+
+	@Test
+	void directPut_byteBuffer_isVisibleViaGet(@TempDir Path dir) {
+		// Given
+		try (var db = openDb(dir)) {
+			var key = ByteBuffer.allocateDirect(3);
+			key.put("key".getBytes()).flip();
+			var value = ByteBuffer.allocateDirect(5);
+			value.put("value".getBytes()).flip();
+
+			// When
+			db.put(key, value);
+
+			// Then
+			assertThat(db.get("key".getBytes())).isEqualTo("value".getBytes());
+		}
+	}
+
+	@Test
+	void directGet_byteBuffer_returnsValue(@TempDir Path dir) {
+		// Given
+		try (var db = openDb(dir)) {
+			db.put("k".getBytes(), "v".getBytes());
+
+			var key = ByteBuffer.allocateDirect(1);
+			key.put("k".getBytes()).flip();
+			var out = ByteBuffer.allocateDirect(32);
+
+			// When
+			int len = db.get(key, out);
+
+			// Then
+			assertThat(len).isEqualTo(1);
+		}
+	}
+
+	@Test
+	void directDelete_byteBuffer_removesKey(@TempDir Path dir) {
+		// Given
+		try (var db = openDb(dir)) {
+			db.put("k".getBytes(), "v".getBytes());
+
+			var key = ByteBuffer.allocateDirect(1);
+			key.put("k".getBytes()).flip();
+
+			// When
+			db.delete(key);
+
+			// Then
+			assertThat(db.get("k".getBytes())).isNull();
+		}
+	}
+
+	// -----------------------------------------------------------------------
+	// direct operations — MemorySegment tier
+	// -----------------------------------------------------------------------
+
+	@Test
+	void directPut_memorySegment_isVisibleViaGet(@TempDir Path dir) {
+		// Given
+		try (var db = openDb(dir);
+		     Arena arena = Arena.ofConfined()) {
+			var key = arena.allocateFrom("seg-k");
+			var value = arena.allocateFrom("seg-v");
+
+			// When
+			db.put(key.asSlice(0, 5), value.asSlice(0, 5));
+
+			// Then
+			assertThat(db.get("seg-k".getBytes())).isEqualTo("seg-v".getBytes());
+		}
+	}
+
+	@Test
+	void directGet_memorySegment_returnsValue(@TempDir Path dir) {
+		// Given
+		try (var db = openDb(dir);
+		     Arena arena = Arena.ofConfined()) {
+			db.put("k".getBytes(), "v".getBytes());
+
+			var key = arena.allocateFrom("k");
+			var out = arena.allocate(32);
+
+			// When
+			long len = db.get(key.asSlice(0, 1), out);
+
+			// Then
+			assertThat(len).isEqualTo(1);
+			assertThat(out.asSlice(0, 1).toArray(ValueLayout.JAVA_BYTE)).isEqualTo("v".getBytes());
+		}
+	}
+
+	@Test
+	void directDelete_memorySegment_removesKey(@TempDir Path dir) {
+		// Given
+		try (var db = openDb(dir);
+		     Arena arena = Arena.ofConfined()) {
+			db.put("k".getBytes(), "v".getBytes());
+
+			var key = arena.allocateFrom("k");
+
+			// When
+			db.delete(key.asSlice(0, 1));
 
 			// Then
 			assertThat(db.get("k".getBytes())).isNull();

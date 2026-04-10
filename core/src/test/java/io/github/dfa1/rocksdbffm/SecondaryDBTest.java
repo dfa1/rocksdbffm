@@ -3,6 +3,9 @@ package io.github.dfa1.rocksdbffm;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.lang.foreign.Arena;
+import java.lang.foreign.ValueLayout;
+import java.nio.ByteBuffer;
 import java.nio.file.Path;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -118,6 +121,63 @@ class SecondaryDBTest {
 
 			// When / Then
 			assertThat(secondary.get(ro, "k".getBytes())).isEqualTo("v".getBytes());
+		}
+	}
+
+	@Test
+	void get_byteBuffer_returnsValue(@TempDir Path primaryDir, @TempDir Path secondaryDir) {
+		// Given
+		try (var opts = Options.newOptions().setCreateIfMissing(true);
+		     var primary = RocksDB.open(opts, primaryDir);
+		     var fo = FlushOptions.newFlushOptions()) {
+			primary.put("k".getBytes(), "v".getBytes());
+			primary.flush(fo);
+		}
+
+		try (var opts = Options.newOptions();
+		     var secondary = SecondaryDB.open(opts, primaryDir, secondaryDir)) {
+			secondary.tryCatchUpWithPrimary();
+
+			var key = ByteBuffer.allocateDirect(1);
+			key.put("k".getBytes()).flip();
+			var out = ByteBuffer.allocateDirect(32);
+
+			// When
+			int len = secondary.get(key, out);
+
+			// Then
+			assertThat(len).isEqualTo(1);
+			out.flip();
+			var bytes = new byte[out.remaining()];
+			out.get(bytes);
+			assertThat(bytes).isEqualTo("v".getBytes());
+		}
+	}
+
+	@Test
+	void get_memorySegment_returnsValue(@TempDir Path primaryDir, @TempDir Path secondaryDir) {
+		// Given
+		try (var opts = Options.newOptions().setCreateIfMissing(true);
+		     var primary = RocksDB.open(opts, primaryDir);
+		     var fo = FlushOptions.newFlushOptions()) {
+			primary.put("k".getBytes(), "v".getBytes());
+			primary.flush(fo);
+		}
+
+		try (var opts = Options.newOptions();
+		     var secondary = SecondaryDB.open(opts, primaryDir, secondaryDir);
+		     Arena arena = Arena.ofConfined()) {
+			secondary.tryCatchUpWithPrimary();
+
+			var key = arena.allocateFrom("k");
+			var out = arena.allocate(32);
+
+			// When
+			long len = secondary.get(key.asSlice(0, 1), out);
+
+			// Then
+			assertThat(len).isEqualTo(1);
+			assertThat(out.asSlice(0, 1).toArray(ValueLayout.JAVA_BYTE)).isEqualTo("v".getBytes());
 		}
 	}
 

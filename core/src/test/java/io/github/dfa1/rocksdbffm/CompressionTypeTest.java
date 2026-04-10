@@ -18,21 +18,21 @@ class CompressionTypeTest {
 
 	@Test
 	void getSupportedCompressions_alwaysContainsNoCompression(@TempDir Path dir) {
-		try (RocksDB db = RocksDB.open(dir)) {
+		try (ReadWriteDB db = RocksDB.open(dir)) {
 			assertThat(db.getSupportedCompressions()).contains(CompressionType.NO_COMPRESSION);
 		}
 	}
 
 	@Test
 	void getSupportedCompressions_isNonEmpty(@TempDir Path dir) {
-		try (RocksDB db = RocksDB.open(dir)) {
+		try (ReadWriteDB db = RocksDB.open(dir)) {
 			assertThat(db.getSupportedCompressions()).isNotEmpty();
 		}
 	}
 
 	@Test
 	void getSupportedCompressions_isUnmodifiable(@TempDir Path dir) {
-		try (RocksDB db = RocksDB.open(dir)) {
+		try (ReadWriteDB db = RocksDB.open(dir)) {
 			Set<CompressionType> supported = db.getSupportedCompressions();
 			assertThatThrownBy(() -> supported.add(CompressionType.SNAPPY))
 					.isInstanceOf(UnsupportedOperationException.class);
@@ -65,7 +65,7 @@ class CompressionTypeTest {
 		try (Options opts = Options.newOptions()
 				.setCreateIfMissing(true)
 				.setCompression(CompressionType.NO_COMPRESSION);
-		     RocksDB db = RocksDB.open(opts, dir)) {
+		     ReadWriteDB db = RocksDB.open(opts, dir)) {
 			db.put("k".getBytes(), "v".getBytes());
 			assertThat(db.get("k".getBytes())).isEqualTo("v".getBytes());
 		}
@@ -76,7 +76,7 @@ class CompressionTypeTest {
 	void openDb_withEachSupportedCompression_writesAndReadsBack(@TempDir Path dir) {
 		// Given — use a reference DB just to probe support
 		Set<CompressionType> supported;
-		try (RocksDB probe = RocksDB.open(dir.resolve("probe"))) {
+		try (ReadWriteDB probe = RocksDB.open(dir.resolve("probe"))) {
 			supported = probe.getSupportedCompressions();
 		}
 
@@ -87,7 +87,7 @@ class CompressionTypeTest {
 			try (Options opts = Options.newOptions()
 					.setCreateIfMissing(true)
 					.setCompression(type);
-			     RocksDB db = RocksDB.open(opts, dbPath)) {
+			     ReadWriteDB db = RocksDB.open(opts, dbPath)) {
 				db.put("key".getBytes(), "val".getBytes());
 				assertThat(db.get("key".getBytes()))
 						.as("compression=%s", type)

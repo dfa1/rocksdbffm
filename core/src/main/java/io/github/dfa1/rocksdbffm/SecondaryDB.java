@@ -5,6 +5,7 @@ import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
+import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.Optional;
 import java.util.OptionalLong;
@@ -32,27 +33,13 @@ import java.util.OptionalLong;
 public final class SecondaryDB extends NativeObject {
 
 	// -----------------------------------------------------------------------
-	// Method handles
+	// Method handles unique to SecondaryDB
 	// -----------------------------------------------------------------------
 
 	/// `rocksdb_t* rocksdb_open_as_secondary(const rocksdb_options_t* options, const char* name, const char* secondary_path, char** errptr);`
 	private static final MethodHandle MH_OPEN;
-	/// `void rocksdb_close(rocksdb_t* db);`
-	private static final MethodHandle MH_CLOSE;
 	/// `void rocksdb_try_catch_up_with_primary(rocksdb_t* db, char** errptr);`
 	private static final MethodHandle MH_CATCH_UP;
-	/// `rocksdb_pinnableslice_t* rocksdb_get_pinned(rocksdb_t* db, const rocksdb_readoptions_t* options, const char* key, size_t keylen, char** errptr);`
-	private static final MethodHandle MH_GET_PINNED;
-	/// `const char* rocksdb_pinnableslice_value(const rocksdb_pinnableslice_t* t, size_t* vlen);`
-	private static final MethodHandle MH_PINNABLESLICE_VALUE;
-	/// `void rocksdb_pinnableslice_destroy(rocksdb_pinnableslice_t* v);`
-	private static final MethodHandle MH_PINNABLESLICE_DESTROY;
-	/// `const rocksdb_snapshot_t* rocksdb_create_snapshot(rocksdb_t* db);`
-	private static final MethodHandle MH_CREATE_SNAPSHOT;
-	/// `char* rocksdb_property_value(rocksdb_t* db, const char* propname);`
-	private static final MethodHandle MH_PROPERTY_VALUE;
-	/// `int rocksdb_property_int(rocksdb_t* db, const char* propname, uint64_t* out_val);`
-	private static final MethodHandle MH_PROPERTY_INT;
 
 	static {
 		MH_OPEN = RocksDB.lookup("rocksdb_open_as_secondary",
@@ -60,35 +47,8 @@ public final class SecondaryDB extends NativeObject {
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
-		MH_CLOSE = RocksDB.lookup("rocksdb_close",
-				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
-
 		MH_CATCH_UP = RocksDB.lookup("rocksdb_try_catch_up_with_primary",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-
-		MH_GET_PINNED = RocksDB.lookup("rocksdb_get_pinned",
-				FunctionDescriptor.of(ValueLayout.ADDRESS,
-						ValueLayout.ADDRESS, ValueLayout.ADDRESS,
-						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
-						ValueLayout.ADDRESS));
-
-		MH_PINNABLESLICE_VALUE = RocksDB.lookup("rocksdb_pinnableslice_value",
-				FunctionDescriptor.of(ValueLayout.ADDRESS,
-						ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-
-		MH_PINNABLESLICE_DESTROY = RocksDB.lookup("rocksdb_pinnableslice_destroy",
-				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
-
-		MH_CREATE_SNAPSHOT = RocksDB.lookup("rocksdb_create_snapshot",
-				FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-
-		MH_PROPERTY_VALUE = RocksDB.lookup("rocksdb_property_value",
-				FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-
-		MH_PROPERTY_INT = RocksDB.lookup("rocksdb_property_int",
-				FunctionDescriptor.of(ValueLayout.JAVA_INT,
-						ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-
 	}
 
 	// -----------------------------------------------------------------------
@@ -149,59 +109,31 @@ public final class SecondaryDB extends NativeObject {
 	}
 
 	// -----------------------------------------------------------------------
-	// Read operations
+	// Get
 	// -----------------------------------------------------------------------
 
 	/// Returns the value for `key`, or `null` if the key does not exist.
 	/// Uses PinnableSlice to avoid an intermediate copy from the block cache.
 	public byte[] get(byte[] key) {
-		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
-			MemorySegment k = Native.toNative(arena, key);
-
-			MemorySegment pin = (MemorySegment) MH_GET_PINNED.invokeExact(
-					ptr(), readOpts.ptr(), k, (long) key.length, err);
-			Native.checkError(err);
-
-			if (MemorySegment.NULL.equals(pin)) {
-				return null;
-			}
-
-			MemorySegment valLenSeg = arena.allocate(ValueLayout.JAVA_LONG);
-			MemorySegment valPtr = (MemorySegment) MH_PINNABLESLICE_VALUE.invokeExact(pin, valLenSeg);
-			long valLen = valLenSeg.get(ValueLayout.JAVA_LONG, 0);
-			byte[] result = valPtr.reinterpret(valLen).toArray(ValueLayout.JAVA_BYTE);
-			MH_PINNABLESLICE_DESTROY.invokeExact(pin);
-			return result;
-		} catch (Throwable t) {
-			throw RocksDBException.wrap("get failed", t);
-		}
+		return RocksDB.getBytes(ptr(), readOpts.ptr(), key);
 	}
 
-	/// Returns the value for `key` using the supplied [ReadOptions]
-	/// (e.g. for snapshot-pinned reads), or `null` if the key does not exist.
+	/// Get with explicit [ReadOptions], e.g. for snapshot-pinned reads. Returns `null` if not found.
 	public byte[] get(ReadOptions readOptions, byte[] key) {
-		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
-			MemorySegment k = Native.toNative(arena, key);
+		return RocksDB.getBytes(ptr(), readOptions.ptr(), key);
+	}
 
-			MemorySegment pin = (MemorySegment) MH_GET_PINNED.invokeExact(
-					ptr(), readOptions.ptr(), k, (long) key.length, err);
-			Native.checkError(err);
+	/// Single-copy get via PinnableSlice + direct output [ByteBuffer].
+	/// Returns the actual value length, or -1 if not found.
+	public int get(ByteBuffer key, ByteBuffer value) {
+		return RocksDB.getIntoBuffer(ptr(), readOpts.ptr(),
+				MemorySegment.ofBuffer(key), key.remaining(), value);
+	}
 
-			if (MemorySegment.NULL.equals(pin)) {
-				return null;
-			}
-
-			MemorySegment valLenSeg = arena.allocate(ValueLayout.JAVA_LONG);
-			MemorySegment valPtr = (MemorySegment) MH_PINNABLESLICE_VALUE.invokeExact(pin, valLenSeg);
-			long valLen = valLenSeg.get(ValueLayout.JAVA_LONG, 0);
-			byte[] result = valPtr.reinterpret(valLen).toArray(ValueLayout.JAVA_BYTE);
-			MH_PINNABLESLICE_DESTROY.invokeExact(pin);
-			return result;
-		} catch (Throwable t) {
-			throw RocksDBException.wrap("get failed", t);
-		}
+	/// Zero-copy get via PinnableSlice into a caller-supplied native segment.
+	/// Returns the actual value length.
+	public long get(MemorySegment key, MemorySegment value) {
+		return RocksDB.getIntoSegment(ptr(), readOpts.ptr(), key, key.byteSize(), value);
 	}
 
 	// -----------------------------------------------------------------------
@@ -226,47 +158,21 @@ public final class SecondaryDB extends NativeObject {
 	/// Creates a point-in-time snapshot of the secondary's current view.
 	/// Must be closed after use.
 	public Snapshot getSnapshot() {
-		try {
-			MemorySegment snapPtr = (MemorySegment) MH_CREATE_SNAPSHOT.invokeExact(ptr());
-			return new Snapshot(ptr(), snapPtr);
-		} catch (Throwable t) {
-			throw RocksDBException.wrap("getSnapshot failed", t);
-		}
+		return RocksDB.createSnapshot(ptr());
 	}
 
 	// -----------------------------------------------------------------------
 	// DB Properties
 	// -----------------------------------------------------------------------
 
-	/// @see RocksDB#getProperty(Property)
+	/// Returns the value of a DB property as a string, or [Optional#empty()] if not supported.
 	public Optional<String> getProperty(Property property) {
-		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment propSeg = arena.allocateFrom(property.propertyName());
-			MemorySegment result = (MemorySegment) MH_PROPERTY_VALUE.invokeExact(ptr(), propSeg);
-			if (MemorySegment.NULL.equals(result)) {
-				return Optional.empty();
-			}
-			String value = result.reinterpret(Long.MAX_VALUE).getString(0);
-			Native.free(result);
-			return Optional.of(value);
-		} catch (Throwable t) {
-			throw RocksDBException.wrap("getProperty failed", t);
-		}
+		return RocksDB.getProperty(ptr(), property);
 	}
 
-	/// @see RocksDB#getLongProperty(Property)
+	/// Returns the value of a numeric DB property, or [OptionalLong#empty()] if not supported.
 	public OptionalLong getLongProperty(Property property) {
-		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment propSeg = arena.allocateFrom(property.propertyName());
-			MemorySegment out = arena.allocate(ValueLayout.JAVA_LONG);
-			int rc = (int) MH_PROPERTY_INT.invokeExact(ptr(), propSeg, out);
-			if (rc != 0) {
-				return OptionalLong.empty();
-			}
-			return OptionalLong.of(out.get(ValueLayout.JAVA_LONG, 0));
-		} catch (Throwable t) {
-			throw RocksDBException.wrap("getLongProperty failed", t);
-		}
+		return RocksDB.getLongProperty(ptr(), property);
 	}
 
 	// -----------------------------------------------------------------------
@@ -276,6 +182,6 @@ public final class SecondaryDB extends NativeObject {
 	@Override
 	protected void tryClose(MemorySegment ptr) throws Throwable {
 		readOpts.close();
-		MH_CLOSE.invokeExact(ptr);
+		RocksDB.close(ptr);
 	}
 }

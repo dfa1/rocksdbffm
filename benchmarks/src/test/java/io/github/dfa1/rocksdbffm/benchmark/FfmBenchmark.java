@@ -1,5 +1,6 @@
 package io.github.dfa1.rocksdbffm.benchmark;
 
+import io.github.dfa1.rocksdbffm.ReadWriteDB;
 import io.github.dfa1.rocksdbffm.RocksDB;
 import io.github.dfa1.rocksdbffm.WriteBatch;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -34,7 +35,7 @@ import java.util.concurrent.TimeUnit;
 @Fork(value = 1, jvmArgsPrepend = {"--enable-native-access=ALL-UNNAMED", "--sun-misc-unsafe-memory-access=allow"})
 public class FfmBenchmark {
 
-	private RocksDB db;
+	private ReadWriteDB db;
 	private Path dbPath;
 
 	// byte[] tier

@@ -96,7 +96,7 @@ class NullSafetyTest {
 	@Test
 	void delete_nullKey(@TempDir Path dir) {
 		try (var db = RocksDB.open(dir)) {
-			assertThatThrownBy(() -> db.delete(null))
+			assertThatThrownBy(() -> db.delete((byte[]) null))
 					.isInstanceOf(RuntimeException.class);
 		}
 	}

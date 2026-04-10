@@ -219,34 +219,6 @@ class RocksDBTest {
 	}
 
 	@Test
-	void openReadOnly_rejectsPut(@TempDir Path dir) {
-		// Given
-		try (var rw = RocksDB.open(dir)) {
-			rw.put("seed".getBytes(), "val".getBytes());
-		}
-
-		try (var ro = RocksDB.openReadOnly(dir)) {
-			// When / Then
-			assertThatThrownBy(() -> ro.put("k".getBytes(), "v".getBytes()))
-					.isInstanceOf(RocksDBException.class);
-		}
-	}
-
-	@Test
-	void openReadOnly_rejectsDelete(@TempDir Path dir) {
-		// Given
-		try (var rw = RocksDB.open(dir)) {
-			rw.put("k".getBytes(), "v".getBytes());
-		}
-
-		try (var ro = RocksDB.openReadOnly(dir)) {
-			// When / Then
-			assertThatThrownBy(() -> ro.delete("k".getBytes()))
-					.isInstanceOf(RocksDBException.class);
-		}
-	}
-
-	@Test
 	void openReadOnly_withExplicitOptions(@TempDir Path dir) {
 		// Given
 		try (var rw = RocksDB.open(dir)) {

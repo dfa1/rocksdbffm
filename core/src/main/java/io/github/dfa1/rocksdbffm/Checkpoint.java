@@ -58,14 +58,28 @@ public final class Checkpoint extends NativeObject {
 	/// Creates a checkpoint object bound to `db`.
 	/// The checkpoint object may be reused to export multiple snapshots.
 	/// Close it when done — this does not affect the database or any exported checkpoints.
-	public static Checkpoint newCheckpoint(RocksDB db) {
+	public static Checkpoint newCheckpoint(ReadWriteDB db) {
+		return create(db.ptr());
+	}
+
+	/// Creates a checkpoint object bound to a read-only `db`.
+	public static Checkpoint newCheckpoint(ReadOnlyDB db) {
+		return create(db.ptr());
+	}
+
+	/// Creates a checkpoint object bound to a secondary `db`.
+	public static Checkpoint newCheckpoint(SecondaryDB db) {
+		return create(db.ptr());
+	}
+
+	private static Checkpoint create(MemorySegment dbPtr) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
-			var ptr = (MemorySegment) MH_CREATE.invokeExact(db.ptr(), err);
+			var ptr = (MemorySegment) MH_CREATE.invokeExact(dbPtr, err);
 			Native.checkError(err);
 			return new Checkpoint(ptr);
 		} catch (Throwable t) {
-			throw RocksDBException.wrap("Native call failed", t);
+			throw RocksDBException.wrap("newCheckpoint failed", t);
 		}
 	}
 

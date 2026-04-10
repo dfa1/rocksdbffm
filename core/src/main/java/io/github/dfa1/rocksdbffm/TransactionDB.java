@@ -220,7 +220,32 @@ public final class TransactionDB extends NativeObject {
 			MH_PUT.invokeExact(ptr(), writeOpts.ptr(), k, (long) key.length, v, (long) value.length, err);
 			Native.checkError(err);
 		} catch (Throwable t) {
-			throw RocksDBException.wrap("Native call failed", t);
+			throw RocksDBException.wrap("put failed", t);
+		}
+	}
+
+	/// Zero-copy put: wraps the direct buffers' native memory without heap→native copy.
+	public void put(java.nio.ByteBuffer key, java.nio.ByteBuffer value) {
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = Native.errHolder(arena);
+			MH_PUT.invokeExact(ptr(), writeOpts.ptr(),
+					MemorySegment.ofBuffer(key), (long) key.remaining(),
+					MemorySegment.ofBuffer(value), (long) value.remaining(),
+					err);
+			Native.checkError(err);
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("put failed", t);
+		}
+	}
+
+	/// Zero-copy put: caller supplies pre-allocated native segments.
+	public void put(MemorySegment key, MemorySegment value) {
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = Native.errHolder(arena);
+			MH_PUT.invokeExact(ptr(), writeOpts.ptr(), key, key.byteSize(), value, value.byteSize(), err);
+			Native.checkError(err);
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("put failed", t);
 		}
 	}
 
@@ -270,7 +295,54 @@ public final class TransactionDB extends NativeObject {
 			Native.free(valPtr);
 			return result;
 		} catch (Throwable t) {
-			throw RocksDBException.wrap("Native call failed", t);
+			throw RocksDBException.wrap("get failed", t);
+		}
+	}
+
+	/// Single-copy get + direct output [java.nio.ByteBuffer].
+	/// Returns the actual value length, or -1 if not found.
+	public int get(java.nio.ByteBuffer key, java.nio.ByteBuffer value) {
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = Native.errHolder(arena);
+			MemorySegment valLenSeg = arena.allocate(ValueLayout.JAVA_LONG);
+			MemorySegment valPtr = (MemorySegment) MH_GET.invokeExact(
+					ptr(), readOpts.ptr(),
+					MemorySegment.ofBuffer(key), (long) key.remaining(),
+					valLenSeg, err);
+			Native.checkError(err);
+			if (MemorySegment.NULL.equals(valPtr)) {
+				return -1;
+			}
+			long valLen = valLenSeg.get(ValueLayout.JAVA_LONG, 0);
+			int toCopy = (int) Math.min(valLen, value.remaining());
+			MemorySegment.ofBuffer(value).copyFrom(valPtr.reinterpret(toCopy));
+			value.position(value.position() + toCopy);
+			Native.free(valPtr);
+			return (int) valLen;
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("get failed", t);
+		}
+	}
+
+	/// Zero-copy get into a caller-supplied native segment.
+	/// Returns the actual value length, or -1 if not found.
+	public long get(MemorySegment key, MemorySegment value) {
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = Native.errHolder(arena);
+			MemorySegment valLenSeg = arena.allocate(ValueLayout.JAVA_LONG);
+			MemorySegment valPtr = (MemorySegment) MH_GET.invokeExact(
+					ptr(), readOpts.ptr(), key, key.byteSize(), valLenSeg, err);
+			Native.checkError(err);
+			if (MemorySegment.NULL.equals(valPtr)) {
+				return -1L;
+			}
+			long valLen = valLenSeg.get(ValueLayout.JAVA_LONG, 0);
+			long toCopy = Math.min(valLen, value.byteSize());
+			value.copyFrom(valPtr.reinterpret(toCopy));
+			Native.free(valPtr);
+			return valLen;
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("get failed", t);
 		}
 	}
 
@@ -317,7 +389,30 @@ public final class TransactionDB extends NativeObject {
 			MH_DELETE.invokeExact(ptr(), writeOpts.ptr(), k, (long) key.length, err);
 			Native.checkError(err);
 		} catch (Throwable t) {
-			throw RocksDBException.wrap("Native call failed", t);
+			throw RocksDBException.wrap("delete failed", t);
+		}
+	}
+
+	/// Zero-copy for direct [java.nio.ByteBuffer]s.
+	public void delete(java.nio.ByteBuffer key) {
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = Native.errHolder(arena);
+			MH_DELETE.invokeExact(ptr(), writeOpts.ptr(),
+					MemorySegment.ofBuffer(key), (long) key.remaining(), err);
+			Native.checkError(err);
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("delete failed", t);
+		}
+	}
+
+	/// Zero-copy native-first path.
+	public void delete(MemorySegment key) {
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = Native.errHolder(arena);
+			MH_DELETE.invokeExact(ptr(), writeOpts.ptr(), key, key.byteSize(), err);
+			Native.checkError(err);
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("delete failed", t);
 		}
 	}
 

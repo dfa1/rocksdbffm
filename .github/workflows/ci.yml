@@ -40,5 +40,4 @@ jobs:
           key: rocksdb-v11.0.4-${{ matrix.os }}-${{ runner.arch }}
 
       - name: Build and test
-        # On Linux, Maven will now run tests natively on the ELF you just built!
-        run: mvn test
+        run: mvn --batch-mode verify

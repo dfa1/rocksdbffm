@@ -16,13 +16,13 @@ public final class ReadOptions extends NativeObject {
 	private static final MethodHandle MH_SET_SNAPSHOT;
 
 	static {
-		MH_CREATE = RocksDB.lookup("rocksdb_readoptions_create",
+		MH_CREATE = NativeLibrary.lookup("rocksdb_readoptions_create",
 				FunctionDescriptor.of(ValueLayout.ADDRESS));
 
-		MH_DESTROY = RocksDB.lookup("rocksdb_readoptions_destroy",
+		MH_DESTROY = NativeLibrary.lookup("rocksdb_readoptions_destroy",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
-		MH_SET_SNAPSHOT = RocksDB.lookup("rocksdb_readoptions_set_snapshot",
+		MH_SET_SNAPSHOT = NativeLibrary.lookup("rocksdb_readoptions_set_snapshot",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 	}
 

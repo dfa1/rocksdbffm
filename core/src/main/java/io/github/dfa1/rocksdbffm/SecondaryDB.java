@@ -42,12 +42,12 @@ public final class SecondaryDB extends NativeObject implements RocksDbHandle {
 	private static final MethodHandle MH_CATCH_UP;
 
 	static {
-		MH_OPEN = RocksDB.lookup("rocksdb_open_as_secondary",
+		MH_OPEN = NativeLibrary.lookup("rocksdb_open_as_secondary",
 				FunctionDescriptor.of(ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
-		MH_CATCH_UP = RocksDB.lookup("rocksdb_try_catch_up_with_primary",
+		MH_CATCH_UP = NativeLibrary.lookup("rocksdb_try_catch_up_with_primary",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 	}
 

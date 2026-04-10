@@ -47,22 +47,22 @@ public final class OptimisticTransactionDB extends NativeObject {
 	private static final MethodHandle MH_CLOSE_BASE_DB;
 
 	static {
-		MH_OPEN = RocksDB.lookup("rocksdb_optimistictransactiondb_open",
+		MH_OPEN = NativeLibrary.lookup("rocksdb_optimistictransactiondb_open",
 				FunctionDescriptor.of(ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
-		MH_CLOSE = RocksDB.lookup("rocksdb_optimistictransactiondb_close",
+		MH_CLOSE = NativeLibrary.lookup("rocksdb_optimistictransactiondb_close",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
-		MH_BEGIN = RocksDB.lookup("rocksdb_optimistictransaction_begin",
+		MH_BEGIN = NativeLibrary.lookup("rocksdb_optimistictransaction_begin",
 				FunctionDescriptor.of(ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
-		MH_GET_BASE_DB = RocksDB.lookup("rocksdb_optimistictransactiondb_get_base_db",
+		MH_GET_BASE_DB = NativeLibrary.lookup("rocksdb_optimistictransactiondb_get_base_db",
 				FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
-		MH_CLOSE_BASE_DB = RocksDB.lookup("rocksdb_optimistictransactiondb_close_base_db",
+		MH_CLOSE_BASE_DB = NativeLibrary.lookup("rocksdb_optimistictransactiondb_close_base_db",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 	}
 

@@ -55,52 +55,52 @@ public final class TransactionDB extends NativeObject {
 
 
 	static {
-		MH_OPEN = RocksDB.lookup("rocksdb_transactiondb_open",
+		MH_OPEN = NativeLibrary.lookup("rocksdb_transactiondb_open",
 				FunctionDescriptor.of(ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
-		MH_CLOSE = RocksDB.lookup("rocksdb_transactiondb_close",
+		MH_CLOSE = NativeLibrary.lookup("rocksdb_transactiondb_close",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
-		MH_BEGIN = RocksDB.lookup("rocksdb_transaction_begin",
+		MH_BEGIN = NativeLibrary.lookup("rocksdb_transaction_begin",
 				FunctionDescriptor.of(ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
-		MH_PUT = RocksDB.lookup("rocksdb_transactiondb_put",
+		MH_PUT = NativeLibrary.lookup("rocksdb_transactiondb_put",
 				FunctionDescriptor.ofVoid(
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
 						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
 						ValueLayout.ADDRESS));
 
-		MH_DELETE = RocksDB.lookup("rocksdb_transactiondb_delete",
+		MH_DELETE = NativeLibrary.lookup("rocksdb_transactiondb_delete",
 				FunctionDescriptor.ofVoid(
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
 						ValueLayout.ADDRESS));
 
-		MH_GET = RocksDB.lookup("rocksdb_transactiondb_get",
+		MH_GET = NativeLibrary.lookup("rocksdb_transactiondb_get",
 				FunctionDescriptor.of(ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
 
-		MH_CREATE_SNAPSHOT = RocksDB.lookup("rocksdb_transactiondb_create_snapshot",
+		MH_CREATE_SNAPSHOT = NativeLibrary.lookup("rocksdb_transactiondb_create_snapshot",
 				FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
-		MH_FLUSH = RocksDB.lookup("rocksdb_transactiondb_flush",
+		MH_FLUSH = NativeLibrary.lookup("rocksdb_transactiondb_flush",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
-		MH_FLUSH_WAL = RocksDB.lookup("rocksdb_transactiondb_flush_wal",
+		MH_FLUSH_WAL = NativeLibrary.lookup("rocksdb_transactiondb_flush_wal",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_BYTE, ValueLayout.ADDRESS));
 
-		MH_PROPERTY_VALUE = RocksDB.lookup("rocksdb_transactiondb_property_value",
+		MH_PROPERTY_VALUE = NativeLibrary.lookup("rocksdb_transactiondb_property_value",
 				FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
-		MH_PROPERTY_INT = RocksDB.lookup("rocksdb_transactiondb_property_int",
+		MH_PROPERTY_INT = NativeLibrary.lookup("rocksdb_transactiondb_property_int",
 				FunctionDescriptor.of(ValueLayout.JAVA_INT,
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 	}

@@ -45,57 +45,57 @@ public final class Transaction extends NativeObject {
 	private static final MethodHandle MH_PINNABLESLICE_DESTROY;
 
 	static {
-		MH_COMMIT = RocksDB.lookup("rocksdb_transaction_commit",
+		MH_COMMIT = NativeLibrary.lookup("rocksdb_transaction_commit",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
-		MH_ROLLBACK = RocksDB.lookup("rocksdb_transaction_rollback",
+		MH_ROLLBACK = NativeLibrary.lookup("rocksdb_transaction_rollback",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
-		MH_DESTROY = RocksDB.lookup("rocksdb_transaction_destroy",
+		MH_DESTROY = NativeLibrary.lookup("rocksdb_transaction_destroy",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
-		MH_SET_SAVEPOINT = RocksDB.lookup("rocksdb_transaction_set_savepoint",
+		MH_SET_SAVEPOINT = NativeLibrary.lookup("rocksdb_transaction_set_savepoint",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
-		MH_ROLLBACK_TO_SAVEPOINT = RocksDB.lookup("rocksdb_transaction_rollback_to_savepoint",
+		MH_ROLLBACK_TO_SAVEPOINT = NativeLibrary.lookup("rocksdb_transaction_rollback_to_savepoint",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
-		MH_PUT = RocksDB.lookup("rocksdb_transaction_put",
+		MH_PUT = NativeLibrary.lookup("rocksdb_transaction_put",
 				FunctionDescriptor.ofVoid(
 						ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
 						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
 						ValueLayout.ADDRESS));
 
-		MH_DELETE = RocksDB.lookup("rocksdb_transaction_delete",
+		MH_DELETE = NativeLibrary.lookup("rocksdb_transaction_delete",
 				FunctionDescriptor.ofVoid(
 						ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
 						ValueLayout.ADDRESS));
 
-		MH_GET_PINNED = RocksDB.lookup("rocksdb_transaction_get_pinned",
+		MH_GET_PINNED = NativeLibrary.lookup("rocksdb_transaction_get_pinned",
 				FunctionDescriptor.of(ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
 						ValueLayout.ADDRESS));
 
-		MH_GET_FOR_UPDATE = RocksDB.lookup("rocksdb_transaction_get_for_update",
+		MH_GET_FOR_UPDATE = NativeLibrary.lookup("rocksdb_transaction_get_for_update",
 				FunctionDescriptor.of(ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
 						ValueLayout.ADDRESS, ValueLayout.JAVA_BYTE,
 						ValueLayout.ADDRESS));
 
-		MH_PINNABLESLICE_VALUE = RocksDB.lookup("rocksdb_pinnableslice_value",
+		MH_PINNABLESLICE_VALUE = NativeLibrary.lookup("rocksdb_pinnableslice_value",
 				FunctionDescriptor.of(ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
-		MH_PINNABLESLICE_DESTROY = RocksDB.lookup("rocksdb_pinnableslice_destroy",
+		MH_PINNABLESLICE_DESTROY = NativeLibrary.lookup("rocksdb_pinnableslice_destroy",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
 
 		// Note: must be freed with rocksdb_free, not rocksdb_release_snapshot
-		MH_GET_SNAPSHOT = RocksDB.lookup("rocksdb_transaction_get_snapshot",
+		MH_GET_SNAPSHOT = NativeLibrary.lookup("rocksdb_transaction_get_snapshot",
 				FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 	}
 

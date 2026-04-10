@@ -19,7 +19,7 @@ public final class LRUCache extends Cache {
 	private static final MethodHandle MH_CREATE;
 
 	static {
-		MH_CREATE = RocksDB.lookup("rocksdb_cache_create_lru",
+		MH_CREATE = NativeLibrary.lookup("rocksdb_cache_create_lru",
 				FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
 	}
 

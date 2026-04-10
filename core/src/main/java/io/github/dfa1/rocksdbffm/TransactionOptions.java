@@ -20,19 +20,19 @@ public final class TransactionOptions extends NativeObject {
 	private static final MethodHandle MH_SET_LOCK_TIMEOUT;
 
 	static {
-		MH_CREATE = RocksDB.lookup("rocksdb_transaction_options_create",
+		MH_CREATE = NativeLibrary.lookup("rocksdb_transaction_options_create",
 				FunctionDescriptor.of(ValueLayout.ADDRESS));
 
-		MH_DESTROY = RocksDB.lookup("rocksdb_transaction_options_destroy",
+		MH_DESTROY = NativeLibrary.lookup("rocksdb_transaction_options_destroy",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
-		MH_SET_SET_SNAPSHOT = RocksDB.lookup("rocksdb_transaction_options_set_set_snapshot",
+		MH_SET_SET_SNAPSHOT = NativeLibrary.lookup("rocksdb_transaction_options_set_set_snapshot",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_BYTE));
 
-		MH_SET_DEADLOCK_DETECT = RocksDB.lookup("rocksdb_transaction_options_set_deadlock_detect",
+		MH_SET_DEADLOCK_DETECT = NativeLibrary.lookup("rocksdb_transaction_options_set_deadlock_detect",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_BYTE));
 
-		MH_SET_LOCK_TIMEOUT = RocksDB.lookup("rocksdb_transaction_options_set_lock_timeout",
+		MH_SET_LOCK_TIMEOUT = NativeLibrary.lookup("rocksdb_transaction_options_set_lock_timeout",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
 	}
 

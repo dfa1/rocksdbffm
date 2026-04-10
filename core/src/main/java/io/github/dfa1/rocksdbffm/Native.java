@@ -1,9 +1,5 @@
 package io.github.dfa1.rocksdbffm;
 
-import io.github.dfa1.rocksdbffm.pool.BlockingPool;
-import io.github.dfa1.rocksdbffm.pool.CachedBlockingPool;
-import io.github.dfa1.rocksdbffm.pool.Pool;
-
 import java.lang.foreign.Arena;
 import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.MemorySegment;
@@ -16,7 +12,7 @@ import java.lang.invoke.MethodHandle;
 final class Native {
 
 	/// `void rocksdb_free(void* ptr);`
-	private static final MethodHandle MH_FREE = RocksDB.lookup("rocksdb_free",
+	private static final MethodHandle MH_FREE = NativeLibrary.lookup("rocksdb_free",
 			FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
 	private Native() {

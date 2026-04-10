@@ -47,44 +47,44 @@ public final class Options extends NativeObject {
 	private static final MethodHandle MH_GET_COMPRESSION;
 
 	static {
-		MH_CREATE = RocksDB.lookup("rocksdb_options_create",
+		MH_CREATE = NativeLibrary.lookup("rocksdb_options_create",
 				FunctionDescriptor.of(ValueLayout.ADDRESS));
 
-		MH_DESTROY = RocksDB.lookup("rocksdb_options_destroy",
+		MH_DESTROY = NativeLibrary.lookup("rocksdb_options_destroy",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
-		MH_SET_CREATE_IF_MISSING = RocksDB.lookup("rocksdb_options_set_create_if_missing",
+		MH_SET_CREATE_IF_MISSING = NativeLibrary.lookup("rocksdb_options_set_create_if_missing",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_BYTE));
 
-		MH_GET_CREATE_IF_MISSING = RocksDB.lookup("rocksdb_options_get_create_if_missing",
+		MH_GET_CREATE_IF_MISSING = NativeLibrary.lookup("rocksdb_options_get_create_if_missing",
 				FunctionDescriptor.of(ValueLayout.JAVA_BYTE, ValueLayout.ADDRESS));
 
-		MH_SET_BLOCK_BASED_TABLE_FACTORY = RocksDB.lookup(
+		MH_SET_BLOCK_BASED_TABLE_FACTORY = NativeLibrary.lookup(
 				"rocksdb_options_set_block_based_table_factory",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
-		MH_ENABLE_STATISTICS = RocksDB.lookup("rocksdb_options_enable_statistics",
+		MH_ENABLE_STATISTICS = NativeLibrary.lookup("rocksdb_options_enable_statistics",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
-		MH_SET_STATISTICS_LEVEL = RocksDB.lookup("rocksdb_options_set_statistics_level",
+		MH_SET_STATISTICS_LEVEL = NativeLibrary.lookup("rocksdb_options_set_statistics_level",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
 
-		MH_GET_STATISTICS_LEVEL = RocksDB.lookup("rocksdb_options_get_statistics_level",
+		MH_GET_STATISTICS_LEVEL = NativeLibrary.lookup("rocksdb_options_get_statistics_level",
 				FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
 
-		MH_STATISTICS_GET_STRING = RocksDB.lookup("rocksdb_options_statistics_get_string",
+		MH_STATISTICS_GET_STRING = NativeLibrary.lookup("rocksdb_options_statistics_get_string",
 				FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
-		MH_STATISTICS_GET_TICKER_COUNT = RocksDB.lookup("rocksdb_options_statistics_get_ticker_count",
+		MH_STATISTICS_GET_TICKER_COUNT = NativeLibrary.lookup("rocksdb_options_statistics_get_ticker_count",
 				FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
 
-		MH_STATISTICS_GET_HISTOGRAM_DATA = RocksDB.lookup("rocksdb_options_statistics_get_histogram_data",
+		MH_STATISTICS_GET_HISTOGRAM_DATA = NativeLibrary.lookup("rocksdb_options_statistics_get_histogram_data",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
 
-		MH_SET_COMPRESSION = RocksDB.lookup("rocksdb_options_set_compression",
+		MH_SET_COMPRESSION = NativeLibrary.lookup("rocksdb_options_set_compression",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
 
-		MH_GET_COMPRESSION = RocksDB.lookup("rocksdb_options_get_compression",
+		MH_GET_COMPRESSION = NativeLibrary.lookup("rocksdb_options_get_compression",
 				FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
 
 	}

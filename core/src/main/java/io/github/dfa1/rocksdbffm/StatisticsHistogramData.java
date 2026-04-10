@@ -32,27 +32,27 @@ public final class StatisticsHistogramData extends NativeObject {
 	private static final MethodHandle MH_GET_MIN;
 
 	static {
-		MH_CREATE = RocksDB.lookup("rocksdb_statistics_histogram_data_create",
+		MH_CREATE = NativeLibrary.lookup("rocksdb_statistics_histogram_data_create",
 				FunctionDescriptor.of(ValueLayout.ADDRESS));
-		MH_DESTROY = RocksDB.lookup("rocksdb_statistics_histogram_data_destroy",
+		MH_DESTROY = NativeLibrary.lookup("rocksdb_statistics_histogram_data_destroy",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
-		MH_GET_MEDIAN = RocksDB.lookup("rocksdb_statistics_histogram_data_get_median",
+		MH_GET_MEDIAN = NativeLibrary.lookup("rocksdb_statistics_histogram_data_get_median",
 				FunctionDescriptor.of(ValueLayout.JAVA_DOUBLE, ValueLayout.ADDRESS));
-		MH_GET_P95 = RocksDB.lookup("rocksdb_statistics_histogram_data_get_p95",
+		MH_GET_P95 = NativeLibrary.lookup("rocksdb_statistics_histogram_data_get_p95",
 				FunctionDescriptor.of(ValueLayout.JAVA_DOUBLE, ValueLayout.ADDRESS));
-		MH_GET_P99 = RocksDB.lookup("rocksdb_statistics_histogram_data_get_p99",
+		MH_GET_P99 = NativeLibrary.lookup("rocksdb_statistics_histogram_data_get_p99",
 				FunctionDescriptor.of(ValueLayout.JAVA_DOUBLE, ValueLayout.ADDRESS));
-		MH_GET_AVERAGE = RocksDB.lookup("rocksdb_statistics_histogram_data_get_average",
+		MH_GET_AVERAGE = NativeLibrary.lookup("rocksdb_statistics_histogram_data_get_average",
 				FunctionDescriptor.of(ValueLayout.JAVA_DOUBLE, ValueLayout.ADDRESS));
-		MH_GET_STD_DEV = RocksDB.lookup("rocksdb_statistics_histogram_data_get_std_dev",
+		MH_GET_STD_DEV = NativeLibrary.lookup("rocksdb_statistics_histogram_data_get_std_dev",
 				FunctionDescriptor.of(ValueLayout.JAVA_DOUBLE, ValueLayout.ADDRESS));
-		MH_GET_MAX = RocksDB.lookup("rocksdb_statistics_histogram_data_get_max",
+		MH_GET_MAX = NativeLibrary.lookup("rocksdb_statistics_histogram_data_get_max",
 				FunctionDescriptor.of(ValueLayout.JAVA_DOUBLE, ValueLayout.ADDRESS));
-		MH_GET_COUNT = RocksDB.lookup("rocksdb_statistics_histogram_data_get_count",
+		MH_GET_COUNT = NativeLibrary.lookup("rocksdb_statistics_histogram_data_get_count",
 				FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
-		MH_GET_SUM = RocksDB.lookup("rocksdb_statistics_histogram_data_get_sum",
+		MH_GET_SUM = NativeLibrary.lookup("rocksdb_statistics_histogram_data_get_sum",
 				FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
-		MH_GET_MIN = RocksDB.lookup("rocksdb_statistics_histogram_data_get_min",
+		MH_GET_MIN = NativeLibrary.lookup("rocksdb_statistics_histogram_data_get_min",
 				FunctionDescriptor.of(ValueLayout.JAVA_DOUBLE, ValueLayout.ADDRESS));
 	}
 

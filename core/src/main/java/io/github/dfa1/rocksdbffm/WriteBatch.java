@@ -32,39 +32,39 @@ public final class WriteBatch extends NativeObject {
 	private static final MethodHandle MH_COUNT;
 
 	static {
-		MH_CREATE = RocksDB.lookup("rocksdb_writebatch_create",
+		MH_CREATE = NativeLibrary.lookup("rocksdb_writebatch_create",
 				FunctionDescriptor.of(ValueLayout.ADDRESS));
 
-		MH_DESTROY = RocksDB.lookup("rocksdb_writebatch_destroy",
+		MH_DESTROY = NativeLibrary.lookup("rocksdb_writebatch_destroy",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
-		MH_PUT = RocksDB.lookup("rocksdb_writebatch_put",
+		MH_PUT = NativeLibrary.lookup("rocksdb_writebatch_put",
 				FunctionDescriptor.ofVoid(
 						ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
 						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
 
-		MH_DELETE = RocksDB.lookup("rocksdb_writebatch_delete",
+		MH_DELETE = NativeLibrary.lookup("rocksdb_writebatch_delete",
 				FunctionDescriptor.ofVoid(
 						ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
 
-		MH_MERGE = RocksDB.lookup("rocksdb_writebatch_merge",
-				FunctionDescriptor.ofVoid(
-						ValueLayout.ADDRESS,
-						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
-						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
-
-		MH_DELETE_RANGE = RocksDB.lookup("rocksdb_writebatch_delete_range",
+		MH_MERGE = NativeLibrary.lookup("rocksdb_writebatch_merge",
 				FunctionDescriptor.ofVoid(
 						ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
 						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
 
-		MH_CLEAR = RocksDB.lookup("rocksdb_writebatch_clear",
+		MH_DELETE_RANGE = NativeLibrary.lookup("rocksdb_writebatch_delete_range",
+				FunctionDescriptor.ofVoid(
+						ValueLayout.ADDRESS,
+						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
+						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
+
+		MH_CLEAR = NativeLibrary.lookup("rocksdb_writebatch_clear",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
-		MH_COUNT = RocksDB.lookup("rocksdb_writebatch_count",
+		MH_COUNT = NativeLibrary.lookup("rocksdb_writebatch_count",
 				FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
 	}
 

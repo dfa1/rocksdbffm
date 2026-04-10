@@ -14,10 +14,10 @@ public final class WriteOptions extends NativeObject {
 	private static final MethodHandle MH_DESTROY;
 
 	static {
-		MH_CREATE = RocksDB.lookup("rocksdb_writeoptions_create",
+		MH_CREATE = NativeLibrary.lookup("rocksdb_writeoptions_create",
 				FunctionDescriptor.of(ValueLayout.ADDRESS));
 
-		MH_DESTROY = RocksDB.lookup("rocksdb_writeoptions_destroy",
+		MH_DESTROY = NativeLibrary.lookup("rocksdb_writeoptions_destroy",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 	}
 

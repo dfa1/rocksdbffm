@@ -18,16 +18,16 @@ public final class TransactionDBOptions extends NativeObject {
 	private static final MethodHandle MH_SET_NUM_STRIPES;
 
 	static {
-		MH_CREATE = RocksDB.lookup("rocksdb_transactiondb_options_create",
+		MH_CREATE = NativeLibrary.lookup("rocksdb_transactiondb_options_create",
 				FunctionDescriptor.of(ValueLayout.ADDRESS));
 
-		MH_DESTROY = RocksDB.lookup("rocksdb_transactiondb_options_destroy",
+		MH_DESTROY = NativeLibrary.lookup("rocksdb_transactiondb_options_destroy",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
-		MH_SET_MAX_NUM_LOCKS = RocksDB.lookup("rocksdb_transactiondb_options_set_max_num_locks",
+		MH_SET_MAX_NUM_LOCKS = NativeLibrary.lookup("rocksdb_transactiondb_options_set_max_num_locks",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
 
-		MH_SET_NUM_STRIPES = RocksDB.lookup("rocksdb_transactiondb_options_set_num_stripes",
+		MH_SET_NUM_STRIPES = NativeLibrary.lookup("rocksdb_transactiondb_options_set_num_stripes",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
 	}
 

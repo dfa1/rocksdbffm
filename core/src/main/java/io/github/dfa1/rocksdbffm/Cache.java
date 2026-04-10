@@ -24,19 +24,19 @@ public abstract class Cache extends NativeObject {
 	private static final MethodHandle MH_GET_PINNED_USAGE;
 
 	static {
-		MH_DESTROY = RocksDB.lookup("rocksdb_cache_destroy",
+		MH_DESTROY = NativeLibrary.lookup("rocksdb_cache_destroy",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
-		MH_SET_CAPACITY = RocksDB.lookup("rocksdb_cache_set_capacity",
+		MH_SET_CAPACITY = NativeLibrary.lookup("rocksdb_cache_set_capacity",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
 
-		MH_GET_CAPACITY = RocksDB.lookup("rocksdb_cache_get_capacity",
+		MH_GET_CAPACITY = NativeLibrary.lookup("rocksdb_cache_get_capacity",
 				FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
 
-		MH_GET_USAGE = RocksDB.lookup("rocksdb_cache_get_usage",
+		MH_GET_USAGE = NativeLibrary.lookup("rocksdb_cache_get_usage",
 				FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
 
-		MH_GET_PINNED_USAGE = RocksDB.lookup("rocksdb_cache_get_pinned_usage",
+		MH_GET_PINNED_USAGE = NativeLibrary.lookup("rocksdb_cache_get_pinned_usage",
 				FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
 	}
 

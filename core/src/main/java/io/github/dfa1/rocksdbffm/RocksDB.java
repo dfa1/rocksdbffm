@@ -1,18 +1,12 @@
 package io.github.dfa1.rocksdbffm;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.lang.foreign.Arena;
 import java.lang.foreign.FunctionDescriptor;
-import java.lang.foreign.Linker;
 import java.lang.foreign.MemorySegment;
-import java.lang.foreign.SymbolLookup;
 import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 import java.nio.ByteBuffer;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
@@ -35,9 +29,6 @@ import java.util.OptionalLong;
 /// `rocksdb_t*` method handles, which are mapped exactly once and exposed
 /// via package-private static helpers to sibling classes.
 public final class RocksDB {
-
-	private static final Linker LINKER = Linker.nativeLinker();
-	static final SymbolLookup LIB;
 
 	// -----------------------------------------------------------------------
 	// Open handles — used only inside factory methods
@@ -99,87 +90,85 @@ public final class RocksDB {
 	private static final MethodHandle MH_INGEST_EXTERNAL_FILE;
 
 	static {
-		LIB = SymbolLookup.libraryLookup(resolveLibPath(), Arena.ofAuto());
-
-		MH_OPEN = lookup("rocksdb_open",
+		MH_OPEN = NativeLibrary.lookup("rocksdb_open",
 				FunctionDescriptor.of(ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
-		MH_OPEN_WITH_TTL = lookup("rocksdb_open_with_ttl",
+		MH_OPEN_WITH_TTL = NativeLibrary.lookup("rocksdb_open_with_ttl",
 				FunctionDescriptor.of(ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS,
 						ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
 
-		MH_OPEN_FOR_READ_ONLY = lookup("rocksdb_open_for_read_only",
+		MH_OPEN_FOR_READ_ONLY = NativeLibrary.lookup("rocksdb_open_for_read_only",
 				FunctionDescriptor.of(ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS,
 						ValueLayout.JAVA_BYTE, ValueLayout.ADDRESS));
 
-		MH_CLOSE = lookup("rocksdb_close",
+		MH_CLOSE = NativeLibrary.lookup("rocksdb_close",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
-		MH_GET_PINNED = lookup("rocksdb_get_pinned",
+		MH_GET_PINNED = NativeLibrary.lookup("rocksdb_get_pinned",
 				FunctionDescriptor.of(ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
 						ValueLayout.ADDRESS));
 
-		MH_PINNABLESLICE_VALUE = lookup("rocksdb_pinnableslice_value",
+		MH_PINNABLESLICE_VALUE = NativeLibrary.lookup("rocksdb_pinnableslice_value",
 				FunctionDescriptor.of(ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
-		MH_PINNABLESLICE_DESTROY = lookup("rocksdb_pinnableslice_destroy",
+		MH_PINNABLESLICE_DESTROY = NativeLibrary.lookup("rocksdb_pinnableslice_destroy",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
-		MH_PUT = lookup("rocksdb_put",
+		MH_PUT = NativeLibrary.lookup("rocksdb_put",
 				FunctionDescriptor.ofVoid(
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
 						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
 						ValueLayout.ADDRESS));
 
-		MH_DELETE = lookup("rocksdb_delete",
+		MH_DELETE = NativeLibrary.lookup("rocksdb_delete",
 				FunctionDescriptor.ofVoid(
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
 						ValueLayout.ADDRESS));
 
-		MH_FLUSH = lookup("rocksdb_flush",
+		MH_FLUSH = NativeLibrary.lookup("rocksdb_flush",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
-		MH_FLUSH_WAL = lookup("rocksdb_flush_wal",
+		MH_FLUSH_WAL = NativeLibrary.lookup("rocksdb_flush_wal",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_BYTE, ValueLayout.ADDRESS));
 
-		MH_CREATE_SNAPSHOT = lookup("rocksdb_create_snapshot",
+		MH_CREATE_SNAPSHOT = NativeLibrary.lookup("rocksdb_create_snapshot",
 				FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
-		MH_PROPERTY_VALUE = lookup("rocksdb_property_value",
+		MH_PROPERTY_VALUE = NativeLibrary.lookup("rocksdb_property_value",
 				FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
-		MH_PROPERTY_INT = lookup("rocksdb_property_int",
+		MH_PROPERTY_INT = NativeLibrary.lookup("rocksdb_property_int",
 				FunctionDescriptor.of(ValueLayout.JAVA_INT,
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
-		MH_MERGE = lookup("rocksdb_merge",
+		MH_MERGE = NativeLibrary.lookup("rocksdb_merge",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
 						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
 
-		MH_DELETE_RANGE_CF = lookup("rocksdb_delete_range_cf",
+		MH_DELETE_RANGE_CF = NativeLibrary.lookup("rocksdb_delete_range_cf",
 				FunctionDescriptor.ofVoid(
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
 						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
 						ValueLayout.ADDRESS));
 
-		MH_GET_DEFAULT_CF = lookup("rocksdb_get_default_column_family_handle",
+		MH_GET_DEFAULT_CF = NativeLibrary.lookup("rocksdb_get_default_column_family_handle",
 				FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
-		MH_WRITE = lookup("rocksdb_write",
+		MH_WRITE = NativeLibrary.lookup("rocksdb_write",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
-		MH_KEY_MAY_EXIST = lookup("rocksdb_key_may_exist",
+		MH_KEY_MAY_EXIST = NativeLibrary.lookup("rocksdb_key_may_exist",
 				FunctionDescriptor.of(ValueLayout.JAVA_BYTE,
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
@@ -187,38 +176,40 @@ public final class RocksDB {
 						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
 						ValueLayout.ADDRESS));
 
-		MH_COMPACT_RANGE = lookup("rocksdb_compact_range",
+		MH_COMPACT_RANGE = NativeLibrary.lookup("rocksdb_compact_range",
 				FunctionDescriptor.ofVoid(
 						ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
 						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
 
-		MH_COMPACT_RANGE_OPT = lookup("rocksdb_compact_range_opt",
+		MH_COMPACT_RANGE_OPT = NativeLibrary.lookup("rocksdb_compact_range_opt",
 				FunctionDescriptor.ofVoid(
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
 						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
 
-		MH_SUGGEST_COMPACT_RANGE = lookup("rocksdb_suggest_compact_range",
+		MH_SUGGEST_COMPACT_RANGE = NativeLibrary.lookup("rocksdb_suggest_compact_range",
 				FunctionDescriptor.ofVoid(
 						ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
 						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
 						ValueLayout.ADDRESS));
 
-		MH_DISABLE_FILE_DELETIONS = lookup("rocksdb_disable_file_deletions",
+		MH_DISABLE_FILE_DELETIONS = NativeLibrary.lookup("rocksdb_disable_file_deletions",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
-		MH_ENABLE_FILE_DELETIONS = lookup("rocksdb_enable_file_deletions",
+		MH_ENABLE_FILE_DELETIONS = NativeLibrary.lookup("rocksdb_enable_file_deletions",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
-		MH_INGEST_EXTERNAL_FILE = lookup("rocksdb_ingest_external_file",
+		MH_INGEST_EXTERNAL_FILE = NativeLibrary.lookup("rocksdb_ingest_external_file",
 				FunctionDescriptor.ofVoid(
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 	}
 
-	private RocksDB() {}
+	private RocksDB() {
+		// no instances
+	}
 
 	// -----------------------------------------------------------------------
 	// Factory — read-write
@@ -726,45 +717,4 @@ public final class RocksDB {
 		}
 	}
 
-	// -----------------------------------------------------------------------
-	// Infrastructure — library loading and symbol lookup
-	// -----------------------------------------------------------------------
-
-	static MethodHandle lookup(String name, FunctionDescriptor fd) {
-		return LINKER.downcallHandle(
-				LIB.find(name).orElseThrow(() ->
-						new UnsatisfiedLinkError("Symbol not found: " + name)),
-				fd);
-	}
-
-	private static String resolveLibPath() {
-		String explicit = System.getProperty("rocksdb.lib.path");
-		if (explicit != null) {
-			return explicit;
-		}
-
-		String classifier = classifier();
-		String ext = classifier.startsWith("osx") ? "dylib" : "so";
-		String resource = "/native/" + classifier + "/librocksdb." + ext;
-
-		try (InputStream in = RocksDB.class.getResourceAsStream(resource)) {
-			if (in == null) {
-				throw new UnsatisfiedLinkError("No bundled RocksDB library found for platform " + classifier);
-			}
-			Path tmp = Files.createTempFile("librocksdb-", "." + ext);
-			tmp.toFile().deleteOnExit();
-			Files.copy(in, tmp, StandardCopyOption.REPLACE_EXISTING);
-			return tmp.toString();
-		} catch (IOException e) {
-			throw new UnsatisfiedLinkError("Failed to extract bundled RocksDB: " + e.getMessage());
-		}
-	}
-
-	private static String classifier() {
-		String os = System.getProperty("os.name", "").toLowerCase();
-		String arch = System.getProperty("os.arch", "").toLowerCase();
-		String osName = os.contains("mac") ? "osx" : "linux";
-		String archName = (arch.equals("aarch64") || arch.equals("arm64")) ? "aarch64" : "x86_64";
-		return osName + "-" + archName;
-	}
 }

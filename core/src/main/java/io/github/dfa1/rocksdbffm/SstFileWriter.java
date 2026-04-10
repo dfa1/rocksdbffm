@@ -51,54 +51,54 @@ public final class SstFileWriter extends NativeObject {
 	private static final MethodHandle MH_FILE_SIZE;
 
 	static {
-		MH_ENVOPTIONS_CREATE = RocksDB.lookup("rocksdb_envoptions_create",
+		MH_ENVOPTIONS_CREATE = NativeLibrary.lookup("rocksdb_envoptions_create",
 				FunctionDescriptor.of(ValueLayout.ADDRESS));
 
-		MH_ENVOPTIONS_DESTROY = RocksDB.lookup("rocksdb_envoptions_destroy",
+		MH_ENVOPTIONS_DESTROY = NativeLibrary.lookup("rocksdb_envoptions_destroy",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
-		MH_CREATE = RocksDB.lookup("rocksdb_sstfilewriter_create",
+		MH_CREATE = NativeLibrary.lookup("rocksdb_sstfilewriter_create",
 				FunctionDescriptor.of(ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
-		MH_DESTROY = RocksDB.lookup("rocksdb_sstfilewriter_destroy",
+		MH_DESTROY = NativeLibrary.lookup("rocksdb_sstfilewriter_destroy",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
-		MH_OPEN = RocksDB.lookup("rocksdb_sstfilewriter_open",
+		MH_OPEN = NativeLibrary.lookup("rocksdb_sstfilewriter_open",
 				FunctionDescriptor.ofVoid(
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
-		MH_PUT = RocksDB.lookup("rocksdb_sstfilewriter_put",
+		MH_PUT = NativeLibrary.lookup("rocksdb_sstfilewriter_put",
 				FunctionDescriptor.ofVoid(
 						ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
 						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
 						ValueLayout.ADDRESS));
 
-		MH_DELETE = RocksDB.lookup("rocksdb_sstfilewriter_delete",
+		MH_DELETE = NativeLibrary.lookup("rocksdb_sstfilewriter_delete",
 				FunctionDescriptor.ofVoid(
 						ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
 						ValueLayout.ADDRESS));
 
-		MH_DELETE_RANGE = RocksDB.lookup("rocksdb_sstfilewriter_delete_range",
-				FunctionDescriptor.ofVoid(
-						ValueLayout.ADDRESS,
-						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
-						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
-						ValueLayout.ADDRESS));
-
-		MH_MERGE = RocksDB.lookup("rocksdb_sstfilewriter_merge",
+		MH_DELETE_RANGE = NativeLibrary.lookup("rocksdb_sstfilewriter_delete_range",
 				FunctionDescriptor.ofVoid(
 						ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
 						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
 						ValueLayout.ADDRESS));
 
-		MH_FINISH = RocksDB.lookup("rocksdb_sstfilewriter_finish",
+		MH_MERGE = NativeLibrary.lookup("rocksdb_sstfilewriter_merge",
+				FunctionDescriptor.ofVoid(
+						ValueLayout.ADDRESS,
+						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
+						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
+						ValueLayout.ADDRESS));
+
+		MH_FINISH = NativeLibrary.lookup("rocksdb_sstfilewriter_finish",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
-		MH_FILE_SIZE = RocksDB.lookup("rocksdb_sstfilewriter_file_size",
+		MH_FILE_SIZE = NativeLibrary.lookup("rocksdb_sstfilewriter_file_size",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 	}
 

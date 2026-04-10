@@ -51,48 +51,48 @@ public final class RocksIterator extends NativeObject {
 	private static final MethodHandle MH_REFRESH;
 
 	static {
-		MH_CREATE = RocksDB.lookup("rocksdb_create_iterator",
+		MH_CREATE = NativeLibrary.lookup("rocksdb_create_iterator",
 				FunctionDescriptor.of(ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
-		MH_DESTROY = RocksDB.lookup("rocksdb_iter_destroy",
+		MH_DESTROY = NativeLibrary.lookup("rocksdb_iter_destroy",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
-		MH_VALID = RocksDB.lookup("rocksdb_iter_valid",
+		MH_VALID = NativeLibrary.lookup("rocksdb_iter_valid",
 				FunctionDescriptor.of(ValueLayout.JAVA_BYTE, ValueLayout.ADDRESS));
 
-		MH_SEEK_TO_FIRST = RocksDB.lookup("rocksdb_iter_seek_to_first",
+		MH_SEEK_TO_FIRST = NativeLibrary.lookup("rocksdb_iter_seek_to_first",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
-		MH_SEEK_TO_LAST = RocksDB.lookup("rocksdb_iter_seek_to_last",
+		MH_SEEK_TO_LAST = NativeLibrary.lookup("rocksdb_iter_seek_to_last",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
-		MH_SEEK = RocksDB.lookup("rocksdb_iter_seek",
+		MH_SEEK = NativeLibrary.lookup("rocksdb_iter_seek",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
 
-		MH_SEEK_FOR_PREV = RocksDB.lookup("rocksdb_iter_seek_for_prev",
+		MH_SEEK_FOR_PREV = NativeLibrary.lookup("rocksdb_iter_seek_for_prev",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
 
-		MH_NEXT = RocksDB.lookup("rocksdb_iter_next",
+		MH_NEXT = NativeLibrary.lookup("rocksdb_iter_next",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
-		MH_PREV = RocksDB.lookup("rocksdb_iter_prev",
+		MH_PREV = NativeLibrary.lookup("rocksdb_iter_prev",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
-		MH_KEY = RocksDB.lookup("rocksdb_iter_key",
+		MH_KEY = NativeLibrary.lookup("rocksdb_iter_key",
 				FunctionDescriptor.of(ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
-		MH_VALUE = RocksDB.lookup("rocksdb_iter_value",
+		MH_VALUE = NativeLibrary.lookup("rocksdb_iter_value",
 				FunctionDescriptor.of(ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
-		MH_GET_ERROR = RocksDB.lookup("rocksdb_iter_get_error",
+		MH_GET_ERROR = NativeLibrary.lookup("rocksdb_iter_get_error",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
-		MH_REFRESH = RocksDB.lookup("rocksdb_iter_refresh",
+		MH_REFRESH = NativeLibrary.lookup("rocksdb_iter_refresh",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 	}
 

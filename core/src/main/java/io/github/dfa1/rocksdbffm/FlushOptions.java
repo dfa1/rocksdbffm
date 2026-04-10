@@ -27,16 +27,16 @@ public final class FlushOptions extends NativeObject {
 	private static final MethodHandle MH_GET_WAIT;
 
 	static {
-		MH_CREATE = RocksDB.lookup("rocksdb_flushoptions_create",
+		MH_CREATE = NativeLibrary.lookup("rocksdb_flushoptions_create",
 				FunctionDescriptor.of(ValueLayout.ADDRESS));
 
-		MH_DESTROY = RocksDB.lookup("rocksdb_flushoptions_destroy",
+		MH_DESTROY = NativeLibrary.lookup("rocksdb_flushoptions_destroy",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
-		MH_SET_WAIT = RocksDB.lookup("rocksdb_flushoptions_set_wait",
+		MH_SET_WAIT = NativeLibrary.lookup("rocksdb_flushoptions_set_wait",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_BYTE));
 
-		MH_GET_WAIT = RocksDB.lookup("rocksdb_flushoptions_get_wait",
+		MH_GET_WAIT = NativeLibrary.lookup("rocksdb_flushoptions_get_wait",
 				FunctionDescriptor.of(ValueLayout.JAVA_BYTE, ValueLayout.ADDRESS));
 	}
 

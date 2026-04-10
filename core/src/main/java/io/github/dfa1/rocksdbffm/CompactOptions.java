@@ -38,41 +38,41 @@ public final class CompactOptions extends NativeObject {
 	private static final MethodHandle MH_GET_TARGET_LEVEL;
 
 	static {
-		MH_CREATE = RocksDB.lookup("rocksdb_compactoptions_create",
+		MH_CREATE = NativeLibrary.lookup("rocksdb_compactoptions_create",
 				FunctionDescriptor.of(ValueLayout.ADDRESS));
 
-		MH_DESTROY = RocksDB.lookup("rocksdb_compactoptions_destroy",
+		MH_DESTROY = NativeLibrary.lookup("rocksdb_compactoptions_destroy",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
-		MH_SET_EXCLUSIVE = RocksDB.lookup(
+		MH_SET_EXCLUSIVE = NativeLibrary.lookup(
 				"rocksdb_compactoptions_set_exclusive_manual_compaction",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_BYTE));
 
-		MH_GET_EXCLUSIVE = RocksDB.lookup(
+		MH_GET_EXCLUSIVE = NativeLibrary.lookup(
 				"rocksdb_compactoptions_get_exclusive_manual_compaction",
 				FunctionDescriptor.of(ValueLayout.JAVA_BYTE, ValueLayout.ADDRESS));
 
-		MH_SET_BOTTOMMOST = RocksDB.lookup(
+		MH_SET_BOTTOMMOST = NativeLibrary.lookup(
 				"rocksdb_compactoptions_set_bottommost_level_compaction",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_BYTE));
 
-		MH_GET_BOTTOMMOST = RocksDB.lookup(
+		MH_GET_BOTTOMMOST = NativeLibrary.lookup(
 				"rocksdb_compactoptions_get_bottommost_level_compaction",
 				FunctionDescriptor.of(ValueLayout.JAVA_BYTE, ValueLayout.ADDRESS));
 
-		MH_SET_CHANGE_LEVEL = RocksDB.lookup(
+		MH_SET_CHANGE_LEVEL = NativeLibrary.lookup(
 				"rocksdb_compactoptions_set_change_level",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_BYTE));
 
-		MH_GET_CHANGE_LEVEL = RocksDB.lookup(
+		MH_GET_CHANGE_LEVEL = NativeLibrary.lookup(
 				"rocksdb_compactoptions_get_change_level",
 				FunctionDescriptor.of(ValueLayout.JAVA_BYTE, ValueLayout.ADDRESS));
 
-		MH_SET_TARGET_LEVEL = RocksDB.lookup(
+		MH_SET_TARGET_LEVEL = NativeLibrary.lookup(
 				"rocksdb_compactoptions_set_target_level",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
 
-		MH_GET_TARGET_LEVEL = RocksDB.lookup(
+		MH_GET_TARGET_LEVEL = NativeLibrary.lookup(
 				"rocksdb_compactoptions_get_target_level",
 				FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
 	}

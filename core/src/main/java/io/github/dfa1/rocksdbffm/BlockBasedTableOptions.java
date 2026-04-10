@@ -77,39 +77,39 @@ public final class BlockBasedTableOptions extends NativeObject {
 	private static final MethodHandle MH_SET_PARTITION_FILTERS;
 
 	static {
-		MH_CREATE = RocksDB.lookup("rocksdb_block_based_options_create",
+		MH_CREATE = NativeLibrary.lookup("rocksdb_block_based_options_create",
 				FunctionDescriptor.of(ValueLayout.ADDRESS));
 
-		MH_DESTROY = RocksDB.lookup("rocksdb_block_based_options_destroy",
+		MH_DESTROY = NativeLibrary.lookup("rocksdb_block_based_options_destroy",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
-		MH_SET_BLOCK_SIZE = RocksDB.lookup("rocksdb_block_based_options_set_block_size",
+		MH_SET_BLOCK_SIZE = NativeLibrary.lookup("rocksdb_block_based_options_set_block_size",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
 
-		MH_SET_FILTER_POLICY = RocksDB.lookup("rocksdb_block_based_options_set_filter_policy",
+		MH_SET_FILTER_POLICY = NativeLibrary.lookup("rocksdb_block_based_options_set_filter_policy",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
-		MH_SET_NO_BLOCK_CACHE = RocksDB.lookup("rocksdb_block_based_options_set_no_block_cache",
+		MH_SET_NO_BLOCK_CACHE = NativeLibrary.lookup("rocksdb_block_based_options_set_no_block_cache",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_BYTE));
 
-		MH_SET_BLOCK_CACHE = RocksDB.lookup("rocksdb_block_based_options_set_block_cache",
+		MH_SET_BLOCK_CACHE = NativeLibrary.lookup("rocksdb_block_based_options_set_block_cache",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
-		MH_SET_CACHE_INDEX_AND_FILTER_BLOCKS = RocksDB.lookup(
+		MH_SET_CACHE_INDEX_AND_FILTER_BLOCKS = NativeLibrary.lookup(
 				"rocksdb_block_based_options_set_cache_index_and_filter_blocks",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_BYTE));
 
-		MH_SET_INDEX_TYPE = RocksDB.lookup("rocksdb_block_based_options_set_index_type",
+		MH_SET_INDEX_TYPE = NativeLibrary.lookup("rocksdb_block_based_options_set_index_type",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
 
-		MH_SET_FORMAT_VERSION = RocksDB.lookup("rocksdb_block_based_options_set_format_version",
+		MH_SET_FORMAT_VERSION = NativeLibrary.lookup("rocksdb_block_based_options_set_format_version",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
 
-		MH_SET_WHOLE_KEY_FILTERING = RocksDB.lookup(
+		MH_SET_WHOLE_KEY_FILTERING = NativeLibrary.lookup(
 				"rocksdb_block_based_options_set_whole_key_filtering",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_BYTE));
 
-		MH_SET_PARTITION_FILTERS = RocksDB.lookup(
+		MH_SET_PARTITION_FILTERS = NativeLibrary.lookup(
 				"rocksdb_block_based_options_set_partition_filters",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_BYTE));
 	}

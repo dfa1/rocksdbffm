@@ -34,8 +34,6 @@ import java.util.concurrent.TimeUnit;
 @Fork(value = 1, jvmArgsPrepend = {"--enable-native-access=ALL-UNNAMED", "--sun-misc-unsafe-memory-access=allow"})
 public class FfmBenchmark {
 
-	private static final int BATCH_SIZE = TestData.BATCH_SIZE;
-
 	private RocksDB db;
 	private Path dbPath;
 
@@ -163,7 +161,7 @@ public class FfmBenchmark {
 	@Benchmark
 	public void batchWrites() {
 		batch.clear();
-		for (int i = 0; i < BATCH_SIZE; i++) {
+		for (int i = 0; i < TestData.WRITE_BATCH_SIZE; i++) {
 			batch.put(batchKeys[i], TestData.BATCH_VALUE);
 		}
 		db.write(batch);
@@ -173,7 +171,7 @@ public class FfmBenchmark {
 	public void batchWritesArena() {
 		batch.clear();
 		try (Arena arena = Arena.ofConfined()) {
-			for (int i = 0; i < BATCH_SIZE; i++) {
+			for (int i = 0; i < TestData.WRITE_BATCH_SIZE; i++) {
 				batch.put(arena, batchKeys[i], TestData.BATCH_VALUE);
 			}
 			db.write(arena, batch);

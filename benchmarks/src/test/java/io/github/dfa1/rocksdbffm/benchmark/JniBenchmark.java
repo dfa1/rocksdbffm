@@ -35,7 +35,6 @@ public class JniBenchmark {
 		RocksDB.loadLibrary();
 	}
 
-
 	private RocksDB db;
 	private Options options;
 	private WriteOptions writeOptions;
@@ -128,7 +127,7 @@ public class JniBenchmark {
 	@Benchmark
 	public void batchWrites() throws Exception {
 		batch.clear();
-		for (int i = 0; i < TestData.BATCH_SIZE; i++) {
+		for (int i = 0; i < TestData.WRITE_BATCH_SIZE; i++) {
 			batch.put(batchKeys[i], TestData.BATCH_VALUE);
 		}
 		db.write(writeOptions, batch);

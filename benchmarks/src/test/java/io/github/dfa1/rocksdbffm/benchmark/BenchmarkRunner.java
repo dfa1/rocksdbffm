@@ -36,7 +36,7 @@ public class BenchmarkRunner {
 		LABELS.put("batchWrites", "Batch write (100 ops)");
 	}
 
-	public static void main(String[] args) throws Exception {
+	static void main() throws Exception {
 		// LinkedHashMap preserves insertion order (FFM benchmarks come first)
 		Map<String, double[]> scores = new LinkedHashMap<>();
 

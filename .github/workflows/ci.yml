@@ -24,6 +24,7 @@ jobs:
         with:
           java-version: '25'
           distribution: 'zulu'
+          cache: 'maven' # Caches ~/.m2/repository
 
       - name: Install Zig
         uses: goto-bus-stop/setup-zig@v2

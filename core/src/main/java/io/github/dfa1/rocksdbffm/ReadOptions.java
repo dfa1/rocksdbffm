@@ -5,6 +5,7 @@ import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 
+// TODO: a lot of options are missing?
 /// FFM wrapper for `rocksdb_readoptions_t`.
 public final class ReadOptions extends NativeObject {
 

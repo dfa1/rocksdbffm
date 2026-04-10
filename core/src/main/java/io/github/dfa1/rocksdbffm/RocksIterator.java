@@ -9,7 +9,6 @@ import java.nio.ByteBuffer;
 
 /// FFM wrapper for `rocksdb_iterator_t`.
 ///
-/// Obtain via [RocksDB#newIterator()] or [RocksDB#newIterator(ReadOptions)].
 /// Always close after use.
 ///
 /// ```

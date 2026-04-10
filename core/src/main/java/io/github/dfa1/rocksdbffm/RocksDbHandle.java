@@ -9,11 +9,9 @@ import java.lang.foreign.MemorySegment;
 ///
 /// [TransactionDB] and [OptimisticTransactionDB] are deliberately excluded —
 /// they use distinct C pointer types (`rocksdb_transactiondb_t*` and
-/// `rocksdb_optimistictransactiondb_t*`) and a separate function namespace.
-///
-/// This interface exists primarily to let utilities like [Checkpoint] accept
-/// any `rocksdb_t*`-backed DB in a single method, rather than one overload
-/// per concrete type.
+/// `rocksdb_optimistictransactiondb_t*`) and a separate function namespace. ->
+/// TODO: use rocksdb_t* rocksdb_optimistictransactiondb_get_base_db(
+///     rocksdb_optimistictransactiondb_t* txn_db);
 public sealed interface RocksDbHandle permits ReadWriteDB, TtlDB, ReadOnlyDB, SecondaryDB {
 	MemorySegment ptr();
 }

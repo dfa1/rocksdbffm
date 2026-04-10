@@ -1,8 +1,6 @@
 package io.github.dfa1.rocksdbffm;
 
-/// Well-known RocksDB property names for use with
-/// [RocksDB#getProperty(Property)] and [RocksDB#getLongProperty(Property)].
-///
+/// Well-known RocksDB property names.
 /// [Type#STRING] properties are available only via `getProperty`.
 /// [Type#NUMERIC] properties (uint64) are available via both `getProperty`
 /// and `getLongProperty`. Calling `getLongProperty` on a `STRING`

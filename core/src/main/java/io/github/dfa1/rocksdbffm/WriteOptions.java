@@ -6,6 +6,7 @@ import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 
 /// FFM wrapper for `rocksdb_writeoptions_t`.
+// TODO: a lot of them are just missing
 public final class WriteOptions extends NativeObject {
 
 	/// `rocksdb_writeoptions_t* rocksdb_writeoptions_create(void);`

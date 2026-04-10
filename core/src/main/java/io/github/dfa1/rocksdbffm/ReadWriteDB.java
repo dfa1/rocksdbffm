@@ -21,10 +21,6 @@ import java.util.Set;
 /// ```
 public final class ReadWriteDB extends NativeObject implements RocksDbHandle {
 
-	// -----------------------------------------------------------------------
-	// Instance state
-	// -----------------------------------------------------------------------
-
 	private final WriteOptions writeOpts;
 	private final ReadOptions readOpts;
 
@@ -320,10 +316,12 @@ public final class ReadWriteDB extends NativeObject implements RocksDbHandle {
 		}
 	}
 
+	// TODO: drop, too many variants
 	public void ingestExternalFile(Path file, IngestExternalFileOptions options) {
 		ingestExternalFile(List.of(file), options);
 	}
 
+	// TODO: drop, too many variants
 	public void ingestExternalFile(Path file) {
 		ingestExternalFile(List.of(file));
 	}
@@ -332,6 +330,7 @@ public final class ReadWriteDB extends NativeObject implements RocksDbHandle {
 	// Compression probe
 	// -----------------------------------------------------------------------
 
+	// TODO: move to rocksdb or just delete it
 	/// Returns the set of compression types compiled into the loaded RocksDB library.
 	public Set<CompressionType> getSupportedCompressions() {
 		Set<CompressionType> result = java.util.EnumSet.of(CompressionType.NO_COMPRESSION);
@@ -340,8 +339,12 @@ public final class ReadWriteDB extends NativeObject implements RocksDbHandle {
 			tmpDir = java.nio.file.Files.createTempDirectory("rocksdbffm-compress-probe-");
 			boolean isWindows = System.getProperty("os.name", "").toLowerCase().contains("win");
 			for (CompressionType type : CompressionType.values()) {
-				if (type == CompressionType.NO_COMPRESSION) continue;
-				if (type == CompressionType.XPRESS && !isWindows) continue;
+				if (type == CompressionType.NO_COMPRESSION) {
+					continue;
+				}
+				if (type == CompressionType.XPRESS && !isWindows) {
+					continue;
+				}
 				java.nio.file.Path sstFile = tmpDir.resolve(type.name().toLowerCase() + ".sst");
 				try (Options opts = Options.newOptions().setCompression(type);
 				     SstFileWriter writer = SstFileWriter.newSstFileWriter(opts)) {

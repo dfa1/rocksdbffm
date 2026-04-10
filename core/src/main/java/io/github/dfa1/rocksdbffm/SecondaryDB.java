@@ -51,10 +51,6 @@ public final class SecondaryDB extends NativeObject implements RocksDbHandle {
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 	}
 
-	// -----------------------------------------------------------------------
-	// Instance state
-	// -----------------------------------------------------------------------
-
 	private final ReadOptions readOpts;
 
 	private SecondaryDB(MemorySegment ptr, ReadOptions readOpts) {
@@ -73,6 +69,7 @@ public final class SecondaryDB extends NativeObject implements RocksDbHandle {
 	/// @param primaryPath   path to the primary database directory
 	/// @param secondaryPath a dedicated directory for this secondary's own MANIFEST/WAL
 	///                      tails; created automatically if it does not exist
+	// TODO: don't expose this, go via RocksDB only
 	public static SecondaryDB open(Options dbOptions, Path primaryPath, Path secondaryPath) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);

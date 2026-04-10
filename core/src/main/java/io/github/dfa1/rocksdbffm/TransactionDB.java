@@ -124,6 +124,7 @@ public final class TransactionDB extends NativeObject {
 
 	/// Opens a TransactionDB at `path`.
 	/// The caller retains ownership of `dbOptions` and `txnDbOptions`.
+	// TODO: don't expose this... go via RocksDB only
 	public static TransactionDB open(Options dbOptions, TransactionDBOptions txnDbOptions, Path path) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
@@ -349,8 +350,7 @@ public final class TransactionDB extends NativeObject {
 	// -----------------------------------------------------------------------
 	// DB Properties
 	// -----------------------------------------------------------------------
-
-	/// @see RocksDB#getProperty(Property)
+	//
 	public Optional<String> getProperty(Property property) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment propSeg = arena.allocateFrom(property.propertyName());

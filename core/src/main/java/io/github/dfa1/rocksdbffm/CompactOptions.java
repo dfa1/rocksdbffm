@@ -7,8 +7,6 @@ import java.lang.invoke.MethodHandle;
 
 /// FFM wrapper for `rocksdb_compactoptions_t`.
 ///
-/// Used with [RocksDB#compactRange(CompactOptions, byte\[\], byte\[\])].
-///
 /// ```
 /// try (var opts = new CompactOptions().setChangeLevel(true).setTargetLevel(2)) {
 ///     db.compactRange(opts, null, null);

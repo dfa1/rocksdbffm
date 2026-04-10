@@ -11,7 +11,7 @@ import java.lang.invoke.MethodHandle;
 /// Reads performed with a snapshot set on [ReadOptions] see only data
 /// that was committed before the snapshot was taken.
 ///
-/// Obtain via [RocksDB#getSnapshot()], [TransactionDB#getSnapshot()],
+/// Obtain via [TransactionDB#getSnapshot()],
 /// or [Transaction#getSnapshot()]. Always close after use to release the
 /// underlying native snapshot.
 ///
@@ -37,8 +37,6 @@ public final class Snapshot extends NativeObject {
 
 		MH_RELEASE = NativeLibrary.lookup("rocksdb_release_snapshot",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-
-		// TODO: rocksdb_free is declared a lot of times
 	}
 
 	/// DB pointer used to release the snapshot; NULL signals that `rocksdb_free`

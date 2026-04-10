@@ -185,7 +185,6 @@ public final class Options extends NativeObject {
 
 
 	/// Sets the compression algorithm for all levels.
-	/// Use [RocksDB#getSupportedCompressions()] to check which types are available.
 	///
 	/// @return `this` for chaining
 	public Options setCompression(CompressionType type) {

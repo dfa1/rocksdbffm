@@ -6,6 +6,7 @@ import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 
 /// FFM wrapper for `rocksdb_transaction_options_t`.
+// TODO: add more description + methods
 public final class TransactionOptions extends NativeObject {
 
 	/// `rocksdb_transaction_options_t* rocksdb_transaction_options_create(void);`

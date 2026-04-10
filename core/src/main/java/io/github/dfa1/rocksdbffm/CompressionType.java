@@ -4,8 +4,7 @@ package io.github.dfa1.rocksdbffm;
 ///
 /// Integer values match the `rocksdb_*_compression` constants in `rocksdb/c.h`.
 ///
-/// Not every algorithm is available in every RocksDB build — use
-/// [RocksDB#getSupportedCompressions()] to query which types are compiled in at runtime.
+/// Not every algorithm is available in every RocksDB build.
 ///
 /// ```
 /// try (Options opts = Options.newOptions().setCompression(CompressionType.LZ4)) { ... }

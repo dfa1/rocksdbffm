@@ -86,6 +86,7 @@ public final class OptimisticTransactionDB extends NativeObject {
 	// Factory
 	// -----------------------------------------------------------------------
 
+	// TODO: open only via Rocksdb
 	/// Opens an OptimisticTransactionDB at `path`.
 	/// The caller retains ownership of `dbOptions`.
 	public static OptimisticTransactionDB open(Options dbOptions, Path path) {

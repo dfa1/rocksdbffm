@@ -176,11 +176,6 @@ The project is open to contributions, particularly in the following areas:
 - If that fails and community is aligned:
     - Run it as separated project (like rust-rocksdb).
     - Deploy to maven central.
-- Cover all features of RocksDB in idiomatic Java.
-- Provide a pool for MemorySegment/ByteBuffer to make the library more
-  "battery included".
 - Add arena-accepting overloads to the `byte[]` API tier (Zig-style caller-owned allocator):
   `db.put(arena, key, value)` / `db.get(arena, key)` / `db.delete(arena, key)`.
   Lets callers amortize arena create/destroy over a batch of calls instead of paying it per call.
-- RocksDB, OptimisticTransactionDB, TransactionDB reimplement the same get/put/delete methods
-  - find a way to refactor that

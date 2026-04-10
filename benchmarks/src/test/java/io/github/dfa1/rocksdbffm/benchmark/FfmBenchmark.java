@@ -137,10 +137,6 @@ public class FfmBenchmark {
 	}
 
 	// ---- MemorySegment tier (FFM-only) ------------------------------------
-	@Benchmark
-	public void writesMemorySegment2() {
-		db.put2(writeKeyMemorySegment, writeValueMemorySegment);
-	}
 
 	@Benchmark
 	public void writesMemorySegmentArena() {

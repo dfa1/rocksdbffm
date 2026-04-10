@@ -444,20 +444,6 @@ public final class RocksDB {
 		}
 	}
 
-	/// MemorySegment put using a pooled error segment instead of a new arena.
-	static void putPool(MemorySegment db, MemorySegment writeOpts,
-	                    MemorySegment key, long keyLen, MemorySegment val, long valLen) {
-		MemorySegment acquire = Native.ERROR.acquire();
-		try {
-			MH_PUT.invokeExact(db, writeOpts, key, keyLen, val, valLen, acquire);
-			Native.checkError(acquire);
-		} catch (Throwable t) {
-			throw RocksDBException.wrap("put failed", t);
-		} finally {
-			Native.ERROR.release(acquire);
-		}
-	}
-
 	/// byte[] delete — slow path.
 	static void deleteBytes(MemorySegment db, MemorySegment writeOpts, byte[] key) {
 		try (Arena arena = Arena.ofConfined()) {

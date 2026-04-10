@@ -65,12 +65,6 @@ public final class ReadWriteDB extends NativeObject implements RocksDbHandle {
 		RocksDB.putSegment(arena, ptr(), writeOpts.ptr(), key, key.byteSize(), value, value.byteSize());
 	}
 
-	/// Like [#put(MemorySegment, MemorySegment)] but uses a pooled error segment instead of
-	/// allocating a new arena, trading allocation overhead for pool contention on high-concurrency paths.
-	public void put2(MemorySegment key, MemorySegment value) {
-		RocksDB.putPool(ptr(), writeOpts.ptr(), key, key.byteSize(), value, value.byteSize());
-	}
-
 	// -----------------------------------------------------------------------
 	// Get
 	// -----------------------------------------------------------------------

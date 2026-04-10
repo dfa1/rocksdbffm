@@ -60,16 +60,4 @@ final class Native {
 		}
 	}
 
-	// new stuff, human-generated
-	private static final Arena ARENA_ERROR = Arena.ofAuto();
-
-	// this is needed to allocate a char** to let rocksdb fill up the error
-	public static final Pool<MemorySegment> ERROR = new CachedBlockingPool<>(
-			new BlockingPool<>(100, () -> {
-				MemorySegment error = ARENA_ERROR.allocate(ValueLayout.ADDRESS);
-				error.set(ValueLayout.ADDRESS, 0, MemorySegment.NULL);
-				return error;
-			})
-	);
-
 }

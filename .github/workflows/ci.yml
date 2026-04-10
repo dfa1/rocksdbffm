@@ -1,5 +1,4 @@
 name: CI
-
 on:
   push:
     branches: [ main ]
@@ -8,7 +7,12 @@ on:
 
 jobs:
   build:
-    runs-on: macos-latest   # Apple Silicon (arm64); Zig cross-compiles linux targets
+    # Use a matrix to run on both macOS and Linux
+    strategy:
+      matrix:
+        os: [macos-latest, ubuntu-latest]
+
+    runs-on: ${{ matrix.os }}
 
     steps:
       - uses: actions/checkout@v4
@@ -18,13 +22,13 @@ jobs:
       - name: Set up JDK 25
         uses: actions/setup-java@v4
         with:
-          java-version: 25
-          distribution: zulu
+          java-version: '25'
+          distribution: 'zulu'
 
       - name: Install Zig
         uses: goto-bus-stop/setup-zig@v2
         with:
-          version: 0.15.2
+          version: 0.13.0 # Note: Ensure this matches your local working version
 
       - name: Cache RocksDB native builds
         uses: actions/cache@v4
@@ -32,7 +36,8 @@ jobs:
           path: |
             native/osx-aarch64/src/main/resources/native
             native/linux-x86_64/src/main/resources/native
-          key: rocksdb-v10.10.1-${{ runner.os }}-${{ runner.arch }}
+          key: rocksdb-v11.0.4-${{ matrix.os }}-${{ runner.arch }}
 
       - name: Build and test
+        # On Linux, Maven will now run tests natively on the ELF you just built!
         run: mvn test

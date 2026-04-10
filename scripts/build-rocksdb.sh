@@ -35,17 +35,17 @@ case "$CLASSIFIER" in
     osx-aarch64)
         ZIG_TARGET="aarch64-macos"
         LIB_NAME="librocksdb.dylib"
-        ROCKSDB_OS="Darwin"
+        TARGET_OS="Darwin"
         ;;
     osx-x86_64)
         ZIG_TARGET="x86_64-macos"
         LIB_NAME="librocksdb.dylib"
-        ROCKSDB_OS="Darwin"
+        TARGET_OS="Darwin"
         ;;
     linux-x86_64)
         ZIG_TARGET="x86_64-linux-gnu"
         LIB_NAME="librocksdb.so"
-        ROCKSDB_OS="Linux"
+        TARGET_OS="Linux"
         ;;
     *)
         echo "Unsupported classifier: $CLASSIFIER" >&2
@@ -88,7 +88,7 @@ export PORTABLE=1
 export ROCKSDB_DISABLE_SNAPPY=1
 export ROCKSDB_DISABLE_BZ2=1
 export ROCKSDB_DISABLE_ZLIB=1
-
+export TARGET_OS=$TARGET_OS
 cd "$ROCKSDB_DIR"
 
 # zig cc/c++ treats some warnings as errors that RocksDB's own build does not
@@ -96,19 +96,13 @@ cd "$ROCKSDB_DIR"
 # all builds so the Makefile does not abort on RocksDB's own code.
 EXTRA_FLAGS="-Wno-error"
 
-if [ -n "$CROSS" ]; then
-    # Cross-compilation: existing .o files and make_config.mk are for the host
-    # architecture. Remove them so RocksDB's build_detect_platform regenerates
-    # the config and Make recompiles everything with the cross target.
-    rm -f make_config.mk
-    make clean -j"$JOBS" 2>/dev/null || true
+# Cross-compilation: existing .o files and make_config.mk are for the host
+# architecture. Remove them so RocksDB's build_detect_platform regenerates
+# the config and Make recompiles everything with the cross target.
+rm -f make_config.mk
+make clean -j"$JOBS" 2>/dev/null || true
 
-    # build_detect_platform reads TARGET_OS from the environment (falls back to
-    # uname -s). Export it so platform detection targets the right OS.
-    export TARGET_OS="$ROCKSDB_OS"
-fi
-
-make shared_lib EXTRA_CXXFLAGS="$EXTRA_FLAGS" EXTRA_CFLAGS="$EXTRA_FLAGS" -j"$JOBS"
+make shared_lib EXTRA_LDFLAGS="-s" EXTRA_CXXFLAGS="$EXTRA_FLAGS" EXTRA_CFLAGS="$EXTRA_FLAGS" -j"$JOBS"
 
 # ---------------------------------------------------------------------------
 # Install

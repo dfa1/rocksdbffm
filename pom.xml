@@ -18,7 +18,7 @@
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<rocksdb.version>10.10.1</rocksdb.version>
+		<rocksdb.version>10.10.1.1</rocksdb.version>
 	</properties>
 
 	<dependencyManagement>

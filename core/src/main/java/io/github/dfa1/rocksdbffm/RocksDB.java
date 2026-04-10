@@ -14,6 +14,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.Duration;
+import java.util.List;
 import java.util.Optional;
 import java.util.OptionalLong;
 
@@ -25,7 +26,7 @@ import java.util.OptionalLong;
 /// |---|---|
 /// | [#open] | [ReadWriteDB] |
 /// | [#openReadOnly] | [ReadOnlyDB] |
-/// | [#openWithTtl] | [ReadWriteDB] |
+/// | [#openWithTtl] | [TtlDB] |
 /// | [#openSecondary] | [SecondaryDB] |
 /// | [#openTransaction] | [TransactionDB] |
 /// | [#openOptimistic] | [OptimisticTransactionDB] |
@@ -74,6 +75,28 @@ public final class RocksDB {
 	private static final MethodHandle MH_PROPERTY_VALUE;
 	/// `int rocksdb_property_int(rocksdb_t* db, const char* propname, uint64_t* out_val);`
 	private static final MethodHandle MH_PROPERTY_INT;
+	/// `void rocksdb_merge(rocksdb_t* db, const rocksdb_writeoptions_t* options, const char* key, size_t keylen, const char* val, size_t vallen, char** errptr);`
+	private static final MethodHandle MH_MERGE;
+	/// `void rocksdb_delete_range_cf(rocksdb_t* db, const rocksdb_writeoptions_t* options, rocksdb_column_family_handle_t* column_family, const char* start_key, size_t start_key_len, const char* end_key, size_t end_key_len, char** errptr);`
+	private static final MethodHandle MH_DELETE_RANGE_CF;
+	/// `rocksdb_column_family_handle_t* rocksdb_get_default_column_family_handle(rocksdb_t* db);`
+	private static final MethodHandle MH_GET_DEFAULT_CF;
+	/// `void rocksdb_write(rocksdb_t* db, const rocksdb_writeoptions_t* options, rocksdb_writebatch_t* batch, char** errptr);`
+	private static final MethodHandle MH_WRITE;
+	/// `unsigned char rocksdb_key_may_exist(rocksdb_t* db, const rocksdb_readoptions_t* options, const char* key, size_t key_len, char** value, size_t* val_len, const char* timestamp, size_t timestamp_len, unsigned char* value_found);`
+	private static final MethodHandle MH_KEY_MAY_EXIST;
+	/// `void rocksdb_compact_range(rocksdb_t* db, const char* start_key, size_t start_key_len, const char* limit_key, size_t limit_key_len);`
+	private static final MethodHandle MH_COMPACT_RANGE;
+	/// `void rocksdb_compact_range_opt(rocksdb_t* db, rocksdb_compactoptions_t* opt, const char* start_key, size_t start_key_len, const char* limit_key, size_t limit_key_len);`
+	private static final MethodHandle MH_COMPACT_RANGE_OPT;
+	/// `void rocksdb_suggest_compact_range(rocksdb_t* db, const char* start_key, size_t start_key_len, const char* limit_key, size_t limit_key_len, char** errptr);`
+	private static final MethodHandle MH_SUGGEST_COMPACT_RANGE;
+	/// `void rocksdb_disable_file_deletions(rocksdb_t* db, char** errptr);`
+	private static final MethodHandle MH_DISABLE_FILE_DELETIONS;
+	/// `void rocksdb_enable_file_deletions(rocksdb_t* db, char** errptr);`
+	private static final MethodHandle MH_ENABLE_FILE_DELETIONS;
+	/// `void rocksdb_ingest_external_file(rocksdb_t* db, const char* const* file_list, const size_t list_len, const rocksdb_ingestexternalfileoptions_t* opt, char** errptr);`
+	private static final MethodHandle MH_INGEST_EXTERNAL_FILE;
 
 	static {
 		LIB = SymbolLookup.libraryLookup(resolveLibPath(), Arena.ofAuto());
@@ -136,6 +159,63 @@ public final class RocksDB {
 		MH_PROPERTY_INT = lookup("rocksdb_property_int",
 				FunctionDescriptor.of(ValueLayout.JAVA_INT,
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+		MH_MERGE = lookup("rocksdb_merge",
+				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS,
+						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
+						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
+
+		MH_DELETE_RANGE_CF = lookup("rocksdb_delete_range_cf",
+				FunctionDescriptor.ofVoid(
+						ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS,
+						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
+						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
+						ValueLayout.ADDRESS));
+
+		MH_GET_DEFAULT_CF = lookup("rocksdb_get_default_column_family_handle",
+				FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+		MH_WRITE = lookup("rocksdb_write",
+				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS,
+						ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+		MH_KEY_MAY_EXIST = lookup("rocksdb_key_may_exist",
+				FunctionDescriptor.of(ValueLayout.JAVA_BYTE,
+						ValueLayout.ADDRESS, ValueLayout.ADDRESS,
+						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
+						ValueLayout.ADDRESS, ValueLayout.ADDRESS,
+						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
+						ValueLayout.ADDRESS));
+
+		MH_COMPACT_RANGE = lookup("rocksdb_compact_range",
+				FunctionDescriptor.ofVoid(
+						ValueLayout.ADDRESS,
+						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
+						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
+
+		MH_COMPACT_RANGE_OPT = lookup("rocksdb_compact_range_opt",
+				FunctionDescriptor.ofVoid(
+						ValueLayout.ADDRESS, ValueLayout.ADDRESS,
+						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
+						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
+
+		MH_SUGGEST_COMPACT_RANGE = lookup("rocksdb_suggest_compact_range",
+				FunctionDescriptor.ofVoid(
+						ValueLayout.ADDRESS,
+						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
+						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
+						ValueLayout.ADDRESS));
+
+		MH_DISABLE_FILE_DELETIONS = lookup("rocksdb_disable_file_deletions",
+				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+		MH_ENABLE_FILE_DELETIONS = lookup("rocksdb_enable_file_deletions",
+				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+		MH_INGEST_EXTERNAL_FILE = lookup("rocksdb_ingest_external_file",
+				FunctionDescriptor.ofVoid(
+						ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
+						ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 	}
 
 	private RocksDB() {}
@@ -170,21 +250,21 @@ public final class RocksDB {
 	///
 	/// Keys are lazily expired during the next compaction that covers their
 	/// range. A `ttl` of [Duration#ZERO] disables expiry entirely.
-	public static ReadWriteDB openWithTtl(Options options, Path path, Duration ttl) {
+	public static TtlDB openWithTtl(Options options, Path path, Duration ttl) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
 			MemorySegment pathSeg = arena.allocateFrom(path.toString());
 			MemorySegment ptr = (MemorySegment) MH_OPEN_WITH_TTL.invokeExact(
 					options.ptr(), pathSeg, (int) ttl.toSeconds(), err);
 			Native.checkError(err);
-			return new ReadWriteDB(ptr, WriteOptions.newWriteOptions(), ReadOptions.newReadOptions());
+			return new TtlDB(ptr, WriteOptions.newWriteOptions(), ReadOptions.newReadOptions(), ttl);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("openWithTtl failed", t);
 		}
 	}
 
 	/// Equivalent to `openWithTtl(options, path, ttl)` with `createIfMissing = true`.
-	public static ReadWriteDB openWithTtl(Path path, Duration ttl) {
+	public static TtlDB openWithTtl(Path path, Duration ttl) {
 		try (Options opts = Options.newOptions().setCreateIfMissing(true)) {
 			return openWithTtl(opts, path, ttl);
 		}
@@ -461,6 +541,203 @@ public final class RocksDB {
 
 	static void close(MemorySegment db) throws Throwable {
 		MH_CLOSE.invokeExact(db);
+	}
+
+	static void mergeBytes(MemorySegment db, MemorySegment writeOpts, byte[] key, byte[] value) {
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = Native.errHolder(arena);
+			MH_MERGE.invokeExact(db, writeOpts,
+					Native.toNative(arena, key), (long) key.length,
+					Native.toNative(arena, value), (long) value.length, err);
+			Native.checkError(err);
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("merge failed", t);
+		}
+	}
+
+	static void mergeBuffer(MemorySegment db, MemorySegment writeOpts, ByteBuffer key, ByteBuffer value) {
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = Native.errHolder(arena);
+			MH_MERGE.invokeExact(db, writeOpts,
+					MemorySegment.ofBuffer(key), (long) key.remaining(),
+					MemorySegment.ofBuffer(value), (long) value.remaining(), err);
+			Native.checkError(err);
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("merge failed", t);
+		}
+	}
+
+	static void mergeSegment(MemorySegment db, MemorySegment writeOpts, MemorySegment key, MemorySegment value) {
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = Native.errHolder(arena);
+			MH_MERGE.invokeExact(db, writeOpts, key, key.byteSize(), value, value.byteSize(), err);
+			Native.checkError(err);
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("merge failed", t);
+		}
+	}
+
+	static void deleteRangeCfBytes(MemorySegment db, MemorySegment writeOpts, byte[] startKey, byte[] endKey) {
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = Native.errHolder(arena);
+			MemorySegment cf = (MemorySegment) MH_GET_DEFAULT_CF.invokeExact(db);
+			MH_DELETE_RANGE_CF.invokeExact(db, writeOpts, cf,
+					Native.toNative(arena, startKey), (long) startKey.length,
+					Native.toNative(arena, endKey), (long) endKey.length, err);
+			Native.checkError(err);
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("deleteRange failed", t);
+		}
+	}
+
+	static void deleteRangeCfBuffer(MemorySegment db, MemorySegment writeOpts,
+	                                ByteBuffer startKey, ByteBuffer endKey) {
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = Native.errHolder(arena);
+			MemorySegment cf = (MemorySegment) MH_GET_DEFAULT_CF.invokeExact(db);
+			MH_DELETE_RANGE_CF.invokeExact(db, writeOpts, cf,
+					MemorySegment.ofBuffer(startKey), (long) startKey.remaining(),
+					MemorySegment.ofBuffer(endKey), (long) endKey.remaining(), err);
+			Native.checkError(err);
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("deleteRange failed", t);
+		}
+	}
+
+	static void deleteRangeCfSegment(MemorySegment db, MemorySegment writeOpts,
+	                                 MemorySegment startKey, MemorySegment endKey) {
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = Native.errHolder(arena);
+			MemorySegment cf = (MemorySegment) MH_GET_DEFAULT_CF.invokeExact(db);
+			MH_DELETE_RANGE_CF.invokeExact(db, writeOpts, cf,
+					startKey, startKey.byteSize(), endKey, endKey.byteSize(), err);
+			Native.checkError(err);
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("deleteRange failed", t);
+		}
+	}
+
+	static void writeBatch(MemorySegment db, MemorySegment writeOpts, WriteBatch batch) {
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = Native.errHolder(arena);
+			MH_WRITE.invokeExact(db, writeOpts, batch.ptr(), err);
+			Native.checkError(err);
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("write failed", t);
+		}
+	}
+
+	static void writeBatch(Arena arena, MemorySegment db, MemorySegment writeOpts, WriteBatch batch) {
+		try {
+			MemorySegment err = Native.errHolder(arena);
+			MH_WRITE.invokeExact(db, writeOpts, batch.ptr(), err);
+			Native.checkError(err);
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("write failed", t);
+		}
+	}
+
+	static boolean keyMayExistSegment(MemorySegment db, MemorySegment roOpts,
+	                                  MemorySegment key, long keyLen) throws Throwable {
+		return ((byte) MH_KEY_MAY_EXIST.invokeExact(db, roOpts, key, keyLen,
+				MemorySegment.NULL, MemorySegment.NULL,
+				MemorySegment.NULL, 0L, MemorySegment.NULL)) != 0;
+	}
+
+	static void compactRangeBytes(MemorySegment db, byte[] startKey, byte[] endKey) {
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment s = startKey == null ? MemorySegment.NULL : Native.toNative(arena, startKey);
+			MemorySegment e = endKey == null ? MemorySegment.NULL : Native.toNative(arena, endKey);
+			MH_COMPACT_RANGE.invokeExact(db,
+					s, startKey == null ? 0L : (long) startKey.length,
+					e, endKey == null ? 0L : (long) endKey.length);
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("compactRange failed", t);
+		}
+	}
+
+	static void compactRangeBuffer(MemorySegment db, ByteBuffer startKey, ByteBuffer endKey) {
+		try {
+			MemorySegment s = startKey == null ? MemorySegment.NULL : MemorySegment.ofBuffer(startKey);
+			MemorySegment e = endKey == null ? MemorySegment.NULL : MemorySegment.ofBuffer(endKey);
+			MH_COMPACT_RANGE.invokeExact(db,
+					s, startKey == null ? 0L : (long) startKey.remaining(),
+					e, endKey == null ? 0L : (long) endKey.remaining());
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("compactRange failed", t);
+		}
+	}
+
+	static void compactRangeSegment(MemorySegment db, MemorySegment startKey, MemorySegment endKey) {
+		try {
+			MemorySegment s = startKey == null ? MemorySegment.NULL : startKey;
+			MemorySegment e = endKey == null ? MemorySegment.NULL : endKey;
+			MH_COMPACT_RANGE.invokeExact(db,
+					s, s == MemorySegment.NULL ? 0L : s.byteSize(),
+					e, e == MemorySegment.NULL ? 0L : e.byteSize());
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("compactRange failed", t);
+		}
+	}
+
+	static void compactRangeOptBytes(MemorySegment db, CompactOptions opts, byte[] startKey, byte[] endKey) {
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment s = startKey == null ? MemorySegment.NULL : Native.toNative(arena, startKey);
+			MemorySegment e = endKey == null ? MemorySegment.NULL : Native.toNative(arena, endKey);
+			MH_COMPACT_RANGE_OPT.invokeExact(db, opts.ptr(),
+					s, startKey == null ? 0L : (long) startKey.length,
+					e, endKey == null ? 0L : (long) endKey.length);
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("compactRange failed", t);
+		}
+	}
+
+	static void suggestCompactRangeBytes(MemorySegment db, byte[] startKey, byte[] endKey) {
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = Native.errHolder(arena);
+			MemorySegment s = startKey == null ? MemorySegment.NULL : Native.toNative(arena, startKey);
+			MemorySegment e = endKey == null ? MemorySegment.NULL : Native.toNative(arena, endKey);
+			MH_SUGGEST_COMPACT_RANGE.invokeExact(db,
+					s, startKey == null ? 0L : (long) startKey.length,
+					e, endKey == null ? 0L : (long) endKey.length, err);
+			Native.checkError(err);
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("suggestCompactRange failed", t);
+		}
+	}
+
+	static void disableFileDeletions(MemorySegment db) {
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = Native.errHolder(arena);
+			MH_DISABLE_FILE_DELETIONS.invokeExact(db, err);
+			Native.checkError(err);
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("disableFileDeletions failed", t);
+		}
+	}
+
+	static void enableFileDeletions(MemorySegment db) {
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = Native.errHolder(arena);
+			MH_ENABLE_FILE_DELETIONS.invokeExact(db, err);
+			Native.checkError(err);
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("enableFileDeletions failed", t);
+		}
+	}
+
+	static void ingestExternalFile(MemorySegment db, List<Path> files, IngestExternalFileOptions options) {
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = Native.errHolder(arena);
+			MemorySegment fileArray = arena.allocate(ValueLayout.ADDRESS, files.size());
+			for (int i = 0; i < files.size(); i++) {
+				fileArray.setAtIndex(ValueLayout.ADDRESS, i, arena.allocateFrom(files.get(i).toString()));
+			}
+			MH_INGEST_EXTERNAL_FILE.invokeExact(db, fileArray, (long) files.size(), options.ptr(), err);
+			Native.checkError(err);
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("ingestExternalFile failed", t);
+		}
 	}
 
 	// -----------------------------------------------------------------------

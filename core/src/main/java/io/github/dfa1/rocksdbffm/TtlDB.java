@@ -4,34 +4,41 @@ import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalLong;
-import java.util.Set;
 
-/// FFM wrapper for a read-write `rocksdb_t*` instance.
+/// FFM wrapper for a TTL-aware read-write `rocksdb_t*` instance.
 ///
-/// Obtain via [RocksDB#open] or [RocksDB#openWithTtl].
+/// Obtain via [RocksDB#openWithTtl].
+///
+/// Keys are lazily expired during the next compaction that covers their range.
+/// A [Duration#ZERO] TTL disables expiry entirely.
 ///
 /// ```
-/// try (var db = RocksDB.open(path)) {
+/// try (var db = RocksDB.openWithTtl(path, Duration.ofSeconds(60))) {
 ///     db.put("key".getBytes(), "value".getBytes());
 ///     byte[] value = db.get("key".getBytes());
 /// }
 /// ```
-public final class ReadWriteDB extends NativeObject implements RocksDbHandle {
-
-	// -----------------------------------------------------------------------
-	// Instance state
-	// -----------------------------------------------------------------------
+public final class TtlDB extends NativeObject implements RocksDbHandle {
 
 	private final WriteOptions writeOpts;
 	private final ReadOptions readOpts;
+	private final Duration ttl;
 
-	ReadWriteDB(MemorySegment ptr, WriteOptions writeOpts, ReadOptions readOpts) {
+	TtlDB(MemorySegment ptr, WriteOptions writeOpts, ReadOptions readOpts, Duration ttl) {
 		super(ptr);
 		this.writeOpts = writeOpts;
 		this.readOpts = readOpts;
+		this.ttl = ttl;
+	}
+
+	/// Returns the TTL configured when this database was opened.
+	/// [Duration#ZERO] means expiry is disabled.
+	public Duration getTtl() {
+		return ttl;
 	}
 
 	// -----------------------------------------------------------------------
@@ -63,12 +70,6 @@ public final class ReadWriteDB extends NativeObject implements RocksDbHandle {
 	/// Zero-copy put using the caller's [Arena].
 	public void put(Arena arena, MemorySegment key, MemorySegment value) {
 		RocksDB.putSegment(arena, ptr(), writeOpts.ptr(), key, key.byteSize(), value, value.byteSize());
-	}
-
-	/// Like [#put(MemorySegment, MemorySegment)] but uses a pooled error segment instead of
-	/// allocating a new arena, trading allocation overhead for pool contention on high-concurrency paths.
-	public void put2(MemorySegment key, MemorySegment value) {
-		RocksDB.putPool(ptr(), writeOpts.ptr(), key, key.byteSize(), value, value.byteSize());
 	}
 
 	// -----------------------------------------------------------------------
@@ -161,7 +162,8 @@ public final class ReadWriteDB extends NativeObject implements RocksDbHandle {
 	/// Slow path: copies the key into native memory.
 	public boolean keyMayExist(byte[] key) {
 		try (Arena arena = Arena.ofConfined()) {
-			return RocksDB.keyMayExistSegment(ptr(), readOpts.ptr(), Native.toNative(arena, key), key.length);
+			MemorySegment k = Native.toNative(arena, key);
+			return RocksDB.keyMayExistSegment(ptr(), readOpts.ptr(), k, key.length);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("keyMayExist failed", t);
 		}
@@ -170,7 +172,8 @@ public final class ReadWriteDB extends NativeObject implements RocksDbHandle {
 	/// [#keyMayExist(byte\[\])] with explicit [ReadOptions].
 	public boolean keyMayExist(ReadOptions readOptions, byte[] key) {
 		try (Arena arena = Arena.ofConfined()) {
-			return RocksDB.keyMayExistSegment(ptr(), readOptions.ptr(), Native.toNative(arena, key), key.length);
+			MemorySegment k = Native.toNative(arena, key);
+			return RocksDB.keyMayExistSegment(ptr(), readOptions.ptr(), k, key.length);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("keyMayExist failed", t);
 		}
@@ -332,44 +335,6 @@ public final class ReadWriteDB extends NativeObject implements RocksDbHandle {
 
 	public void ingestExternalFile(Path file) {
 		ingestExternalFile(List.of(file));
-	}
-
-	// -----------------------------------------------------------------------
-	// Compression probe
-	// -----------------------------------------------------------------------
-
-	/// Returns the set of compression types compiled into the loaded RocksDB library.
-	public Set<CompressionType> getSupportedCompressions() {
-		Set<CompressionType> result = java.util.EnumSet.of(CompressionType.NO_COMPRESSION);
-		java.nio.file.Path tmpDir = null;
-		try {
-			tmpDir = java.nio.file.Files.createTempDirectory("rocksdbffm-compress-probe-");
-			boolean isWindows = System.getProperty("os.name", "").toLowerCase().contains("win");
-			for (CompressionType type : CompressionType.values()) {
-				if (type == CompressionType.NO_COMPRESSION) continue;
-				if (type == CompressionType.XPRESS && !isWindows) continue;
-				java.nio.file.Path sstFile = tmpDir.resolve(type.name().toLowerCase() + ".sst");
-				try (Options opts = Options.newOptions().setCompression(type);
-				     SstFileWriter writer = SstFileWriter.newSstFileWriter(opts)) {
-					writer.open(sstFile);
-					writer.put(new byte[]{0}, new byte[]{0});
-					writer.finish();
-					result.add(type);
-				} catch (RocksDBException ignored) {
-				} finally {
-					java.nio.file.Files.deleteIfExists(sstFile);
-				}
-			}
-		} catch (java.io.IOException ignored) {
-		} finally {
-			if (tmpDir != null) {
-				try {
-					java.nio.file.Files.deleteIfExists(tmpDir);
-				} catch (java.io.IOException ignored) {
-				}
-			}
-		}
-		return java.util.Collections.unmodifiableSet(result);
 	}
 
 	// -----------------------------------------------------------------------

@@ -30,7 +30,7 @@ import java.util.OptionalLong;
 ///     byte[] value = secondary.get("key".getBytes());
 /// }
 /// ```
-public final class SecondaryDB extends NativeObject {
+public final class SecondaryDB extends NativeObject implements RocksDbHandle {
 
 	// -----------------------------------------------------------------------
 	// Method handles unique to SecondaryDB

@@ -58,17 +58,9 @@ public final class Checkpoint extends NativeObject {
 	/// Creates a checkpoint object bound to `db`.
 	/// The checkpoint object may be reused to export multiple snapshots.
 	/// Close it when done — this does not affect the database or any exported checkpoints.
-	public static Checkpoint newCheckpoint(ReadWriteDB db) {
-		return create(db.ptr());
-	}
-
-	/// Creates a checkpoint object bound to a read-only `db`.
-	public static Checkpoint newCheckpoint(ReadOnlyDB db) {
-		return create(db.ptr());
-	}
-
-	/// Creates a checkpoint object bound to a secondary `db`.
-	public static Checkpoint newCheckpoint(SecondaryDB db) {
+	///
+	/// Accepts any [RocksDbHandle]: [ReadWriteDB], [TtlDB], [ReadOnlyDB], or [SecondaryDB].
+	public static Checkpoint newCheckpoint(RocksDbHandle db) {
 		return create(db.ptr());
 	}
 

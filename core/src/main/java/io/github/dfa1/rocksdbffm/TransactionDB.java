@@ -5,7 +5,6 @@ import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
-import java.nio.file.Path;
 import java.util.Optional;
 import java.util.OptionalLong;
 
@@ -28,8 +27,6 @@ public final class TransactionDB extends NativeObject {
 	// Method handles
 	// -----------------------------------------------------------------------
 
-	/// `rocksdb_transactiondb_t* rocksdb_transactiondb_open(const rocksdb_options_t* options, const rocksdb_transactiondb_options_t* txn_db_options, const char* name, char** errptr);`
-	private static final MethodHandle MH_OPEN;
 	/// `void rocksdb_transactiondb_close(rocksdb_transactiondb_t* txn_db);`
 	private static final MethodHandle MH_CLOSE;
 	/// `rocksdb_transaction_t* rocksdb_transaction_begin(rocksdb_transactiondb_t* txn_db, const rocksdb_writeoptions_t* write_options, const rocksdb_transaction_options_t* txn_options, rocksdb_transaction_t* old_txn);`
@@ -55,11 +52,6 @@ public final class TransactionDB extends NativeObject {
 
 
 	static {
-		MH_OPEN = NativeLibrary.lookup("rocksdb_transactiondb_open",
-				FunctionDescriptor.of(ValueLayout.ADDRESS,
-						ValueLayout.ADDRESS, ValueLayout.ADDRESS,
-						ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-
 		MH_CLOSE = NativeLibrary.lookup("rocksdb_transactiondb_close",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
@@ -112,33 +104,10 @@ public final class TransactionDB extends NativeObject {
 	private final WriteOptions writeOpts; // default write options for direct ops
 	private final ReadOptions readOpts;  // default read options for direct ops
 
-	private TransactionDB(MemorySegment ptr, WriteOptions writeOpts, ReadOptions readOpts) {
+	TransactionDB(MemorySegment ptr, WriteOptions writeOpts, ReadOptions readOpts) {
 		super(ptr);
 		this.writeOpts = writeOpts;
 		this.readOpts = readOpts;
-	}
-
-	// -----------------------------------------------------------------------
-	// Factory
-	// -----------------------------------------------------------------------
-
-	/// Opens a TransactionDB at `path`.
-	/// The caller retains ownership of `dbOptions` and `txnDbOptions`.
-	// TODO: don't expose this... go via RocksDB only
-	public static TransactionDB open(Options dbOptions, TransactionDBOptions txnDbOptions, Path path) {
-		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
-			MemorySegment pathSeg = arena.allocateFrom(path.toString());
-
-			MemorySegment ptr = (MemorySegment) MH_OPEN.invokeExact(
-					dbOptions.ptr(), txnDbOptions.ptr(), pathSeg, err);
-
-			Native.checkError(err);
-
-			return new TransactionDB(ptr, WriteOptions.newWriteOptions(), ReadOptions.newReadOptions());
-		} catch (Throwable t) {
-			throw RocksDBException.wrap("Native call failed", t);
-		}
 	}
 
 	// -----------------------------------------------------------------------

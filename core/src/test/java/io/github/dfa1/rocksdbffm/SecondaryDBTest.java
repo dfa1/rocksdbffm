@@ -26,7 +26,7 @@ class SecondaryDBTest {
 
 		// When / Then — secondary opens against an existing primary
 		try (var opts = Options.newOptions();
-		     var secondary = SecondaryDB.open(opts, primaryDir, secondaryDir)) {
+		     var secondary = RocksDB.openSecondary(opts, primaryDir, secondaryDir)) {
 			assertThat(secondary).isNotNull();
 		}
 	}
@@ -44,7 +44,7 @@ class SecondaryDBTest {
 		}
 
 		try (var opts = Options.newOptions();
-		     var secondary = SecondaryDB.open(opts, primaryDir, secondaryDir)) {
+		     var secondary = RocksDB.openSecondary(opts, primaryDir, secondaryDir)) {
 
 			// When / Then
 			secondary.tryCatchUpWithPrimary();
@@ -64,7 +64,7 @@ class SecondaryDBTest {
 
 		// Open secondary, catch up, verify initial data
 		try (var opts = Options.newOptions();
-		     var secondary = SecondaryDB.open(opts, primaryDir, secondaryDir)) {
+		     var secondary = RocksDB.openSecondary(opts, primaryDir, secondaryDir)) {
 
 			secondary.tryCatchUpWithPrimary();
 			assertThat(secondary.get("k1".getBytes())).isEqualTo("v1".getBytes());
@@ -96,7 +96,7 @@ class SecondaryDBTest {
 		}
 
 		try (var opts = Options.newOptions();
-		     var secondary = SecondaryDB.open(opts, primaryDir, secondaryDir)) {
+		     var secondary = RocksDB.openSecondary(opts, primaryDir, secondaryDir)) {
 			secondary.tryCatchUpWithPrimary();
 
 			// When / Then
@@ -115,7 +115,7 @@ class SecondaryDBTest {
 		}
 
 		try (var opts = Options.newOptions();
-		     var secondary = SecondaryDB.open(opts, primaryDir, secondaryDir);
+		     var secondary = RocksDB.openSecondary(opts, primaryDir, secondaryDir);
 		     var ro = ReadOptions.newReadOptions()) {
 			secondary.tryCatchUpWithPrimary();
 
@@ -135,7 +135,7 @@ class SecondaryDBTest {
 		}
 
 		try (var opts = Options.newOptions();
-		     var secondary = SecondaryDB.open(opts, primaryDir, secondaryDir)) {
+		     var secondary = RocksDB.openSecondary(opts, primaryDir, secondaryDir)) {
 			secondary.tryCatchUpWithPrimary();
 
 			var key = ByteBuffer.allocateDirect(1);
@@ -165,7 +165,7 @@ class SecondaryDBTest {
 		}
 
 		try (var opts = Options.newOptions();
-		     var secondary = SecondaryDB.open(opts, primaryDir, secondaryDir);
+		     var secondary = RocksDB.openSecondary(opts, primaryDir, secondaryDir);
 		     Arena arena = Arena.ofConfined()) {
 			secondary.tryCatchUpWithPrimary();
 
@@ -197,7 +197,7 @@ class SecondaryDBTest {
 		}
 
 		try (var opts = Options.newOptions();
-		     var secondary = SecondaryDB.open(opts, primaryDir, secondaryDir)) {
+		     var secondary = RocksDB.openSecondary(opts, primaryDir, secondaryDir)) {
 			secondary.tryCatchUpWithPrimary();
 
 			// When
@@ -225,7 +225,7 @@ class SecondaryDBTest {
 		}
 
 		try (var opts = Options.newOptions();
-		     var secondary = SecondaryDB.open(opts, primaryDir, secondaryDir);
+		     var secondary = RocksDB.openSecondary(opts, primaryDir, secondaryDir);
 		     var ro = ReadOptions.newReadOptions()) {
 			secondary.tryCatchUpWithPrimary();
 
@@ -252,7 +252,7 @@ class SecondaryDBTest {
 		}
 
 		try (var opts = Options.newOptions();
-		     var secondary = SecondaryDB.open(opts, primaryDir, secondaryDir)) {
+		     var secondary = RocksDB.openSecondary(opts, primaryDir, secondaryDir)) {
 			secondary.tryCatchUpWithPrimary();
 
 			// When — take a snapshot and read through it
@@ -280,7 +280,7 @@ class SecondaryDBTest {
 		}
 
 		try (var opts = Options.newOptions();
-		     var secondary = SecondaryDB.open(opts, primaryDir, secondaryDir)) {
+		     var secondary = RocksDB.openSecondary(opts, primaryDir, secondaryDir)) {
 			secondary.tryCatchUpWithPrimary();
 
 			assertThat(secondary.getLongProperty(Property.ESTIMATE_NUM_KEYS)).isPresent();

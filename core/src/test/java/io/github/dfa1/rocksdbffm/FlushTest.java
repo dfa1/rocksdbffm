@@ -94,7 +94,7 @@ class FlushTest {
 		// Given
 		try (var opts = Options.newOptions().setCreateIfMissing(true);
 		     var txnDbOpts = TransactionDBOptions.newTransactionDBOptions();
-		     var db = TransactionDB.open(opts, txnDbOpts, dir);
+		     var db = RocksDB.openTransaction(opts, txnDbOpts, dir);
 		     var fo = FlushOptions.newFlushOptions().setWait(true)) {
 			db.put("k".getBytes(), "v".getBytes());
 
@@ -111,7 +111,7 @@ class FlushTest {
 		// Given
 		try (var opts = Options.newOptions().setCreateIfMissing(true);
 		     var txnDbOpts = TransactionDBOptions.newTransactionDBOptions();
-		     var db = TransactionDB.open(opts, txnDbOpts, dir)) {
+		     var db = RocksDB.openTransaction(opts, txnDbOpts, dir)) {
 			db.put("k".getBytes(), "v".getBytes());
 
 			// When / Then

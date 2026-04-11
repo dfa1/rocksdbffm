@@ -21,7 +21,7 @@ class OptimisticTransactionDBTest {
 	void open_createsDb(@TempDir Path dir) {
 		// Given / When / Then — no exception means success
 		try (var opts = Options.newOptions().setCreateIfMissing(true);
-		     var db = OptimisticTransactionDB.open(opts, dir)) {
+		     var db = RocksDB.openOptimistic(opts, dir)) {
 			assertThat(db).isNotNull();
 		}
 	}
@@ -34,7 +34,7 @@ class OptimisticTransactionDBTest {
 	void put_and_get_roundtrip(@TempDir Path dir) {
 		// Given
 		try (var opts = Options.newOptions().setCreateIfMissing(true);
-		     var db = OptimisticTransactionDB.open(opts, dir)) {
+		     var db = RocksDB.openOptimistic(opts, dir)) {
 
 			// When
 			db.put("key".getBytes(), "value".getBytes());
@@ -48,7 +48,7 @@ class OptimisticTransactionDBTest {
 	void delete_removesKey(@TempDir Path dir) {
 		// Given
 		try (var opts = Options.newOptions().setCreateIfMissing(true);
-		     var db = OptimisticTransactionDB.open(opts, dir)) {
+		     var db = RocksDB.openOptimistic(opts, dir)) {
 			db.put("k".getBytes(), "v".getBytes());
 
 			// When
@@ -63,7 +63,7 @@ class OptimisticTransactionDBTest {
 	void get_returnsNull_whenKeyMissing(@TempDir Path dir) {
 		// Given
 		try (var opts = Options.newOptions().setCreateIfMissing(true);
-		     var db = OptimisticTransactionDB.open(opts, dir)) {
+		     var db = RocksDB.openOptimistic(opts, dir)) {
 
 			// When / Then
 			assertThat(db.get("missing".getBytes())).isNull();
@@ -78,7 +78,7 @@ class OptimisticTransactionDBTest {
 	void put_and_get_byteBuffer(@TempDir Path dir) {
 		// Given
 		try (var opts = Options.newOptions().setCreateIfMissing(true);
-		     var db = OptimisticTransactionDB.open(opts, dir)) {
+		     var db = RocksDB.openOptimistic(opts, dir)) {
 
 			var key = ByteBuffer.allocateDirect(3);
 			key.put("key".getBytes()).flip();
@@ -97,7 +97,7 @@ class OptimisticTransactionDBTest {
 	void get_byteBuffer_returnsValue(@TempDir Path dir) {
 		// Given
 		try (var opts = Options.newOptions().setCreateIfMissing(true);
-		     var db = OptimisticTransactionDB.open(opts, dir)) {
+		     var db = RocksDB.openOptimistic(opts, dir)) {
 			db.put("k".getBytes(), "v".getBytes());
 
 			var key = ByteBuffer.allocateDirect(1);
@@ -116,7 +116,7 @@ class OptimisticTransactionDBTest {
 	void delete_byteBuffer_removesKey(@TempDir Path dir) {
 		// Given
 		try (var opts = Options.newOptions().setCreateIfMissing(true);
-		     var db = OptimisticTransactionDB.open(opts, dir)) {
+		     var db = RocksDB.openOptimistic(opts, dir)) {
 			db.put("k".getBytes(), "v".getBytes());
 
 			var key = ByteBuffer.allocateDirect(1);
@@ -138,7 +138,7 @@ class OptimisticTransactionDBTest {
 	void put_and_get_memorySegment(@TempDir Path dir) {
 		// Given
 		try (var opts = Options.newOptions().setCreateIfMissing(true);
-		     var db = OptimisticTransactionDB.open(opts, dir);
+		     var db = RocksDB.openOptimistic(opts, dir);
 		     Arena arena = Arena.ofConfined()) {
 
 			var key = arena.allocateFrom("seg-key");
@@ -156,7 +156,7 @@ class OptimisticTransactionDBTest {
 	void get_memorySegment_returnsValue(@TempDir Path dir) {
 		// Given
 		try (var opts = Options.newOptions().setCreateIfMissing(true);
-		     var db = OptimisticTransactionDB.open(opts, dir);
+		     var db = RocksDB.openOptimistic(opts, dir);
 		     Arena arena = Arena.ofConfined()) {
 			db.put("k".getBytes(), "v".getBytes());
 
@@ -176,7 +176,7 @@ class OptimisticTransactionDBTest {
 	void delete_memorySegment_removesKey(@TempDir Path dir) {
 		// Given
 		try (var opts = Options.newOptions().setCreateIfMissing(true);
-		     var db = OptimisticTransactionDB.open(opts, dir);
+		     var db = RocksDB.openOptimistic(opts, dir);
 		     Arena arena = Arena.ofConfined()) {
 			db.put("k".getBytes(), "v".getBytes());
 
@@ -198,7 +198,7 @@ class OptimisticTransactionDBTest {
 	void newIterator_iteratesData(@TempDir Path dir) {
 		// Given
 		try (var opts = Options.newOptions().setCreateIfMissing(true);
-		     var db = OptimisticTransactionDB.open(opts, dir)) {
+		     var db = RocksDB.openOptimistic(opts, dir)) {
 			db.put("a".getBytes(), "1".getBytes());
 			db.put("b".getBytes(), "2".getBytes());
 
@@ -221,7 +221,7 @@ class OptimisticTransactionDBTest {
 	void transaction_commit_persists(@TempDir Path dir) {
 		// Given
 		try (var opts = Options.newOptions().setCreateIfMissing(true);
-		     var db = OptimisticTransactionDB.open(opts, dir);
+		     var db = RocksDB.openOptimistic(opts, dir);
 		     var wo = WriteOptions.newWriteOptions()) {
 
 			// When
@@ -239,7 +239,7 @@ class OptimisticTransactionDBTest {
 	void transaction_rollback_discardsChanges(@TempDir Path dir) {
 		// Given
 		try (var opts = Options.newOptions().setCreateIfMissing(true);
-		     var db = OptimisticTransactionDB.open(opts, dir);
+		     var db = RocksDB.openOptimistic(opts, dir);
 		     var wo = WriteOptions.newWriteOptions()) {
 
 			// When
@@ -257,7 +257,7 @@ class OptimisticTransactionDBTest {
 	void transaction_get_seesUncommittedWrites(@TempDir Path dir) {
 		// Given
 		try (var opts = Options.newOptions().setCreateIfMissing(true);
-		     var db = OptimisticTransactionDB.open(opts, dir);
+		     var db = RocksDB.openOptimistic(opts, dir);
 		     var wo = WriteOptions.newWriteOptions()) {
 
 			// When — transaction can read its own uncommitted writes
@@ -277,7 +277,7 @@ class OptimisticTransactionDBTest {
 	void transaction_conflict_throwsOnCommit(@TempDir Path dir) {
 		// Given — two transactions read the same key; the first committer wins
 		try (var opts = Options.newOptions().setCreateIfMissing(true);
-		     var db = OptimisticTransactionDB.open(opts, dir);
+		     var db = RocksDB.openOptimistic(opts, dir);
 		     var wo = WriteOptions.newWriteOptions()) {
 
 			db.put("k".getBytes(), "original".getBytes());
@@ -316,7 +316,7 @@ class OptimisticTransactionDBTest {
 	void beginTransaction_withOptions_setSnapshot(@TempDir Path dir) {
 		// Given
 		try (var opts = Options.newOptions().setCreateIfMissing(true);
-		     var db = OptimisticTransactionDB.open(opts, dir);
+		     var db = RocksDB.openOptimistic(opts, dir);
 		     var wo = WriteOptions.newWriteOptions();
 		     var txnOpts = OptimisticTransactionOptions.newOptimisticTransactionOptions().setSetSnapshot(true)) {
 
@@ -342,7 +342,7 @@ class OptimisticTransactionDBTest {
 	void getSnapshot_isolatesReads(@TempDir Path dir) {
 		// Given
 		try (var opts = Options.newOptions().setCreateIfMissing(true);
-		     var db = OptimisticTransactionDB.open(opts, dir)) {
+		     var db = RocksDB.openOptimistic(opts, dir)) {
 
 			db.put("k".getBytes(), "v1".getBytes());
 
@@ -369,7 +369,7 @@ class OptimisticTransactionDBTest {
 	void flush_doesNotThrow(@TempDir Path dir) {
 		// Given
 		try (var opts = Options.newOptions().setCreateIfMissing(true);
-		     var db = OptimisticTransactionDB.open(opts, dir);
+		     var db = RocksDB.openOptimistic(opts, dir);
 		     var fo = FlushOptions.newFlushOptions()) {
 
 			db.put("k".getBytes(), "v".getBytes());
@@ -387,7 +387,7 @@ class OptimisticTransactionDBTest {
 	void getLongProperty_returnsValue(@TempDir Path dir) {
 		// Given
 		try (var opts = Options.newOptions().setCreateIfMissing(true);
-		     var db = OptimisticTransactionDB.open(opts, dir)) {
+		     var db = RocksDB.openOptimistic(opts, dir)) {
 
 			db.put("k".getBytes(), "v".getBytes());
 

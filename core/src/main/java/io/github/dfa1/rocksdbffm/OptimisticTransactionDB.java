@@ -1,12 +1,10 @@
 package io.github.dfa1.rocksdbffm;
 
-import java.lang.foreign.Arena;
 import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 import java.nio.ByteBuffer;
-import java.nio.file.Path;
 import java.util.Optional;
 import java.util.OptionalLong;
 
@@ -35,22 +33,14 @@ public final class OptimisticTransactionDB extends NativeObject {
 	// Method handles unique to OptimisticTransactionDB
 	// -----------------------------------------------------------------------
 
-	/// `rocksdb_optimistictransactiondb_t* rocksdb_optimistictransactiondb_open(const rocksdb_options_t* options, const char* name, char** errptr);`
-	private static final MethodHandle MH_OPEN;
 	/// `void rocksdb_optimistictransactiondb_close(rocksdb_optimistictransactiondb_t* otxn_db);`
 	private static final MethodHandle MH_CLOSE;
 	/// `rocksdb_transaction_t* rocksdb_optimistictransaction_begin(rocksdb_optimistictransactiondb_t* otxn_db, const rocksdb_writeoptions_t* write_options, const rocksdb_optimistictransaction_options_t* otxn_options, rocksdb_transaction_t* old_txn);`
 	private static final MethodHandle MH_BEGIN;
-	/// `rocksdb_t* rocksdb_optimistictransactiondb_get_base_db(rocksdb_optimistictransactiondb_t* otxn_db);`
-	private static final MethodHandle MH_GET_BASE_DB;
 	/// `void rocksdb_optimistictransactiondb_close_base_db(rocksdb_t* base_db);`
 	private static final MethodHandle MH_CLOSE_BASE_DB;
 
 	static {
-		MH_OPEN = NativeLibrary.lookup("rocksdb_optimistictransactiondb_open",
-				FunctionDescriptor.of(ValueLayout.ADDRESS,
-						ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-
 		MH_CLOSE = NativeLibrary.lookup("rocksdb_optimistictransactiondb_close",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
@@ -58,9 +48,6 @@ public final class OptimisticTransactionDB extends NativeObject {
 				FunctionDescriptor.of(ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-
-		MH_GET_BASE_DB = NativeLibrary.lookup("rocksdb_optimistictransactiondb_get_base_db",
-				FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
 		MH_CLOSE_BASE_DB = NativeLibrary.lookup("rocksdb_optimistictransactiondb_close_base_db",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
@@ -74,35 +61,12 @@ public final class OptimisticTransactionDB extends NativeObject {
 	private final WriteOptions writeOpts;
 	private final ReadOptions readOpts;
 
-	private OptimisticTransactionDB(MemorySegment ptr, MemorySegment baseDb,
-	                                WriteOptions writeOpts, ReadOptions readOpts) {
+	OptimisticTransactionDB(MemorySegment ptr, MemorySegment baseDb,
+	                        WriteOptions writeOpts, ReadOptions readOpts) {
 		super(ptr);
 		this.baseDb = baseDb;
 		this.writeOpts = writeOpts;
 		this.readOpts = readOpts;
-	}
-
-	// -----------------------------------------------------------------------
-	// Factory
-	// -----------------------------------------------------------------------
-
-	// TODO: open only via Rocksdb
-	/// Opens an OptimisticTransactionDB at `path`.
-	/// The caller retains ownership of `dbOptions`.
-	public static OptimisticTransactionDB open(Options dbOptions, Path path) {
-		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
-			MemorySegment pathSeg = arena.allocateFrom(path.toString());
-
-			MemorySegment ptr = (MemorySegment) MH_OPEN.invokeExact(
-					dbOptions.ptr(), pathSeg, err);
-			Native.checkError(err);
-
-			MemorySegment baseDb = (MemorySegment) MH_GET_BASE_DB.invokeExact(ptr);
-			return new OptimisticTransactionDB(ptr, baseDb, WriteOptions.newWriteOptions(), ReadOptions.newReadOptions());
-		} catch (Throwable t) {
-			throw RocksDBException.wrap("OptimisticTransactionDB open failed", t);
-		}
 	}
 
 	// -----------------------------------------------------------------------

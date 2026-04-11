@@ -147,7 +147,7 @@ class SnapshotTest {
 		// Given
 		try (var txnDbOpts = TransactionDBOptions.newTransactionDBOptions();
 		     var opts = Options.newOptions().setCreateIfMissing(true);
-		     var db = TransactionDB.open(opts, txnDbOpts, dir)) {
+		     var db = RocksDB.openTransaction(opts, txnDbOpts, dir)) {
 
 			db.put("key".getBytes(), "before".getBytes());
 

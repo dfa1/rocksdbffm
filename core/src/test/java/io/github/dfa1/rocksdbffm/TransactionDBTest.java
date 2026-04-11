@@ -15,7 +15,7 @@ class TransactionDBTest {
 	private static TransactionDB openDb(Path path) {
 		try (var opts = Options.newOptions().setCreateIfMissing(true);
 		     var txnDbOpts = TransactionDBOptions.newTransactionDBOptions()) {
-			return TransactionDB.open(opts, txnDbOpts, path);
+			return RocksDB.openTransaction(opts, txnDbOpts, path);
 		}
 	}
 

@@ -6,7 +6,6 @@ import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 import java.nio.ByteBuffer;
-import java.nio.file.Path;
 import java.util.Optional;
 import java.util.OptionalLong;
 
@@ -36,54 +35,19 @@ public final class SecondaryDB extends NativeObject implements RocksDbHandle {
 	// Method handles unique to SecondaryDB
 	// -----------------------------------------------------------------------
 
-	/// `rocksdb_t* rocksdb_open_as_secondary(const rocksdb_options_t* options, const char* name, const char* secondary_path, char** errptr);`
-	private static final MethodHandle MH_OPEN;
 	/// `void rocksdb_try_catch_up_with_primary(rocksdb_t* db, char** errptr);`
 	private static final MethodHandle MH_CATCH_UP;
 
 	static {
-		MH_OPEN = NativeLibrary.lookup("rocksdb_open_as_secondary",
-				FunctionDescriptor.of(ValueLayout.ADDRESS,
-						ValueLayout.ADDRESS, ValueLayout.ADDRESS,
-						ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-
 		MH_CATCH_UP = NativeLibrary.lookup("rocksdb_try_catch_up_with_primary",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 	}
 
 	private final ReadOptions readOpts;
 
-	private SecondaryDB(MemorySegment ptr, ReadOptions readOpts) {
+	SecondaryDB(MemorySegment ptr, ReadOptions readOpts) {
 		super(ptr);
 		this.readOpts = readOpts;
-	}
-
-	// -----------------------------------------------------------------------
-	// Factory
-	// -----------------------------------------------------------------------
-
-	/// Opens a secondary instance of the RocksDB database at `primaryPath`.
-	///
-	/// @param dbOptions     options (caller retains ownership); `createIfMissing`
-	///                      is typically `false` for a secondary
-	/// @param primaryPath   path to the primary database directory
-	/// @param secondaryPath a dedicated directory for this secondary's own MANIFEST/WAL
-	///                      tails; created automatically if it does not exist
-	// TODO: don't expose this, go via RocksDB only
-	public static SecondaryDB open(Options dbOptions, Path primaryPath, Path secondaryPath) {
-		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
-			MemorySegment primary = arena.allocateFrom(primaryPath.toString());
-			MemorySegment secondary = arena.allocateFrom(secondaryPath.toString());
-
-			MemorySegment ptr = (MemorySegment) MH_OPEN.invokeExact(
-					dbOptions.ptr(), primary, secondary, err);
-			Native.checkError(err);
-
-			return new SecondaryDB(ptr, ReadOptions.newReadOptions());
-		} catch (Throwable t) {
-			throw RocksDBException.wrap("SecondaryDB open failed", t);
-		}
 	}
 
 	// -----------------------------------------------------------------------

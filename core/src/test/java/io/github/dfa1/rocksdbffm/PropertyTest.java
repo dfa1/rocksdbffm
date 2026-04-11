@@ -115,7 +115,7 @@ class PropertyTest {
 		// Given
 		try (var txnDbOpts = TransactionDBOptions.newTransactionDBOptions();
 		     var opts = Options.newOptions().setCreateIfMissing(true);
-		     var db = TransactionDB.open(opts, txnDbOpts, dir)) {
+		     var db = RocksDB.openTransaction(opts, txnDbOpts, dir)) {
 
 			// When
 			Optional<String> stats = db.getProperty(Property.STATS);
@@ -131,7 +131,7 @@ class PropertyTest {
 		// Given
 		try (var txnDbOpts = TransactionDBOptions.newTransactionDBOptions();
 		     var opts = Options.newOptions().setCreateIfMissing(true);
-		     var db = TransactionDB.open(opts, txnDbOpts, dir)) {
+		     var db = RocksDB.openTransaction(opts, txnDbOpts, dir)) {
 
 			db.put("k".getBytes(), "v".getBytes());
 

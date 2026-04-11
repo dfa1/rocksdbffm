@@ -40,6 +40,14 @@ public final class RocksDB {
 	private static final MethodHandle MH_OPEN_WITH_TTL;
 	/// `rocksdb_t* rocksdb_open_for_read_only(const rocksdb_options_t* options, const char* name, unsigned char error_if_wal_file_exists, char** errptr);`
 	private static final MethodHandle MH_OPEN_FOR_READ_ONLY;
+	/// `rocksdb_t* rocksdb_open_as_secondary(const rocksdb_options_t* options, const char* name, const char* secondary_path, char** errptr);`
+	private static final MethodHandle MH_OPEN_SECONDARY;
+	/// `rocksdb_transactiondb_t* rocksdb_transactiondb_open(const rocksdb_options_t* options, const rocksdb_transactiondb_options_t* txn_db_options, const char* name, char** errptr);`
+	private static final MethodHandle MH_OPEN_TRANSACTION;
+	/// `rocksdb_optimistictransactiondb_t* rocksdb_optimistictransactiondb_open(const rocksdb_options_t* options, const char* name, char** errptr);`
+	private static final MethodHandle MH_OPEN_OPTIMISTIC;
+	/// `rocksdb_t* rocksdb_optimistictransactiondb_get_base_db(rocksdb_optimistictransactiondb_t* otxn_db);`
+	private static final MethodHandle MH_GET_BASE_DB;
 	// -----------------------------------------------------------------------
 	// Shared rocksdb_t* method handles — private, accessed via static helpers
 	// -----------------------------------------------------------------------
@@ -103,6 +111,23 @@ public final class RocksDB {
 				FunctionDescriptor.of(ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS,
 						ValueLayout.JAVA_BYTE, ValueLayout.ADDRESS));
+
+		MH_OPEN_SECONDARY = NativeLibrary.lookup("rocksdb_open_as_secondary",
+				FunctionDescriptor.of(ValueLayout.ADDRESS,
+						ValueLayout.ADDRESS, ValueLayout.ADDRESS,
+						ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+		MH_OPEN_TRANSACTION = NativeLibrary.lookup("rocksdb_transactiondb_open",
+				FunctionDescriptor.of(ValueLayout.ADDRESS,
+						ValueLayout.ADDRESS, ValueLayout.ADDRESS,
+						ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+		MH_OPEN_OPTIMISTIC = NativeLibrary.lookup("rocksdb_optimistictransactiondb_open",
+				FunctionDescriptor.of(ValueLayout.ADDRESS,
+						ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+		MH_GET_BASE_DB = NativeLibrary.lookup("rocksdb_optimistictransactiondb_get_base_db",
+				FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
 		MH_CLOSE = NativeLibrary.lookup("rocksdb_close",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
@@ -301,7 +326,19 @@ public final class RocksDB {
 	///
 	/// @param secondaryPath a dedicated directory for this secondary's own MANIFEST/WAL tails
 	public static SecondaryDB openSecondary(Options options, Path primaryPath, Path secondaryPath) {
-		return SecondaryDB.open(options, primaryPath, secondaryPath);
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = Native.errHolder(arena);
+			MemorySegment primary = arena.allocateFrom(primaryPath.toString());
+			MemorySegment secondary = arena.allocateFrom(secondaryPath.toString());
+
+			MemorySegment ptr = (MemorySegment) MH_OPEN_SECONDARY.invokeExact(
+					options.ptr(), primary, secondary, err);
+			Native.checkError(err);
+
+			return new SecondaryDB(ptr, ReadOptions.newReadOptions());
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("openSecondary failed", t);
+		}
 	}
 
 	// -----------------------------------------------------------------------
@@ -310,12 +347,35 @@ public final class RocksDB {
 
 	/// Opens a [TransactionDB] (pessimistic / locking transactions) at `path`.
 	public static TransactionDB openTransaction(Options options, TransactionDBOptions txnDbOptions, Path path) {
-		return TransactionDB.open(options, txnDbOptions, path);
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = Native.errHolder(arena);
+			MemorySegment pathSeg = arena.allocateFrom(path.toString());
+
+			MemorySegment ptr = (MemorySegment) MH_OPEN_TRANSACTION.invokeExact(
+					options.ptr(), txnDbOptions.ptr(), pathSeg, err);
+			Native.checkError(err);
+
+			return new TransactionDB(ptr, WriteOptions.newWriteOptions(), ReadOptions.newReadOptions());
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("openTransaction failed", t);
+		}
 	}
 
 	/// Opens an [OptimisticTransactionDB] (conflict-detection-at-commit) at `path`.
 	public static OptimisticTransactionDB openOptimistic(Options options, Path path) {
-		return OptimisticTransactionDB.open(options, path);
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = Native.errHolder(arena);
+			MemorySegment pathSeg = arena.allocateFrom(path.toString());
+
+			MemorySegment ptr = (MemorySegment) MH_OPEN_OPTIMISTIC.invokeExact(
+					options.ptr(), pathSeg, err);
+			Native.checkError(err);
+
+			MemorySegment baseDb = (MemorySegment) MH_GET_BASE_DB.invokeExact(ptr);
+			return new OptimisticTransactionDB(ptr, baseDb, WriteOptions.newWriteOptions(), ReadOptions.newReadOptions());
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("openOptimistic failed", t);
+		}
 	}
 
 	// -----------------------------------------------------------------------

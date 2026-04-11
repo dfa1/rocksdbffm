@@ -80,6 +80,12 @@ public final class WriteBatch extends NativeObject {
 		}
 	}
 
+	/// Wraps an existing `rocksdb_writebatch_t*` returned by the C API (e.g. from WAL iteration).
+	/// The caller is responsible for ensuring the pointer is valid and not already owned.
+	static WriteBatch wrap(MemorySegment ptr) {
+		return new WriteBatch(ptr);
+	}
+
 	// TODO: experimental zig-like interface => but in the end it could be easier just to allocate the arena as part of the batch
 	public void put(Arena arena, byte[] key, byte[] value) {
 		try {

@@ -220,6 +220,23 @@ public final class ReadWriteDB extends NativeObject {
 	}
 
 	// -----------------------------------------------------------------------
+	// WAL iteration
+	// -----------------------------------------------------------------------
+
+	/// Returns the sequence number of the most recent committed transaction.
+	public SequenceNumber getLatestSequenceNumber() {
+		return RocksDB.getLatestSequenceNumber(ptr());
+	}
+
+	/// Returns a [WalIterator] positioned at the first [WriteBatch] with a sequence number
+	/// greater than or equal to `sequenceNumber`.
+	///
+	/// The caller must close the iterator after use.
+	public WalIterator getUpdatesSince(SequenceNumber sequenceNumber) {
+		return RocksDB.getUpdatesSince(ptr(), sequenceNumber);
+	}
+
+	// -----------------------------------------------------------------------
 	// Flush
 	// -----------------------------------------------------------------------
 

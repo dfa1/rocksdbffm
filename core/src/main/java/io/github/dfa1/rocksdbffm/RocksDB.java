@@ -96,6 +96,10 @@ public final class RocksDB {
 	private static final MethodHandle MH_ENABLE_FILE_DELETIONS;
 	/// `void rocksdb_ingest_external_file(rocksdb_t* db, const char* const* file_list, const size_t list_len, const rocksdb_ingestexternalfileoptions_t* opt, char** errptr);`
 	private static final MethodHandle MH_INGEST_EXTERNAL_FILE;
+	/// `uint64_t rocksdb_get_latest_sequence_number(rocksdb_t* db);`
+	private static final MethodHandle MH_GET_LATEST_SEQUENCE_NUMBER;
+	/// `rocksdb_wal_iterator_t* rocksdb_get_updates_since(rocksdb_t* db, uint64_t seq_number, const rocksdb_wal_readoptions_t* options, char** errptr);`
+	private static final MethodHandle MH_GET_UPDATES_SINCE;
 
 	static {
 		MH_OPEN = NativeLibrary.lookup("rocksdb_open",
@@ -229,6 +233,14 @@ public final class RocksDB {
 		MH_INGEST_EXTERNAL_FILE = NativeLibrary.lookup("rocksdb_ingest_external_file",
 				FunctionDescriptor.ofVoid(
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
+						ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+		MH_GET_LATEST_SEQUENCE_NUMBER = NativeLibrary.lookup("rocksdb_get_latest_sequence_number",
+				FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
+
+		MH_GET_UPDATES_SINCE = NativeLibrary.lookup("rocksdb_get_updates_since",
+				FunctionDescriptor.of(ValueLayout.ADDRESS,
+						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 	}
 
@@ -551,6 +563,27 @@ public final class RocksDB {
 			Native.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("flush failed", t);
+		}
+	}
+
+	static SequenceNumber getLatestSequenceNumber(MemorySegment db) {
+		try {
+			long seq = (long) MH_GET_LATEST_SEQUENCE_NUMBER.invokeExact(db);
+			return SequenceNumber.of(seq);
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("getLatestSequenceNumber failed", t);
+		}
+	}
+
+	static WalIterator getUpdatesSince(MemorySegment db, SequenceNumber sequenceNumber) {
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = Native.errHolder(arena);
+			MemorySegment iterPtr = (MemorySegment) MH_GET_UPDATES_SINCE.invokeExact(
+					db, sequenceNumber.toLong(), MemorySegment.NULL, err);
+			Native.checkError(err);
+			return WalIterator.wrap(iterPtr);
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("getUpdatesSince failed", t);
 		}
 	}
 

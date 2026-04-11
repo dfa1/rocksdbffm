@@ -7,8 +7,7 @@ package io.github.dfa1.rocksdbffm;
 ///
 /// ```
 /// PerfContext.setPerfLevel(PerfLevel.ENABLE_COUNT);
-/// try (PerfContext ctx = PerfContext.create()) {
-///     ctx.reset();
+/// try (PerfContext ctx = PerfContext.newPerfContext()) {
 ///     db.get("key".getBytes());
 ///     long hits = ctx.metric(PerfMetric.BLOCK_CACHE_HIT_COUNT);
 /// }

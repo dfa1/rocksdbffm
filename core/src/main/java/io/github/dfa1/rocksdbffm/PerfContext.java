@@ -15,9 +15,7 @@ import java.lang.invoke.MethodHandle;
 /// ```
 /// PerfContext.setPerfLevel(PerfLevel.ENABLE_COUNT);
 ///
-/// try (PerfContext ctx = PerfContext.create()) {
-///     ctx.reset();
-///
+/// try (PerfContext ctx = PerfContext.newPerfContext()) {
 ///     db.get("key".getBytes());
 ///
 ///     long blockCacheHits = ctx.metric(PerfMetric.BLOCK_CACHE_HIT_COUNT);
@@ -101,15 +99,24 @@ public final class PerfContext extends NativeObject {
 	// Factory
 	// -----------------------------------------------------------------------
 
-	/// Creates a wrapper around the calling thread's perf context.
+	/// Wraps the calling thread's perf context and resets all counters to zero.
 	///
-	/// Call [#reset()] immediately after to clear any accumulated state
-	/// from prior operations on this thread.
-	public static PerfContext create() {
+	/// Use this as the standard entry point when you want a clean measurement window.
+	public static PerfContext newPerfContext() {
+		PerfContext ctx = currentPerfContext();
+		ctx.reset();
+		return ctx;
+	}
+
+	/// Wraps the calling thread's perf context without resetting counters.
+	///
+	/// Use this when you want to observe metrics that have already accumulated,
+	/// or when you manage [#reset()] yourself.
+	public static PerfContext currentPerfContext() {
 		try {
 			return new PerfContext((MemorySegment) MH_CREATE.invokeExact());
 		} catch (Throwable t) {
-			throw RocksDBException.wrap("PerfContext.create failed", t);
+			throw RocksDBException.wrap("PerfContext.currentPerfContext failed", t);
 		}
 	}
 

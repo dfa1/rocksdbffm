@@ -24,22 +24,21 @@ class PerfContextIntegrationTest {
 	@Test
 	void getAccumulatesBlockCacheMetrics(@TempDir Path dir) {
 		try (var opts = Options.newOptions().setCreateIfMissing(true);
-		     var db = RocksDB.open(opts, dir);
-		     var ctx = PerfContext.create()) {
+		     var db = RocksDB.open(opts, dir)) {
 
+			// Given — data flushed to SST so block cache is consulted on read
 			db.put("k".getBytes(), "v".getBytes());
 			db.flush(FlushOptions.newFlushOptions());
 
-			// Given — reset before measurement
-			ctx.reset();
-
 			// When
-			db.get("k".getBytes());
+			try (var ctx = PerfContext.newPerfContext()) {
+				db.get("k".getBytes());
 
-			// Then — at least one block was read or the cache was consulted
-			long blockReads = ctx.metric(PerfMetric.BLOCK_READ_COUNT);
-			long cacheHits = ctx.metric(PerfMetric.BLOCK_CACHE_HIT_COUNT);
-			assertThat(blockReads + cacheHits).isGreaterThan(0);
+				// Then — at least one block was read or the cache was consulted
+				long blockReads = ctx.metric(PerfMetric.BLOCK_READ_COUNT);
+				long cacheHits = ctx.metric(PerfMetric.BLOCK_CACHE_HIT_COUNT);
+				assertThat(blockReads + cacheHits).isGreaterThan(0);
+			}
 		}
 	}
 
@@ -47,10 +46,7 @@ class PerfContextIntegrationTest {
 	void writeAccumulatesWalAndMemtableMetrics(@TempDir Path dir) {
 		try (var opts = Options.newOptions().setCreateIfMissing(true);
 		     var db = RocksDB.open(opts, dir);
-		     var ctx = PerfContext.create()) {
-
-			// Given
-			ctx.reset();
+		     var ctx = PerfContext.newPerfContext()) {
 
 			// When
 			db.put("k".getBytes(), "v".getBytes());
@@ -66,7 +62,7 @@ class PerfContextIntegrationTest {
 	void resetClearsCounters(@TempDir Path dir) {
 		try (var opts = Options.newOptions().setCreateIfMissing(true);
 		     var db = RocksDB.open(opts, dir);
-		     var ctx = PerfContext.create()) {
+		     var ctx = PerfContext.currentPerfContext()) {
 
 			// Given — accumulate some metrics
 			db.put("k".getBytes(), "v".getBytes());
@@ -88,10 +84,9 @@ class PerfContextIntegrationTest {
 	void reportProducesNonEmptyString(@TempDir Path dir) {
 		try (var opts = Options.newOptions().setCreateIfMissing(true);
 		     var db = RocksDB.open(opts, dir);
-		     var ctx = PerfContext.create()) {
+		     var ctx = PerfContext.newPerfContext()) {
 
-			// Given
-			ctx.reset();
+			// Given — some metrics accumulated
 			db.put("k".getBytes(), "v".getBytes());
 
 			// When
@@ -108,52 +103,55 @@ class PerfContextIntegrationTest {
 
 	@Test
 	void disabledLevelCollectsNothing(@TempDir Path dir) {
+		// Given — perf collection is disabled
 		PerfContext.setPerfLevel(PerfLevel.DISABLE);
 
 		try (var opts = Options.newOptions().setCreateIfMissing(true);
 		     var db = RocksDB.open(opts, dir);
-		     var ctx = PerfContext.create()) {
+		     var ctx = PerfContext.newPerfContext()) {
 
-			ctx.reset();
+			// When
 			db.put("k".getBytes(), "v".getBytes());
 
-			// When perf is disabled, timings stay zero
+			// Then — timings stay zero when perf is disabled
 			assertThat(ctx.metric(PerfMetric.WRITE_WAL_TIME)).isZero();
 		}
 	}
 
 	@Test
-	void allPerfLevelsAreSettable(@TempDir Path dir) {
-		// Just verify none of the levels throw
+	void allPerfLevelsAreSettable() {
+		// Given — any PerfLevel value
+
+		// When — each level is applied
 		for (PerfLevel level : PerfLevel.values()) {
 			PerfContext.setPerfLevel(level);
 		}
-		// Restore for @AfterEach
+
+		// Then — no exception was thrown (restore for @AfterEach)
 		PerfContext.setPerfLevel(PerfLevel.ENABLE_COUNT);
 	}
 
 	@Test
 	void iteratorAccumulatesMetrics(@TempDir Path dir) {
 		try (var opts = Options.newOptions().setCreateIfMissing(true);
-		     var db = RocksDB.open(opts, dir);
-		     var ctx = PerfContext.create()) {
+		     var db = RocksDB.open(opts, dir)) {
 
+			// Given — two keys flushed to SST
 			db.put("a".getBytes(), "1".getBytes());
 			db.put("b".getBytes(), "2".getBytes());
 			db.flush(FlushOptions.newFlushOptions());
 
-			ctx.reset();
-
 			// When — iterate over all keys
-			try (var it = db.newIterator()) {
+			try (var ctx = PerfContext.newPerfContext();
+			     var it = db.newIterator()) {
 				it.seekToFirst();
 				while (it.isValid()) {
 					it.next();
 				}
-			}
 
-			// Then — iter read bytes tracked
-			assertThat(ctx.metric(PerfMetric.ITER_READ_BYTES)).isGreaterThanOrEqualTo(0);
+				// Then — iter read bytes are tracked
+				assertThat(ctx.metric(PerfMetric.ITER_READ_BYTES)).isGreaterThanOrEqualTo(0);
+			}
 		}
 	}
 }

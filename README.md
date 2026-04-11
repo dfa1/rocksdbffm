@@ -113,7 +113,7 @@ This project is currently experimental. The table below tracks parity with `rock
 | Perf Context               |   ✅    | `PerfContext`, `PerfLevel`, `PerfMetric`; `setPerfLevel`, `reset`, `metric`, `report`                                                            |
 | Persistent Cache           |   🚫    | Not exposed in `rocksdb/c.h` — C++ only (`NewPersistentCache`); requires a custom C shim to bridge                                               |
 | Uint64AddOperator          |   ✅    | `Options.setUInt64AddMergeOperator()`; built-in little-endian uint64 accumulator                                                                 |
-| Background Jobs            |   ❌    |                                                                                                                                         |
+| Background Jobs            |   🚧    | Tier 1: `cancelAllBackgroundWork`, `disableManualCompaction`, `enableManualCompaction`, `waitForCompact(WaitForCompactOptions)`; Tier 3–5 (Options tuning, Env thread pools, FIFO/Universal options) pending |
 
 ## Design Choices
 

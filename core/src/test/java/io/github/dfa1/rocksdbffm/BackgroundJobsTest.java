@@ -1,0 +1,178 @@
+package io.github.dfa1.rocksdbffm;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+import java.nio.file.Path;
+import java.time.Duration;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
+
+class BackgroundJobsTest {
+
+	// -----------------------------------------------------------------------
+	// cancelAllBackgroundWork
+	// -----------------------------------------------------------------------
+
+	@Test
+	void cancelAllBackgroundWork_noWait_doesNotThrow(@TempDir Path dir) {
+		// Given
+		try (var db = RocksDB.open(dir)) {
+			db.put("k".getBytes(), "v".getBytes());
+
+			// When / Then
+			assertThatNoException().isThrownBy(() -> db.cancelAllBackgroundWork(false));
+		}
+	}
+
+	@Test
+	void cancelAllBackgroundWork_wait_doesNotThrow(@TempDir Path dir) {
+		// Given
+		try (var db = RocksDB.open(dir)) {
+			db.put("k".getBytes(), "v".getBytes());
+
+			// When / Then
+			assertThatNoException().isThrownBy(() -> db.cancelAllBackgroundWork(true));
+		}
+	}
+
+	// -----------------------------------------------------------------------
+	// disableManualCompaction / enableManualCompaction
+	// -----------------------------------------------------------------------
+
+	@Test
+	void disableAndEnableManualCompaction_doesNotThrow(@TempDir Path dir) {
+		// Given
+		try (var db = RocksDB.open(dir)) {
+
+			// When / Then
+			assertThatNoException().isThrownBy(() -> {
+				db.disableManualCompaction();
+				db.enableManualCompaction();
+			});
+		}
+	}
+
+	@Test
+	void disableManualCompaction_doesNotPreventReads(@TempDir Path dir) {
+		// Given
+		try (var db = RocksDB.open(dir)) {
+			db.put("k".getBytes(), "v".getBytes());
+			db.disableManualCompaction();
+
+			// When
+			byte[] result = db.get("k".getBytes());
+
+			// Then
+			assertThat(result).isEqualTo("v".getBytes());
+
+			db.enableManualCompaction();
+		}
+	}
+
+	// -----------------------------------------------------------------------
+	// waitForCompact
+	// -----------------------------------------------------------------------
+
+	@Test
+	void waitForCompact_defaultOptions_doesNotThrow(@TempDir Path dir) {
+		// Given
+		try (var db = RocksDB.open(dir);
+		     var opts = WaitForCompactOptions.create()) {
+
+			db.put("k".getBytes(), "v".getBytes());
+
+			// When / Then
+			assertThatNoException().isThrownBy(() -> db.waitForCompact(opts));
+		}
+	}
+
+	@Test
+	void waitForCompact_withFlush_doesNotThrow(@TempDir Path dir) {
+		// Given
+		try (var db = RocksDB.open(dir);
+		     var opts = WaitForCompactOptions.create().setFlush(true)) {
+
+			db.put("k".getBytes(), "v".getBytes());
+
+			// When / Then
+			assertThatNoException().isThrownBy(() -> db.waitForCompact(opts));
+		}
+	}
+
+	@Test
+	void waitForCompact_withTimeout_doesNotThrow(@TempDir Path dir) {
+		// Given
+		try (var db = RocksDB.open(dir);
+		     var opts = WaitForCompactOptions.create().setTimeout(Duration.ofSeconds(5))) {
+
+			db.put("k".getBytes(), "v".getBytes());
+
+			// When / Then
+			assertThatNoException().isThrownBy(() -> db.waitForCompact(opts));
+		}
+	}
+
+	// -----------------------------------------------------------------------
+	// WaitForCompactOptions round-trips
+	// -----------------------------------------------------------------------
+
+	@Test
+	void waitForCompactOptions_abortOnPause_roundTrips() {
+		try (var opts = WaitForCompactOptions.create()) {
+			assertThat(opts.isAbortOnPause()).isFalse();
+
+			opts.setAbortOnPause(true);
+			assertThat(opts.isAbortOnPause()).isTrue();
+
+			opts.setAbortOnPause(false);
+			assertThat(opts.isAbortOnPause()).isFalse();
+		}
+	}
+
+	@Test
+	void waitForCompactOptions_flush_roundTrips() {
+		try (var opts = WaitForCompactOptions.create()) {
+			assertThat(opts.isFlush()).isFalse();
+
+			opts.setFlush(true);
+			assertThat(opts.isFlush()).isTrue();
+		}
+	}
+
+	@Test
+	void waitForCompactOptions_closeDb_roundTrips() {
+		try (var opts = WaitForCompactOptions.create()) {
+			assertThat(opts.isCloseDb()).isFalse();
+
+			opts.setCloseDb(true);
+			assertThat(opts.isCloseDb()).isTrue();
+		}
+	}
+
+	@Test
+	void waitForCompactOptions_timeout_roundTrips() {
+		try (var opts = WaitForCompactOptions.create()) {
+			assertThat(opts.getTimeout()).isEqualTo(Duration.ZERO);
+
+			opts.setTimeout(Duration.ofSeconds(10));
+			assertThat(opts.getTimeout()).isEqualTo(Duration.ofSeconds(10));
+		}
+	}
+
+	@Test
+	void waitForCompactOptions_chaining_setsAllFields() {
+		try (var opts = WaitForCompactOptions.create()
+				.setAbortOnPause(true)
+				.setFlush(true)
+				.setCloseDb(false)
+				.setTimeout(Duration.ofMillis(500))) {
+
+			assertThat(opts.isAbortOnPause()).isTrue();
+			assertThat(opts.isFlush()).isTrue();
+			assertThat(opts.isCloseDb()).isFalse();
+			assertThat(opts.getTimeout()).isEqualTo(Duration.ofMillis(500));
+		}
+	}
+}

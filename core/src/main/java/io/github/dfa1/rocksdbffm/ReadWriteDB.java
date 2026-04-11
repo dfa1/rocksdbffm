@@ -221,6 +221,37 @@ public final class ReadWriteDB extends NativeObject {
 	}
 
 	// -----------------------------------------------------------------------
+	// Background jobs
+	// -----------------------------------------------------------------------
+
+	/// Cancels all background work (compaction, flush, etc.).
+	///
+	/// @param wait if `true`, blocks until all running jobs have finished
+	public void cancelAllBackgroundWork(boolean wait) {
+		RocksDB.cancelAllBackgroundWork(ptr(), wait);
+	}
+
+	/// Prevents new manual compactions from starting.
+	/// In-progress manual compactions are not affected.
+	/// Call [#enableManualCompaction()] to reverse.
+	public void disableManualCompaction() {
+		RocksDB.disableManualCompaction(ptr());
+	}
+
+	/// Re-enables manual compactions after [#disableManualCompaction()].
+	public void enableManualCompaction() {
+		RocksDB.enableManualCompaction(ptr());
+	}
+
+	/// Blocks until all current compactions finish, subject to the given [WaitForCompactOptions].
+	///
+	/// @throws RocksDBException on I/O error or if [WaitForCompactOptions#isAbortOnPause()] is
+	///                          `true` and background work is paused
+	public void waitForCompact(WaitForCompactOptions options) {
+		RocksDB.waitForCompact(ptr(), options);
+	}
+
+	// -----------------------------------------------------------------------
 	// WAL iteration
 	// -----------------------------------------------------------------------
 

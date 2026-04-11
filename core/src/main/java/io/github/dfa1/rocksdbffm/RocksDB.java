@@ -100,6 +100,14 @@ public final class RocksDB {
 	private static final MethodHandle MH_GET_LATEST_SEQUENCE_NUMBER;
 	/// `rocksdb_wal_iterator_t* rocksdb_get_updates_since(rocksdb_t* db, uint64_t seq_number, const rocksdb_wal_readoptions_t* options, char** errptr);`
 	private static final MethodHandle MH_GET_UPDATES_SINCE;
+	/// `void rocksdb_cancel_all_background_work(rocksdb_t* db, unsigned char wait);`
+	private static final MethodHandle MH_CANCEL_ALL_BACKGROUND_WORK;
+	/// `void rocksdb_disable_manual_compaction(rocksdb_t* db);`
+	private static final MethodHandle MH_DISABLE_MANUAL_COMPACTION;
+	/// `void rocksdb_enable_manual_compaction(rocksdb_t* db);`
+	private static final MethodHandle MH_ENABLE_MANUAL_COMPACTION;
+	/// `void rocksdb_wait_for_compact(rocksdb_t* db, rocksdb_wait_for_compact_options_t* options, char** errptr);`
+	private static final MethodHandle MH_WAIT_FOR_COMPACT;
 
 	static {
 		MH_OPEN = NativeLibrary.lookup("rocksdb_open",
@@ -242,6 +250,18 @@ public final class RocksDB {
 				FunctionDescriptor.of(ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+		MH_CANCEL_ALL_BACKGROUND_WORK = NativeLibrary.lookup("rocksdb_cancel_all_background_work",
+				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_BYTE));
+
+		MH_DISABLE_MANUAL_COMPACTION = NativeLibrary.lookup("rocksdb_disable_manual_compaction",
+				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+
+		MH_ENABLE_MANUAL_COMPACTION = NativeLibrary.lookup("rocksdb_enable_manual_compaction",
+				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+
+		MH_WAIT_FOR_COMPACT = NativeLibrary.lookup("rocksdb_wait_for_compact",
+				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 	}
 
 	private RocksDB() {
@@ -563,6 +583,40 @@ public final class RocksDB {
 			Native.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("flush failed", t);
+		}
+	}
+
+	static void cancelAllBackgroundWork(MemorySegment db, boolean wait) {
+		try {
+			MH_CANCEL_ALL_BACKGROUND_WORK.invokeExact(db, wait ? (byte) 1 : (byte) 0);
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("cancelAllBackgroundWork failed", t);
+		}
+	}
+
+	static void disableManualCompaction(MemorySegment db) {
+		try {
+			MH_DISABLE_MANUAL_COMPACTION.invokeExact(db);
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("disableManualCompaction failed", t);
+		}
+	}
+
+	static void enableManualCompaction(MemorySegment db) {
+		try {
+			MH_ENABLE_MANUAL_COMPACTION.invokeExact(db);
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("enableManualCompaction failed", t);
+		}
+	}
+
+	static void waitForCompact(MemorySegment db, WaitForCompactOptions options) {
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = Native.errHolder(arena);
+			MH_WAIT_FOR_COMPACT.invokeExact(db, options.ptr(), err);
+			Native.checkError(err);
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("waitForCompact failed", t);
 		}
 	}
 

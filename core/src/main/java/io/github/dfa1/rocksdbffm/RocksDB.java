@@ -286,6 +286,32 @@ public final class RocksDB {
 		}
 	}
 
+	/// Opens (or creates) a blob-enabled read-write database at `path`.
+	///
+	/// BlobDB stores large values (≥ [Options#setMinBlobSize]) in separate blob files,
+	/// reducing write amplification for value-heavy workloads.
+	/// The caller is responsible for setting [Options#setEnableBlobFiles(boolean)] to `true`
+	/// and any other blob options before calling this method.
+	public static BlobDB openWithBlobFiles(Options options, Path path) {
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = Native.errHolder(arena);
+			MemorySegment pathSeg = arena.allocateFrom(path.toString());
+			MemorySegment ptr = (MemorySegment) MH_OPEN.invokeExact(options.ptr(), pathSeg, err);
+			Native.checkError(err);
+			return new BlobDB(ptr, WriteOptions.newWriteOptions(), ReadOptions.newReadOptions());
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("openWithBlobFiles failed", t);
+		}
+	}
+
+	/// Equivalent to `openWithBlobFiles(options, path)` with `createIfMissing = true`
+	/// and `enableBlobFiles = true`.
+	public static BlobDB openWithBlobFiles(Path path) {
+		try (Options opts = Options.newOptions().setCreateIfMissing(true).setEnableBlobFiles(true)) {
+			return openWithBlobFiles(opts, path);
+		}
+	}
+
 	// -----------------------------------------------------------------------
 	// Factory — read-only
 	// -----------------------------------------------------------------------

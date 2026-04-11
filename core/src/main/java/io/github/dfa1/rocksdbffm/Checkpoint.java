@@ -63,6 +63,11 @@ public final class Checkpoint extends NativeObject {
 	}
 
 	/// @see #newCheckpoint(ReadWriteDB)
+	public static Checkpoint newCheckpoint(BlobDB db) {
+		return create(db.ptr());
+	}
+
+	/// @see #newCheckpoint(ReadWriteDB)
 	public static Checkpoint newCheckpoint(TtlDB db) {
 		return create(db.ptr());
 	}

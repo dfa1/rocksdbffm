@@ -142,6 +142,7 @@ files so agents can quickly find the right file to extend.
 | Shared utilities        | `Native.java` (`errHolder`, `checkError`, `toNative`), `MemorySize.java`, `RocksDBException.java`                         |
 | Compaction control      | `CompactOptions.java`; `RocksDB.compactRange`, `suggestCompactRange`, `disableFileDeletions`, `enableFileDeletions`       |
 | Secondary DB            | `SecondaryDB.java`                                                                                                        |
+| Blob DB                 | `BlobDB.java`; blob options in `Options.java`; `PrepopulateBlobCache.java`; `RocksDB.openWithBlobFiles`                   |
 
 ---
 

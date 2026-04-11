@@ -45,6 +45,48 @@ public final class Options extends NativeObject {
 	private static final MethodHandle MH_SET_COMPRESSION;
 	/// `int rocksdb_options_get_compression(rocksdb_options_t*);`
 	private static final MethodHandle MH_GET_COMPRESSION;
+	/// `void rocksdb_options_set_enable_blob_files(rocksdb_options_t* opt, unsigned char val);`
+	private static final MethodHandle MH_SET_ENABLE_BLOB_FILES;
+	/// `unsigned char rocksdb_options_get_enable_blob_files(rocksdb_options_t* opt);`
+	private static final MethodHandle MH_GET_ENABLE_BLOB_FILES;
+	/// `void rocksdb_options_set_min_blob_size(rocksdb_options_t* opt, uint64_t val);`
+	private static final MethodHandle MH_SET_MIN_BLOB_SIZE;
+	/// `uint64_t rocksdb_options_get_min_blob_size(rocksdb_options_t* opt);`
+	private static final MethodHandle MH_GET_MIN_BLOB_SIZE;
+	/// `void rocksdb_options_set_blob_file_size(rocksdb_options_t* opt, uint64_t val);`
+	private static final MethodHandle MH_SET_BLOB_FILE_SIZE;
+	/// `uint64_t rocksdb_options_get_blob_file_size(rocksdb_options_t* opt);`
+	private static final MethodHandle MH_GET_BLOB_FILE_SIZE;
+	/// `void rocksdb_options_set_blob_compression_type(rocksdb_options_t* opt, int val);`
+	private static final MethodHandle MH_SET_BLOB_COMPRESSION_TYPE;
+	/// `int rocksdb_options_get_blob_compression_type(rocksdb_options_t* opt);`
+	private static final MethodHandle MH_GET_BLOB_COMPRESSION_TYPE;
+	/// `void rocksdb_options_set_enable_blob_gc(rocksdb_options_t* opt, unsigned char val);`
+	private static final MethodHandle MH_SET_ENABLE_BLOB_GC;
+	/// `unsigned char rocksdb_options_get_enable_blob_gc(rocksdb_options_t* opt);`
+	private static final MethodHandle MH_GET_ENABLE_BLOB_GC;
+	/// `void rocksdb_options_set_blob_gc_age_cutoff(rocksdb_options_t* opt, double val);`
+	private static final MethodHandle MH_SET_BLOB_GC_AGE_CUTOFF;
+	/// `double rocksdb_options_get_blob_gc_age_cutoff(rocksdb_options_t* opt);`
+	private static final MethodHandle MH_GET_BLOB_GC_AGE_CUTOFF;
+	/// `void rocksdb_options_set_blob_gc_force_threshold(rocksdb_options_t* opt, double val);`
+	private static final MethodHandle MH_SET_BLOB_GC_FORCE_THRESHOLD;
+	/// `double rocksdb_options_get_blob_gc_force_threshold(rocksdb_options_t* opt);`
+	private static final MethodHandle MH_GET_BLOB_GC_FORCE_THRESHOLD;
+	/// `void rocksdb_options_set_blob_compaction_readahead_size(rocksdb_options_t* opt, uint64_t val);`
+	private static final MethodHandle MH_SET_BLOB_COMPACTION_READAHEAD_SIZE;
+	/// `uint64_t rocksdb_options_get_blob_compaction_readahead_size(rocksdb_options_t* opt);`
+	private static final MethodHandle MH_GET_BLOB_COMPACTION_READAHEAD_SIZE;
+	/// `void rocksdb_options_set_blob_file_starting_level(rocksdb_options_t* opt, int val);`
+	private static final MethodHandle MH_SET_BLOB_FILE_STARTING_LEVEL;
+	/// `int rocksdb_options_get_blob_file_starting_level(rocksdb_options_t* opt);`
+	private static final MethodHandle MH_GET_BLOB_FILE_STARTING_LEVEL;
+	/// `void rocksdb_options_set_blob_cache(rocksdb_options_t* opt, rocksdb_cache_t* blob_cache);`
+	private static final MethodHandle MH_SET_BLOB_CACHE;
+	/// `void rocksdb_options_set_prepopulate_blob_cache(rocksdb_options_t* opt, int val);`
+	private static final MethodHandle MH_SET_PREPOPULATE_BLOB_CACHE;
+	/// `int rocksdb_options_get_prepopulate_blob_cache(rocksdb_options_t* opt);`
+	private static final MethodHandle MH_GET_PREPOPULATE_BLOB_CACHE;
 
 	static {
 		MH_CREATE = NativeLibrary.lookup("rocksdb_options_create",
@@ -85,6 +127,71 @@ public final class Options extends NativeObject {
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
 
 		MH_GET_COMPRESSION = NativeLibrary.lookup("rocksdb_options_get_compression",
+				FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
+
+		MH_SET_ENABLE_BLOB_FILES = NativeLibrary.lookup("rocksdb_options_set_enable_blob_files",
+				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_BYTE));
+
+		MH_GET_ENABLE_BLOB_FILES = NativeLibrary.lookup("rocksdb_options_get_enable_blob_files",
+				FunctionDescriptor.of(ValueLayout.JAVA_BYTE, ValueLayout.ADDRESS));
+
+		MH_SET_MIN_BLOB_SIZE = NativeLibrary.lookup("rocksdb_options_set_min_blob_size",
+				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
+
+		MH_GET_MIN_BLOB_SIZE = NativeLibrary.lookup("rocksdb_options_get_min_blob_size",
+				FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
+
+		MH_SET_BLOB_FILE_SIZE = NativeLibrary.lookup("rocksdb_options_set_blob_file_size",
+				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
+
+		MH_GET_BLOB_FILE_SIZE = NativeLibrary.lookup("rocksdb_options_get_blob_file_size",
+				FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
+
+		MH_SET_BLOB_COMPRESSION_TYPE = NativeLibrary.lookup("rocksdb_options_set_blob_compression_type",
+				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
+
+		MH_GET_BLOB_COMPRESSION_TYPE = NativeLibrary.lookup("rocksdb_options_get_blob_compression_type",
+				FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
+
+		MH_SET_ENABLE_BLOB_GC = NativeLibrary.lookup("rocksdb_options_set_enable_blob_gc",
+				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_BYTE));
+
+		MH_GET_ENABLE_BLOB_GC = NativeLibrary.lookup("rocksdb_options_get_enable_blob_gc",
+				FunctionDescriptor.of(ValueLayout.JAVA_BYTE, ValueLayout.ADDRESS));
+
+		MH_SET_BLOB_GC_AGE_CUTOFF = NativeLibrary.lookup("rocksdb_options_set_blob_gc_age_cutoff",
+				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_DOUBLE));
+
+		MH_GET_BLOB_GC_AGE_CUTOFF = NativeLibrary.lookup("rocksdb_options_get_blob_gc_age_cutoff",
+				FunctionDescriptor.of(ValueLayout.JAVA_DOUBLE, ValueLayout.ADDRESS));
+
+		MH_SET_BLOB_GC_FORCE_THRESHOLD = NativeLibrary.lookup("rocksdb_options_set_blob_gc_force_threshold",
+				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_DOUBLE));
+
+		MH_GET_BLOB_GC_FORCE_THRESHOLD = NativeLibrary.lookup("rocksdb_options_get_blob_gc_force_threshold",
+				FunctionDescriptor.of(ValueLayout.JAVA_DOUBLE, ValueLayout.ADDRESS));
+
+		MH_SET_BLOB_COMPACTION_READAHEAD_SIZE = NativeLibrary.lookup(
+				"rocksdb_options_set_blob_compaction_readahead_size",
+				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
+
+		MH_GET_BLOB_COMPACTION_READAHEAD_SIZE = NativeLibrary.lookup(
+				"rocksdb_options_get_blob_compaction_readahead_size",
+				FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
+
+		MH_SET_BLOB_FILE_STARTING_LEVEL = NativeLibrary.lookup("rocksdb_options_set_blob_file_starting_level",
+				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
+
+		MH_GET_BLOB_FILE_STARTING_LEVEL = NativeLibrary.lookup("rocksdb_options_get_blob_file_starting_level",
+				FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
+
+		MH_SET_BLOB_CACHE = NativeLibrary.lookup("rocksdb_options_set_blob_cache",
+				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+		MH_SET_PREPOPULATE_BLOB_CACHE = NativeLibrary.lookup("rocksdb_options_set_prepopulate_blob_cache",
+				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
+
+		MH_GET_PREPOPULATE_BLOB_CACHE = NativeLibrary.lookup("rocksdb_options_get_prepopulate_blob_cache",
 				FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
 
 	}
@@ -214,6 +321,213 @@ public final class Options extends NativeObject {
 			throw new RocksDBException("setTableFormatConfig failed", t);
 		}
 		return this;
+	}
+
+	// -----------------------------------------------------------------------
+	// Blob file options
+	// -----------------------------------------------------------------------
+
+	/// Enables storing large values in separate blob files instead of inline in SSTs.
+	/// When enabled, values ≥ [#setMinBlobSize] are written to blob files.
+	/// Default: `false`.
+	public Options setEnableBlobFiles(boolean value) {
+		try {
+			MH_SET_ENABLE_BLOB_FILES.invokeExact(ptr(), value ? (byte) 1 : (byte) 0);
+			return this;
+		} catch (Throwable t) {
+			throw new RocksDBException("setEnableBlobFiles failed", t);
+		}
+	}
+
+	public boolean getEnableBlobFiles() {
+		try {
+			return ((byte) MH_GET_ENABLE_BLOB_FILES.invokeExact(ptr())) != 0;
+		} catch (Throwable t) {
+			throw new RocksDBException("getEnableBlobFiles failed", t);
+		}
+	}
+
+	/// Values strictly smaller than this size are stored inline; larger values go to blob files.
+	/// Only effective when [#setEnableBlobFiles] is `true`. Default: 0 (all values externalized).
+	public Options setMinBlobSize(MemorySize size) {
+		try {
+			MH_SET_MIN_BLOB_SIZE.invokeExact(ptr(), size.toBytes());
+			return this;
+		} catch (Throwable t) {
+			throw new RocksDBException("setMinBlobSize failed", t);
+		}
+	}
+
+	public MemorySize getMinBlobSize() {
+		try {
+			return MemorySize.ofBytes((long) MH_GET_MIN_BLOB_SIZE.invokeExact(ptr()));
+		} catch (Throwable t) {
+			throw new RocksDBException("getMinBlobSize failed", t);
+		}
+	}
+
+	/// Target size for individual blob files. RocksDB rolls to a new file when this is exceeded.
+	/// Default: 256 MiB.
+	public Options setBlobFileSize(MemorySize size) {
+		try {
+			MH_SET_BLOB_FILE_SIZE.invokeExact(ptr(), size.toBytes());
+			return this;
+		} catch (Throwable t) {
+			throw new RocksDBException("setBlobFileSize failed", t);
+		}
+	}
+
+	public MemorySize getBlobFileSize() {
+		try {
+			return MemorySize.ofBytes((long) MH_GET_BLOB_FILE_SIZE.invokeExact(ptr()));
+		} catch (Throwable t) {
+			throw new RocksDBException("getBlobFileSize failed", t);
+		}
+	}
+
+	/// Compression algorithm applied to blob file values. Independent of SST compression.
+	/// Default: [CompressionType#NO_COMPRESSION].
+	public Options setBlobCompressionType(CompressionType type) {
+		try {
+			MH_SET_BLOB_COMPRESSION_TYPE.invokeExact(ptr(), type.value);
+			return this;
+		} catch (Throwable t) {
+			throw new RocksDBException("setBlobCompressionType failed", t);
+		}
+	}
+
+	public CompressionType getBlobCompressionType() {
+		try {
+			return CompressionType.fromValue((int) MH_GET_BLOB_COMPRESSION_TYPE.invokeExact(ptr()));
+		} catch (Throwable t) {
+			throw new RocksDBException("getBlobCompressionType failed", t);
+		}
+	}
+
+	/// Enables garbage collection of obsolete blob files during compaction.
+	/// Default: `false`.
+	public Options setEnableBlobGc(boolean value) {
+		try {
+			MH_SET_ENABLE_BLOB_GC.invokeExact(ptr(), value ? (byte) 1 : (byte) 0);
+			return this;
+		} catch (Throwable t) {
+			throw new RocksDBException("setEnableBlobGc failed", t);
+		}
+	}
+
+	public boolean getEnableBlobGc() {
+		try {
+			return ((byte) MH_GET_ENABLE_BLOB_GC.invokeExact(ptr())) != 0;
+		} catch (Throwable t) {
+			throw new RocksDBException("getEnableBlobGc failed", t);
+		}
+	}
+
+	/// Blob files whose age is older than this fraction of the oldest snapshot are
+	/// unconditionally GC'd, regardless of garbage ratio.
+	/// Range: [0.0, 1.0]. Default: 0.5.
+	public Options setBlobGcAgeCutoff(double value) {
+		try {
+			MH_SET_BLOB_GC_AGE_CUTOFF.invokeExact(ptr(), value);
+			return this;
+		} catch (Throwable t) {
+			throw new RocksDBException("setBlobGcAgeCutoff failed", t);
+		}
+	}
+
+	public double getBlobGcAgeCutoff() {
+		try {
+			return (double) MH_GET_BLOB_GC_AGE_CUTOFF.invokeExact(ptr());
+		} catch (Throwable t) {
+			throw new RocksDBException("getBlobGcAgeCutoff failed", t);
+		}
+	}
+
+	/// Blob files whose garbage ratio exceeds this threshold are force-compacted.
+	/// Range: [0.0, 1.0]. Default: 1.0 (disabled).
+	public Options setBlobGcForceThreshold(double value) {
+		try {
+			MH_SET_BLOB_GC_FORCE_THRESHOLD.invokeExact(ptr(), value);
+			return this;
+		} catch (Throwable t) {
+			throw new RocksDBException("setBlobGcForceThreshold failed", t);
+		}
+	}
+
+	public double getBlobGcForceThreshold() {
+		try {
+			return (double) MH_GET_BLOB_GC_FORCE_THRESHOLD.invokeExact(ptr());
+		} catch (Throwable t) {
+			throw new RocksDBException("getBlobGcForceThreshold failed", t);
+		}
+	}
+
+	/// Read-ahead size when reading blob files during compaction.
+	/// `0` disables read-ahead. Default: 0.
+	public Options setBlobCompactionReadaheadSize(MemorySize size) {
+		try {
+			MH_SET_BLOB_COMPACTION_READAHEAD_SIZE.invokeExact(ptr(), size.toBytes());
+			return this;
+		} catch (Throwable t) {
+			throw new RocksDBException("setBlobCompactionReadaheadSize failed", t);
+		}
+	}
+
+	public MemorySize getBlobCompactionReadaheadSize() {
+		try {
+			return MemorySize.ofBytes((long) MH_GET_BLOB_COMPACTION_READAHEAD_SIZE.invokeExact(ptr()));
+		} catch (Throwable t) {
+			throw new RocksDBException("getBlobCompactionReadaheadSize failed", t);
+		}
+	}
+
+	/// LSM level at which blob file separation begins. Keys in levels below this
+	/// threshold are stored inline. Default: 0 (all levels externalize blobs).
+	public Options setBlobFileStartingLevel(int level) {
+		try {
+			MH_SET_BLOB_FILE_STARTING_LEVEL.invokeExact(ptr(), level);
+			return this;
+		} catch (Throwable t) {
+			throw new RocksDBException("setBlobFileStartingLevel failed", t);
+		}
+	}
+
+	public int getBlobFileStartingLevel() {
+		try {
+			return (int) MH_GET_BLOB_FILE_STARTING_LEVEL.invokeExact(ptr());
+		} catch (Throwable t) {
+			throw new RocksDBException("getBlobFileStartingLevel failed", t);
+		}
+	}
+
+	/// Attaches a dedicated cache for blob values.
+	/// Ownership of the cache is shared; the cache must outlive this Options object.
+	public Options setBlobCache(Cache cache) {
+		try {
+			MH_SET_BLOB_CACHE.invokeExact(ptr(), cache.ptr());
+			return this;
+		} catch (Throwable t) {
+			throw new RocksDBException("setBlobCache failed", t);
+		}
+	}
+
+	/// Controls whether blob values are pre-populated into the blob cache on write.
+	/// Default: [PrepopulateBlobCache#DISABLE].
+	public Options setPrepopulateBlobCache(PrepopulateBlobCache mode) {
+		try {
+			MH_SET_PREPOPULATE_BLOB_CACHE.invokeExact(ptr(), mode.value);
+			return this;
+		} catch (Throwable t) {
+			throw new RocksDBException("setPrepopulateBlobCache failed", t);
+		}
+	}
+
+	public PrepopulateBlobCache getPrepopulateBlobCache() {
+		try {
+			return PrepopulateBlobCache.fromValue((int) MH_GET_PREPOPULATE_BLOB_CACHE.invokeExact(ptr()));
+		} catch (Throwable t) {
+			throw new RocksDBException("getPrepopulateBlobCache failed", t);
+		}
 	}
 
 	@Override

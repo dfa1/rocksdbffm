@@ -104,7 +104,7 @@ This project is currently experimental. The table below tracks parity with `rock
 | WAL Iterator               |   ❌    | Change log streaming                                                                                                                             |
 | Rate Limiter               |   ❌    | Write rate limiting                                                                                                                              |
 | Secondary DB               |   ✅    | `SecondaryDB`; `tryCatchUpWithPrimary`, get, iterator, snapshot, properties                                                                      |
-| Blob DB                    |   ❌    | `BlobBD`; properties                                                                                                                             |
+| Blob DB                    |   ✅    | `BlobDB`; blob options on `Options`; blob properties (`BLOB_STATS`, `NUM_BLOB_FILES`, …); `PrepopulateBlobCache`                                  |
 | Logger                     |   ❌    | Logger + callback                                                                                                                                |
 
 ## Design Choices

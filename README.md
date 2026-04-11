@@ -110,7 +110,7 @@ This project is currently experimental. The table below tracks parity with `rock
 | Custom Comparators         |   ❌    | custom comparators                                                                                                                               |
 | Advanced column family     |   ❌    |                                                                                                                                                  |
 | Advanced memtable config   |   ❌    |                                                                                                                                                  |
-| Perf Context               |   ❌    |                                                                                                                                                  |
+| Perf Context               |   ✅    | `PerfContext`, `PerfLevel`, `PerfMetric`; `setPerfLevel`, `reset`, `metric`, `report`                                                            |
 | Persistent Cache           |   🚫    | Not exposed in `rocksdb/c.h` — C++ only (`NewPersistentCache`); requires a custom C shim to bridge                                               |
 | Uint64AddOperator          |   ❌    | for merge                                                                                                                                        |
 | Background Jobs            |   ❌    |                                                                                                                                         |

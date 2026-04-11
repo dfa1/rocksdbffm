@@ -147,6 +147,7 @@ files so agents can quickly find the right file to extend.
 | Rate Limiter            | `RateLimiter.java`; `Options.setRateLimiter`                                                                              |
 | SST File Manager        | `SstFileManager.java`, `Env.java`; `Options.setSstFileManager`, `Options.setEnv`                                          |
 | Backup Engine           | `BackupEngine.java`, `BackupEngineOptions.java`, `RestoreOptions.java`, `BackupInfo.java`, `BackupId.java`                |
+| Perf Context            | `PerfContext.java`, `PerfLevel.java`, `PerfMetric.java`; thread-local; `setPerfLevel`, `reset`, `metric`, `report`       |
 
 ---
 

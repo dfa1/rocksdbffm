@@ -42,6 +42,8 @@ public final class Logger extends NativeObject {
 		void log(LogLevel level, String message);
 	}
 
+	private static final int STDERR_CALLBACK_ID = -1;
+
 	/// `rocksdb_logger_t* rocksdb_logger_create_stderr_logger(int log_level, const char* prefix);`
 	private static final MethodHandle MH_CREATE_STDERR;
 	/// `rocksdb_logger_t* rocksdb_logger_create_callback_logger(int log_level, void (*)(void* priv, unsigned lev, char* msg, size_t len), void* priv);`
@@ -79,7 +81,7 @@ public final class Logger extends NativeObject {
 			MethodHandle dispatchMH = MethodHandles.lookup().findStatic(Logger.class, "dispatch",
 					MethodType.methodType(void.class, MemorySegment.class, int.class, MemorySegment.class, long.class));
 			GLOBAL_STUB = Linker.nativeLinker().upcallStub(dispatchMH, CALLBACK_DESC, Arena.global());
-		} catch (NoSuchMethodException | IllegalAccessException e) {
+		} catch (ReflectiveOperationException e) {
 			throw new ExceptionInInitializerError(e);
 		}
 	}
@@ -100,7 +102,7 @@ public final class Logger extends NativeObject {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment prefixSeg = prefix != null ? arena.allocateFrom(prefix) : MemorySegment.NULL;
 			MemorySegment ptr = (MemorySegment) MH_CREATE_STDERR.invokeExact(level.value, prefixSeg);
-			return new Logger(ptr, -1L);
+			return new Logger(ptr, STDERR_CALLBACK_ID);
 		} catch (Throwable t) {
 			throw new RocksDBException("Logger.newStderrLogger failed", t);
 		}
@@ -130,7 +132,7 @@ public final class Logger extends NativeObject {
 
 	@Override
 	protected void tryClose(MemorySegment ptr) throws Throwable {
-		if (callbackId != -1L) {
+		if (callbackId != STDERR_CALLBACK_ID) {
 			// Unregister first so any concurrent native invocation after destroy becomes a no-op.
 			REGISTRY.remove(callbackId);
 		}
@@ -150,13 +152,29 @@ public final class Logger extends NativeObject {
 				message = "";
 			} else {
 				// msg arrives as a zero-size segment; reinterpret to give it bounds
+				// so it is not possible to use msg.getString(0), that works only for zero terminated strings
 				byte[] bytes = new byte[(int) len];
 				msg.reinterpret(len).asByteBuffer().get(bytes, 0, (int) len);
 				message = new String(bytes, 0, (int) len, StandardCharsets.UTF_8);
 			}
+			message = dropTrailingNewline(message);
 			cb.log(level, message);
-		} catch (Throwable ignored) {
-			// exceptions must not escape into native code
+		} catch (Throwable throwable) {
+			// exceptions must not escape into native code, but they must be shown to the user somehow
+			assert false; // fail at least the build
 		}
+	}
+
+	// sometimes callback is invoked with a message without \n but most of the time, with it
+	// normalize the message to always drop the last newline (so logging framework are happy)
+	private static String dropTrailingNewline(String message) {
+		if (message.isEmpty()) {
+			return message;
+		}
+		final int lastCharIndex = message.length() - 1;
+		if (message.charAt(lastCharIndex) == '\n') {
+			message = message.substring(0, lastCharIndex);
+		}
+		return message;
 	}
 }

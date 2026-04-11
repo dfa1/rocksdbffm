@@ -32,9 +32,10 @@ class LoggerTest {
 		List<String> messages = new ArrayList<>();
 		List<LogLevel> levels = new ArrayList<>();
 
-		try (var logger = Logger.newCallbackLogger(LogLevel.DEBUG, (level, msg) -> {
+		try (var logger = Logger.newCallbackLogger(LogLevel.INFO, (level, msg) -> {
 			levels.add(level);
 			messages.add(msg);
+			System.out.println(level + ": " + msg);
 		});
 		     var opts = Options.newOptions().setCreateIfMissing(true).setInfoLog(logger);
 		     var db = RocksDB.open(opts, dir)) {
@@ -77,6 +78,6 @@ class LoggerTest {
 		}
 
 		// Then — no crash; messages may or may not arrive after the upcall arena is closed
-		// (just verify it doesn't throw)
+		assertThat(messages).isEmpty();
 	}
 }

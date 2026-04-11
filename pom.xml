@@ -13,6 +13,7 @@
 		<module>native/osx-aarch64</module>
 		<module>native/linux-x86_64</module>
 		<module>core</module>
+		<module>integration-tests</module>
 		<module>benchmarks</module>
 	</modules>
 

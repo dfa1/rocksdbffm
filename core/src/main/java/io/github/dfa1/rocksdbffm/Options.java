@@ -95,6 +95,10 @@ public final class Options extends NativeObject {
 	private static final MethodHandle MH_GET_INFO_LOG_LEVEL;
 	/// `void rocksdb_options_set_ratelimiter(rocksdb_options_t* opt, rocksdb_ratelimiter_t* limiter);`
 	private static final MethodHandle MH_SET_RATELIMITER;
+	/// `void rocksdb_options_set_env(rocksdb_options_t*, rocksdb_env_t*);`
+	private static final MethodHandle MH_SET_ENV;
+	/// `void rocksdb_options_set_sst_file_manager(rocksdb_options_t* opt, rocksdb_sst_file_manager_t* sfm);`
+	private static final MethodHandle MH_SET_SST_FILE_MANAGER;
 
 	static {
 		MH_CREATE = NativeLibrary.lookup("rocksdb_options_create",
@@ -212,6 +216,12 @@ public final class Options extends NativeObject {
 				FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
 
 		MH_SET_RATELIMITER = NativeLibrary.lookup("rocksdb_options_set_ratelimiter",
+				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+		MH_SET_ENV = NativeLibrary.lookup("rocksdb_options_set_env",
+				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+		MH_SET_SST_FILE_MANAGER = NativeLibrary.lookup("rocksdb_options_set_sst_file_manager",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
 	}
@@ -580,6 +590,31 @@ public final class Options extends NativeObject {
 			return LogLevel.fromValue((int) MH_GET_INFO_LOG_LEVEL.invokeExact(ptr()));
 		} catch (Throwable t) {
 			throw new RocksDBException("getInfoLogLevel failed", t);
+		}
+	}
+
+	/// Sets the [Env] used for all file-system and threading operations.
+	///
+	/// The [Env] must remain open for the lifetime of the database.
+	/// No ownership transfer: both objects may be closed independently.
+	public Options setEnv(Env env) {
+		try {
+			MH_SET_ENV.invokeExact(ptr(), env.ptr());
+			return this;
+		} catch (Throwable t) {
+			throw new RocksDBException("setEnv failed", t);
+		}
+	}
+
+	/// Attaches an [SstFileManager] to track SST files and enforce disk-space limits.
+	///
+	/// No ownership transfer: both objects may be closed independently.
+	public Options setSstFileManager(SstFileManager sfm) {
+		try {
+			MH_SET_SST_FILE_MANAGER.invokeExact(ptr(), sfm.ptr());
+			return this;
+		} catch (Throwable t) {
+			throw new RocksDBException("setSstFileManager failed", t);
 		}
 	}
 

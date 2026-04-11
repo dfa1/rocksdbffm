@@ -144,6 +144,7 @@ files so agents can quickly find the right file to extend.
 | Secondary DB            | `SecondaryDB.java`                                                                                                        |
 | Blob DB                 | `BlobDB.java`; blob options in `Options.java`; `PrepopulateBlobCache.java`; `RocksDB.openWithBlobFiles`                   |
 | Rate Limiter            | `RateLimiter.java`; `Options.setRateLimiter`                                                                              |
+| SST File Manager        | `SstFileManager.java`, `Env.java`; `Options.setSstFileManager`, `Options.setEnv`                                          |
 
 ---
 

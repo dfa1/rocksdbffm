@@ -10,10 +10,10 @@ permissions:
 
 jobs:
   build:
-    # Use a matrix to run on both macOS and Linux
     strategy:
       matrix:
-        os: [macos-latest, ubuntu-latest]
+        # TODO: build on windows and linux too (to make sure the native library actually works)
+        os: [macos-latest]
 
     runs-on: ${{ matrix.os }}
 

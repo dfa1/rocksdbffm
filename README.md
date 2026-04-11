@@ -111,7 +111,7 @@ This project is currently experimental. The table below tracks parity with `rock
 | Advanced column family     |   ❌    |                                                                                                                                                  |
 | Advanced memtable config   |   ❌    |                                                                                                                                                  |
 | Perf Context               |   ❌    |                                                                                                                                                  |
-| Persistent Cache           |   ❌    |                                                                                                                                                  |
+| Persistent Cache           |   🚫    | Not exposed in `rocksdb/c.h` — C++ only (`NewPersistentCache`); requires a custom C shim to bridge                                               |
 | Uint64AddOperator          |   ❌    | for merge                                                                                                                                        |
 | Background Jobs            |   ❌    |                                                                                                                                         |
 

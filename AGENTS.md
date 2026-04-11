@@ -57,6 +57,7 @@ To ensure type safety and consistent units across the API:
   `MemorySize` type.
 - **Sequence Numbers:** Never use raw `long` for RocksDB sequence numbers. Always use the project's `SequenceNumber`
   type.
+- **BackupId:**: Never use raw uint32, use a wrapper Java type that hides this from the user.
 
 ### 3. API Surface Design
 

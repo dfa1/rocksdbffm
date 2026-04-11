@@ -92,7 +92,7 @@ This project is currently experimental. The table below tracks parity with `rock
 | Compression                |   ✅    | `CompressionType` enum (NO/Snappy/zlib/bz2/LZ4/LZ4HC/Xpress/Zstd); `Options.setCompression`; `CompressionType.getSupportedTypes()` runtime probe |
 | Column Families            |   ❌    | Key namespace isolation                                                                                                                          |
 | Merge                      |   ✅    | `merge` on `RocksDB` and `WriteBatch`                                                                                                            |
-| MergeOperator              |   ❌    | custom `MergeOperator` via FFM upcall stubs; built-in uint64 add                                                                                 |
+| MergeOperator              |   ❌    | custom `MergeOperator` via FFM upcall stubs                                                                                                      |
 | MultiGet                   |   ❌    | Bulk reads                                                                                                                                       |
 | DeleteRange                |   ✅    | Range tombstones; `deleteRange` on `RocksDB` and `WriteBatch`; all three access tiers                                                            |
 | Compaction control         |   ✅    | `compactRange` (all three tiers + `CompactOptions`), `suggestCompactRange`, `disableFileDeletions`, `enableFileDeletions`                        |
@@ -102,11 +102,19 @@ This project is currently experimental. The table below tracks parity with `rock
 | Optimistic Transactions    |   ✅    | `OptimisticTransactionDB`; conflict detection at commit; `OptimisticTransactionOptions`                                                          |
 | CompactionFilter           |   ❌    | Custom compaction logic                                                                                                                          |
 | WAL Iterator               |   ❌    | Change log streaming                                                                                                                             |
-| Rate Limiter               |   ✅    | `RateLimiter`; writes-only, reads-only, all-IO modes; auto-tuned variant; `Options.setRateLimiter`                                              |
+| Rate Limiter               |   ✅    | `RateLimiter`; writes-only, reads-only, all-IO modes; auto-tuned variant; `Options.setRateLimiter`                                               |
 | SST File Manager           |   ✅    | `SstFileManager`; disk-space limits, trash-deletion rate, compaction buffer; `Env`; `Options.setSstFileManager`, `Options.setEnv`                |
 | Secondary DB               |   ✅    | `SecondaryDB`; `tryCatchUpWithPrimary`, get, iterator, snapshot, properties                                                                      |
-| Blob DB                    |   ✅    | `BlobDB`; blob options on `Options`; blob properties (`BLOB_STATS`, `NUM_BLOB_FILES`, …); `PrepopulateBlobCache`                                  |
+| Blob DB                    |   ✅    | `BlobDB`; blob options on `Options`; blob properties (`BLOB_STATS`, `NUM_BLOB_FILES`, …); `PrepopulateBlobCache`                                 |
 | Logger                     |   ✅    | Logger + callback                                                                                                                                |
+| Custom Comparators         |   ❌    | custom comparators                                                                                                                               |
+| Advanced column family     |   ❌    |                                                                                                                                                  |
+| Advanced memtable config   |   ❌    |                                                                                                                                                  |
+| Perf Context               |   ❌    |                                                                                                                                                  |
+| Persistent Cache           |   ❌    |                                                                                                                                                  |
+| RestoreOptions             |   ❌    |                                                                                                                                                  |
+| Uint64AddOperator          |   ❌    | for merge                                                                                                                                        |
+| Background Jobs            |   ❌    |                                                                                                                                         |
 
 ## Design Choices
 

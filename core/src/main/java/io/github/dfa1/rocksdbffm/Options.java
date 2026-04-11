@@ -87,6 +87,12 @@ public final class Options extends NativeObject {
 	private static final MethodHandle MH_SET_PREPOPULATE_BLOB_CACHE;
 	/// `int rocksdb_options_get_prepopulate_blob_cache(rocksdb_options_t* opt);`
 	private static final MethodHandle MH_GET_PREPOPULATE_BLOB_CACHE;
+	/// `void rocksdb_options_set_info_log(rocksdb_options_t*, rocksdb_logger_t*);`
+	private static final MethodHandle MH_SET_INFO_LOG;
+	/// `void rocksdb_options_set_info_log_level(rocksdb_options_t*, int);`
+	private static final MethodHandle MH_SET_INFO_LOG_LEVEL;
+	/// `int rocksdb_options_get_info_log_level(rocksdb_options_t*);`
+	private static final MethodHandle MH_GET_INFO_LOG_LEVEL;
 
 	static {
 		MH_CREATE = NativeLibrary.lookup("rocksdb_options_create",
@@ -192,6 +198,15 @@ public final class Options extends NativeObject {
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
 
 		MH_GET_PREPOPULATE_BLOB_CACHE = NativeLibrary.lookup("rocksdb_options_get_prepopulate_blob_cache",
+				FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
+
+		MH_SET_INFO_LOG = NativeLibrary.lookup("rocksdb_options_set_info_log",
+				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+		MH_SET_INFO_LOG_LEVEL = NativeLibrary.lookup("rocksdb_options_set_info_log_level",
+				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
+
+		MH_GET_INFO_LOG_LEVEL = NativeLibrary.lookup("rocksdb_options_get_info_log_level",
 				FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
 
 	}
@@ -527,6 +542,39 @@ public final class Options extends NativeObject {
 			return PrepopulateBlobCache.fromValue((int) MH_GET_PREPOPULATE_BLOB_CACHE.invokeExact(ptr()));
 		} catch (Throwable t) {
 			throw new RocksDBException("getPrepopulateBlobCache failed", t);
+		}
+	}
+
+	// -----------------------------------------------------------------------
+	// Logging options
+	// -----------------------------------------------------------------------
+
+	/// Sets the logger for this DB. RocksDB holds a shared reference; it is safe
+	/// to close [Logger] after this call.
+	public Options setInfoLog(Logger logger) {
+		try {
+			MH_SET_INFO_LOG.invokeExact(ptr(), logger.ptr());
+			return this;
+		} catch (Throwable t) {
+			throw new RocksDBException("setInfoLog failed", t);
+		}
+	}
+
+	/// Sets the minimum log level. Messages below this level are suppressed.
+	public Options setInfoLogLevel(LogLevel level) {
+		try {
+			MH_SET_INFO_LOG_LEVEL.invokeExact(ptr(), level.value);
+			return this;
+		} catch (Throwable t) {
+			throw new RocksDBException("setInfoLogLevel failed", t);
+		}
+	}
+
+	public LogLevel getInfoLogLevel() {
+		try {
+			return LogLevel.fromValue((int) MH_GET_INFO_LOG_LEVEL.invokeExact(ptr()));
+		} catch (Throwable t) {
+			throw new RocksDBException("getInfoLogLevel failed", t);
 		}
 	}
 

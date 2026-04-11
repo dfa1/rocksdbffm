@@ -133,7 +133,8 @@ public final class ReadWriteDB extends NativeObject {
 		RocksDB.mergeBytes(ptr(), writeOpts.ptr(), key, value);
 	}
 
-	/// Zero-copy for direct [ByteBuffer]s.
+	/// Zero-copy for direct [ByteBuffer]s. Both buffers must be direct (`ByteBuffer.allocateDirect`);
+	/// heap buffers will throw [IllegalArgumentException].
 	public void merge(ByteBuffer key, ByteBuffer value) {
 		RocksDB.mergeBuffer(ptr(), writeOpts.ptr(), key, value);
 	}

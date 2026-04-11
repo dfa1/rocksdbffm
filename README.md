@@ -101,7 +101,7 @@ This project is currently experimental. The table below tracks parity with `rock
 | TTL DB                     |   ✅    | `openWithTtl(path, Duration)`; lazy expiry via compaction; full API available                                                                    |
 | Optimistic Transactions    |   ✅    | `OptimisticTransactionDB`; conflict detection at commit; `OptimisticTransactionOptions`                                                          |
 | CompactionFilter           |   ❌    | Custom compaction logic                                                                                                                          |
-| WAL Iterator               |   ❌    | Change log streaming                                                                                                                             |
+| WAL Iterator               |   ✅    | `WalIterator`, `WalBatchResult`; `getUpdatesSince(SequenceNumber)`, `getLatestSequenceNumber`; CDC/replication/auditing                          |
 | Rate Limiter               |   ✅    | `RateLimiter`; writes-only, reads-only, all-IO modes; auto-tuned variant; `Options.setRateLimiter`                                               |
 | SST File Manager           |   ✅    | `SstFileManager`; disk-space limits, trash-deletion rate, compaction buffer; `Env`; `Options.setSstFileManager`, `Options.setEnv`                |
 | Secondary DB               |   ✅    | `SecondaryDB`; `tryCatchUpWithPrimary`, get, iterator, snapshot, properties                                                                      |
@@ -112,7 +112,7 @@ This project is currently experimental. The table below tracks parity with `rock
 | Advanced memtable config   |   ❌    |                                                                                                                                                  |
 | Perf Context               |   ✅    | `PerfContext`, `PerfLevel`, `PerfMetric`; `setPerfLevel`, `reset`, `metric`, `report`                                                            |
 | Persistent Cache           |   🚫    | Not exposed in `rocksdb/c.h` — C++ only (`NewPersistentCache`); requires a custom C shim to bridge                                               |
-| Uint64AddOperator          |   ❌    | for merge                                                                                                                                        |
+| Uint64AddOperator          |   ✅    | `Options.setUInt64AddMergeOperator()`; built-in little-endian uint64 accumulator                                                                 |
 | Background Jobs            |   ❌    |                                                                                                                                         |
 
 ## Design Choices

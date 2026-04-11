@@ -101,7 +101,11 @@ checkError(err);
 For every new feature:
 
 1. Write unit tests in JUnit 5 using `@TempDir`.
-2. Follow the `// Given / // When / // Then` structure.
+2. **Always** follow the `// Given / // When / // Then` structure — every test, no exceptions.
+   - `// Given` sets up state.
+   - `// When` performs the action under test.
+   - `// Then` asserts the outcome.
+   - For tests with no meaningful setup, use `// Given` with a blank line or a comment explaining why there is none.
 3. **Run tests:** `mvn test`
 
 ### 2. Benchmark First

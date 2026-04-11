@@ -120,55 +120,76 @@ class BackgroundJobsTest {
 
 	@Test
 	void waitForCompactOptions_abortOnPause_roundTrips() {
+		// Given
 		try (var opts = WaitForCompactOptions.create()) {
 			assertThat(opts.isAbortOnPause()).isFalse();
 
+			// When
 			opts.setAbortOnPause(true);
+
+			// Then
 			assertThat(opts.isAbortOnPause()).isTrue();
 
+			// When
 			opts.setAbortOnPause(false);
+
+			// Then
 			assertThat(opts.isAbortOnPause()).isFalse();
 		}
 	}
 
 	@Test
 	void waitForCompactOptions_flush_roundTrips() {
+		// Given
 		try (var opts = WaitForCompactOptions.create()) {
 			assertThat(opts.isFlush()).isFalse();
 
+			// When
 			opts.setFlush(true);
+
+			// Then
 			assertThat(opts.isFlush()).isTrue();
 		}
 	}
 
 	@Test
 	void waitForCompactOptions_closeDb_roundTrips() {
+		// Given
 		try (var opts = WaitForCompactOptions.create()) {
 			assertThat(opts.isCloseDb()).isFalse();
 
+			// When
 			opts.setCloseDb(true);
+
+			// Then
 			assertThat(opts.isCloseDb()).isTrue();
 		}
 	}
 
 	@Test
 	void waitForCompactOptions_timeout_roundTrips() {
+		// Given
 		try (var opts = WaitForCompactOptions.create()) {
 			assertThat(opts.getTimeout()).isEqualTo(Duration.ZERO);
 
+			// When
 			opts.setTimeout(Duration.ofSeconds(10));
+
+			// Then
 			assertThat(opts.getTimeout()).isEqualTo(Duration.ofSeconds(10));
 		}
 	}
 
 	@Test
 	void waitForCompactOptions_chaining_setsAllFields() {
+		// Given / When
 		try (var opts = WaitForCompactOptions.create()
 				.setAbortOnPause(true)
 				.setFlush(true)
 				.setCloseDb(false)
 				.setTimeout(Duration.ofMillis(500))) {
 
+			// Then
 			assertThat(opts.isAbortOnPause()).isTrue();
 			assertThat(opts.isFlush()).isTrue();
 			assertThat(opts.isCloseDb()).isFalse();

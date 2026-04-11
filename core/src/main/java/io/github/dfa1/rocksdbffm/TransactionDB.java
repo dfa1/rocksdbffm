@@ -21,7 +21,7 @@ import java.util.OptionalLong;
 ///     }
 /// }
 /// ```
-public final class TransactionDB extends NativeObject {
+public final class TransactionDB extends NativeObject implements RocksDbHandle {
 
 	// -----------------------------------------------------------------------
 	// Method handles
@@ -29,6 +29,8 @@ public final class TransactionDB extends NativeObject {
 
 	/// `void rocksdb_transactiondb_close(rocksdb_transactiondb_t* txn_db);`
 	private static final MethodHandle MH_CLOSE;
+	/// `void rocksdb_transactiondb_close_base_db(rocksdb_t* base_db);`
+	private static final MethodHandle MH_CLOSE_BASE_DB;
 	/// `rocksdb_transaction_t* rocksdb_transaction_begin(rocksdb_transactiondb_t* txn_db, const rocksdb_writeoptions_t* write_options, const rocksdb_transaction_options_t* txn_options, rocksdb_transaction_t* old_txn);`
 	private static final MethodHandle MH_BEGIN;
 	/// `const rocksdb_snapshot_t* rocksdb_transactiondb_create_snapshot(rocksdb_transactiondb_t* txn_db);`
@@ -53,6 +55,9 @@ public final class TransactionDB extends NativeObject {
 
 	static {
 		MH_CLOSE = NativeLibrary.lookup("rocksdb_transactiondb_close",
+				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+
+		MH_CLOSE_BASE_DB = NativeLibrary.lookup("rocksdb_transactiondb_close_base_db",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
 		MH_BEGIN = NativeLibrary.lookup("rocksdb_transaction_begin",
@@ -101,11 +106,13 @@ public final class TransactionDB extends NativeObject {
 	// Instance state
 	// -----------------------------------------------------------------------
 
+	private final MemorySegment txnDb;   // rocksdb_transactiondb_t* — for begin/close/flush/etc.
 	private final WriteOptions writeOpts; // default write options for direct ops
 	private final ReadOptions readOpts;  // default read options for direct ops
 
-	TransactionDB(MemorySegment ptr, WriteOptions writeOpts, ReadOptions readOpts) {
-		super(ptr);
+	TransactionDB(MemorySegment txnDb, MemorySegment baseDb, WriteOptions writeOpts, ReadOptions readOpts) {
+		super(baseDb);  // NativeObject (and RocksDbHandle) exposes rocksdb_t* via ptr()
+		this.txnDb = txnDb;
 		this.writeOpts = writeOpts;
 		this.readOpts = readOpts;
 	}
@@ -119,7 +126,7 @@ public final class TransactionDB extends NativeObject {
 	public void flush(FlushOptions flushOptions) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
-			MH_FLUSH.invokeExact(ptr(), flushOptions.ptr(), err);
+			MH_FLUSH.invokeExact(txnDb, flushOptions.ptr(), err);
 			Native.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("flush failed", t);
@@ -132,7 +139,7 @@ public final class TransactionDB extends NativeObject {
 	public void flushWal(boolean sync) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
-			MH_FLUSH_WAL.invokeExact(ptr(), sync ? (byte) 1 : (byte) 0, err);
+			MH_FLUSH_WAL.invokeExact(txnDb, sync ? (byte) 1 : (byte) 0, err);
 			Native.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("flushWal failed", t);
@@ -147,7 +154,7 @@ public final class TransactionDB extends NativeObject {
 	/// The returned snapshot must be closed after use.
 	public Snapshot getSnapshot() {
 		try {
-			MemorySegment snapPtr = (MemorySegment) MH_CREATE_SNAPSHOT.invokeExact(ptr());
+			MemorySegment snapPtr = (MemorySegment) MH_CREATE_SNAPSHOT.invokeExact(txnDb);
 			return new Snapshot(ptr(), snapPtr);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("getSnapshot failed", t);
@@ -170,7 +177,7 @@ public final class TransactionDB extends NativeObject {
 	public Transaction beginTransaction(WriteOptions writeOptions, TransactionOptions txnOptions) {
 		try {
 			MemorySegment txnPtr = (MemorySegment) MH_BEGIN.invokeExact(
-					ptr(), writeOptions.ptr(), txnOptions.ptr(), MemorySegment.NULL);
+					txnDb, writeOptions.ptr(), txnOptions.ptr(), MemorySegment.NULL);
 			return new Transaction(txnPtr);
 		} catch (Throwable t) {
 			throw new RocksDBException("beginTransaction failed", t);
@@ -187,7 +194,7 @@ public final class TransactionDB extends NativeObject {
 			MemorySegment err = Native.errHolder(arena);
 			MemorySegment k = Native.toNative(arena, key);
 			MemorySegment v = Native.toNative(arena, value);
-			MH_PUT.invokeExact(ptr(), writeOpts.ptr(), k, (long) key.length, v, (long) value.length, err);
+			MH_PUT.invokeExact(txnDb, writeOpts.ptr(), k, (long) key.length, v, (long) value.length, err);
 			Native.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("put failed", t);
@@ -198,7 +205,7 @@ public final class TransactionDB extends NativeObject {
 	public void put(java.nio.ByteBuffer key, java.nio.ByteBuffer value) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
-			MH_PUT.invokeExact(ptr(), writeOpts.ptr(),
+			MH_PUT.invokeExact(txnDb, writeOpts.ptr(),
 					MemorySegment.ofBuffer(key), (long) key.remaining(),
 					MemorySegment.ofBuffer(value), (long) value.remaining(),
 					err);
@@ -212,7 +219,7 @@ public final class TransactionDB extends NativeObject {
 	public void put(MemorySegment key, MemorySegment value) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
-			MH_PUT.invokeExact(ptr(), writeOpts.ptr(), key, key.byteSize(), value, value.byteSize(), err);
+			MH_PUT.invokeExact(txnDb, writeOpts.ptr(), key, key.byteSize(), value, value.byteSize(), err);
 			Native.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("put failed", t);
@@ -227,7 +234,7 @@ public final class TransactionDB extends NativeObject {
 			MemorySegment valLenSeg = arena.allocate(ValueLayout.JAVA_LONG);
 
 			MemorySegment valPtr = (MemorySegment) MH_GET.invokeExact(
-					ptr(), readOptions.ptr(), k, (long) key.length, valLenSeg, err);
+					txnDb, readOptions.ptr(), k, (long) key.length, valLenSeg, err);
 
 			Native.checkError(err);
 
@@ -252,7 +259,7 @@ public final class TransactionDB extends NativeObject {
 			MemorySegment valLenSeg = arena.allocate(ValueLayout.JAVA_LONG);
 
 			MemorySegment valPtr = (MemorySegment) MH_GET.invokeExact(
-					ptr(), readOpts.ptr(), k, (long) key.length, valLenSeg, err);
+					txnDb, readOpts.ptr(), k, (long) key.length, valLenSeg, err);
 
 			Native.checkError(err);
 
@@ -276,7 +283,7 @@ public final class TransactionDB extends NativeObject {
 			MemorySegment err = Native.errHolder(arena);
 			MemorySegment valLenSeg = arena.allocate(ValueLayout.JAVA_LONG);
 			MemorySegment valPtr = (MemorySegment) MH_GET.invokeExact(
-					ptr(), readOpts.ptr(),
+					txnDb, readOpts.ptr(),
 					MemorySegment.ofBuffer(key), (long) key.remaining(),
 					valLenSeg, err);
 			Native.checkError(err);
@@ -301,7 +308,7 @@ public final class TransactionDB extends NativeObject {
 			MemorySegment err = Native.errHolder(arena);
 			MemorySegment valLenSeg = arena.allocate(ValueLayout.JAVA_LONG);
 			MemorySegment valPtr = (MemorySegment) MH_GET.invokeExact(
-					ptr(), readOpts.ptr(), key, key.byteSize(), valLenSeg, err);
+					txnDb, readOpts.ptr(), key, key.byteSize(), valLenSeg, err);
 			Native.checkError(err);
 			if (MemorySegment.NULL.equals(valPtr)) {
 				return -1L;
@@ -323,7 +330,7 @@ public final class TransactionDB extends NativeObject {
 	public Optional<String> getProperty(Property property) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment propSeg = arena.allocateFrom(property.propertyName());
-			MemorySegment result = (MemorySegment) MH_PROPERTY_VALUE.invokeExact(ptr(), propSeg);
+			MemorySegment result = (MemorySegment) MH_PROPERTY_VALUE.invokeExact(txnDb, propSeg);
 			if (MemorySegment.NULL.equals(result)) {
 				return Optional.empty();
 			}
@@ -340,7 +347,7 @@ public final class TransactionDB extends NativeObject {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment propSeg = arena.allocateFrom(property.propertyName());
 			MemorySegment out = arena.allocate(ValueLayout.JAVA_LONG);
-			int rc = (int) MH_PROPERTY_INT.invokeExact(ptr(), propSeg, out);
+			int rc = (int) MH_PROPERTY_INT.invokeExact(txnDb, propSeg, out);
 			if (rc != 0) {
 				return OptionalLong.empty();
 			}
@@ -355,7 +362,7 @@ public final class TransactionDB extends NativeObject {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
 			MemorySegment k = Native.toNative(arena, key);
-			MH_DELETE.invokeExact(ptr(), writeOpts.ptr(), k, (long) key.length, err);
+			MH_DELETE.invokeExact(txnDb, writeOpts.ptr(), k, (long) key.length, err);
 			Native.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("delete failed", t);
@@ -366,7 +373,7 @@ public final class TransactionDB extends NativeObject {
 	public void delete(java.nio.ByteBuffer key) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
-			MH_DELETE.invokeExact(ptr(), writeOpts.ptr(),
+			MH_DELETE.invokeExact(txnDb, writeOpts.ptr(),
 					MemorySegment.ofBuffer(key), (long) key.remaining(), err);
 			Native.checkError(err);
 		} catch (Throwable t) {
@@ -378,7 +385,7 @@ public final class TransactionDB extends NativeObject {
 	public void delete(MemorySegment key) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = Native.errHolder(arena);
-			MH_DELETE.invokeExact(ptr(), writeOpts.ptr(), key, key.byteSize(), err);
+			MH_DELETE.invokeExact(txnDb, writeOpts.ptr(), key, key.byteSize(), err);
 			Native.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("delete failed", t);
@@ -393,7 +400,8 @@ public final class TransactionDB extends NativeObject {
 	protected void tryClose(MemorySegment ptr) throws Throwable {
 		writeOpts.close();
 		readOpts.close();
-		MH_CLOSE.invokeExact(ptr);
+		MH_CLOSE_BASE_DB.invokeExact(ptr);
+		MH_CLOSE.invokeExact(txnDb);
 	}
 
 }

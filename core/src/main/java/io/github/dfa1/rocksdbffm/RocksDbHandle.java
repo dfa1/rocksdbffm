@@ -4,13 +4,10 @@ import java.lang.foreign.MemorySegment;
 
 /// Marker for types backed by a native `rocksdb_t*` pointer.
 ///
-/// Sealed to the types whose [#ptr()] returns a `rocksdb_t*`:
-/// [ReadWriteDB], [TtlDB], [ReadOnlyDB], [SecondaryDB], and
-/// [OptimisticTransactionDB] (which exposes its base `rocksdb_t*` obtained
-/// via `rocksdb_optimistictransactiondb_get_base_db`).
-///
-/// [TransactionDB] is excluded — it uses `rocksdb_transactiondb_t*` with a
-/// separate function namespace and no shared `rocksdb_t*` helpers.
-public sealed interface RocksDbHandle permits ReadWriteDB, TtlDB, ReadOnlyDB, SecondaryDB, OptimisticTransactionDB {
+/// All permitted types expose a `rocksdb_t*` via [#ptr()]:
+/// - [ReadWriteDB], [TtlDB], [ReadOnlyDB], [SecondaryDB] — opened directly as `rocksdb_t*`
+/// - [TransactionDB] — base `rocksdb_t*` via `rocksdb_transactiondb_get_base_db`
+/// - [OptimisticTransactionDB] — base `rocksdb_t*` via `rocksdb_optimistictransactiondb_get_base_db`
+public sealed interface RocksDbHandle permits ReadWriteDB, TtlDB, ReadOnlyDB, SecondaryDB, TransactionDB, OptimisticTransactionDB {
 	MemorySegment ptr();
 }

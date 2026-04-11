@@ -46,6 +46,8 @@ public final class RocksDB {
 	private static final MethodHandle MH_OPEN_TRANSACTION;
 	/// `rocksdb_optimistictransactiondb_t* rocksdb_optimistictransactiondb_open(const rocksdb_options_t* options, const char* name, char** errptr);`
 	private static final MethodHandle MH_OPEN_OPTIMISTIC;
+	/// `rocksdb_t* rocksdb_transactiondb_get_base_db(rocksdb_transactiondb_t* txn_db);`
+	private static final MethodHandle MH_GET_BASE_DB_TXN;
 	/// `rocksdb_t* rocksdb_optimistictransactiondb_get_base_db(rocksdb_optimistictransactiondb_t* otxn_db);`
 	private static final MethodHandle MH_GET_BASE_DB;
 	// -----------------------------------------------------------------------
@@ -125,6 +127,9 @@ public final class RocksDB {
 		MH_OPEN_OPTIMISTIC = NativeLibrary.lookup("rocksdb_optimistictransactiondb_open",
 				FunctionDescriptor.of(ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+		MH_GET_BASE_DB_TXN = NativeLibrary.lookup("rocksdb_transactiondb_get_base_db",
+				FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
 		MH_GET_BASE_DB = NativeLibrary.lookup("rocksdb_optimistictransactiondb_get_base_db",
 				FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
@@ -355,7 +360,8 @@ public final class RocksDB {
 					options.ptr(), txnDbOptions.ptr(), pathSeg, err);
 			Native.checkError(err);
 
-			return new TransactionDB(ptr, WriteOptions.newWriteOptions(), ReadOptions.newReadOptions());
+			MemorySegment baseDb = (MemorySegment) MH_GET_BASE_DB_TXN.invokeExact(ptr);
+			return new TransactionDB(ptr, baseDb, WriteOptions.newWriteOptions(), ReadOptions.newReadOptions());
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("openTransaction failed", t);
 		}

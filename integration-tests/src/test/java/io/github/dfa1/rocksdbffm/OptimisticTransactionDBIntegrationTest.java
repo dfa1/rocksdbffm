@@ -8,7 +8,7 @@ import java.nio.file.Path;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-class IntegrationTestOptimisticTransactionDB {
+class OptimisticTransactionDBIntegrationTest {
 
 	@Test
 	void commit_makesChangesVisible(@TempDir Path dir) {

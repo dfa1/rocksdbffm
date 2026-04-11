@@ -52,7 +52,7 @@
 				<version>3.5.5</version>
 				<configuration>
 					<includes>
-						<include>**/IntegrationTest*.java</include>
+						<include>**/*IntegrationTest.java</include>
 					</includes>
 					<argLine>--enable-native-access=ALL-UNNAMED</argLine>
 				</configuration>

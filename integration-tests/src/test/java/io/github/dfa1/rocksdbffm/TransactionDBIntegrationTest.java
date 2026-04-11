@@ -7,7 +7,7 @@ import java.nio.file.Path;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class IntegrationTestTransactionDB {
+class TransactionDBIntegrationTest {
 
 	private static TransactionDB openDb(Path path) {
 		try (var opts = Options.newOptions().setCreateIfMissing(true);

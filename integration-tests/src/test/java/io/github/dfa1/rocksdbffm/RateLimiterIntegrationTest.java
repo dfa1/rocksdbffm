@@ -7,7 +7,7 @@ import java.nio.file.Path;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class IntegrationTestRateLimiter {
+class RateLimiterIntegrationTest {
 
 	@Test
 	void openDbWithRateLimiter(@TempDir Path dir) {

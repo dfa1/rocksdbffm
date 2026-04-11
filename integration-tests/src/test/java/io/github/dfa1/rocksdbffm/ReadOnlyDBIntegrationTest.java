@@ -9,7 +9,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class IntegrationTestReadOnlyDB {
+class ReadOnlyDBIntegrationTest {
 
 	@Test
 	void readsDataWrittenByPrimary(@TempDir Path dir) {

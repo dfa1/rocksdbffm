@@ -8,7 +8,7 @@ import java.time.Duration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class IntegrationTestTtlDB {
+class TtlDBIntegrationTest {
 
 	@Test
 	void putGet_withinTtl(@TempDir Path dir) {

@@ -7,7 +7,7 @@ import java.nio.file.Path;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class IntegrationTestSstFileManager {
+class SstFileManagerIntegrationTest {
 
 	@Test
 	void openDbWithSstFileManager(@TempDir Path dir) {

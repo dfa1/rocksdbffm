@@ -9,7 +9,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class IntegrationTestReadWriteDB {
+class ReadWriteDBIntegrationTest {
 
 	@Test
 	void putGetDelete(@TempDir Path dir) {

@@ -7,7 +7,7 @@ import java.nio.file.Path;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class IntegrationTestSecondaryDB {
+class SecondaryDBIntegrationTest {
 
 	@Test
 	void catchUp_seesInitialPrimaryWrites(

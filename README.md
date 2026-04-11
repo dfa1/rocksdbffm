@@ -102,7 +102,7 @@ This project is currently experimental. The table below tracks parity with `rock
 | Optimistic Transactions    |   ✅    | `OptimisticTransactionDB`; conflict detection at commit; `OptimisticTransactionOptions`                                                          |
 | CompactionFilter           |   ❌    | Custom compaction logic                                                                                                                          |
 | WAL Iterator               |   ❌    | Change log streaming                                                                                                                             |
-| Rate Limiter               |   ❌    | Write rate limiting                                                                                                                              |
+| Rate Limiter               |   ✅    | `RateLimiter`; writes-only, reads-only, all-IO modes; auto-tuned variant; `Options.setRateLimiter`                                              |
 | Secondary DB               |   ✅    | `SecondaryDB`; `tryCatchUpWithPrimary`, get, iterator, snapshot, properties                                                                      |
 | Blob DB                    |   ✅    | `BlobDB`; blob options on `Options`; blob properties (`BLOB_STATS`, `NUM_BLOB_FILES`, …); `PrepopulateBlobCache`                                  |
 | Logger                     |   ✅    | Logger + callback                                                                                                                                |

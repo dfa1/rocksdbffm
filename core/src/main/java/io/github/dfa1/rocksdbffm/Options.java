@@ -93,6 +93,8 @@ public final class Options extends NativeObject {
 	private static final MethodHandle MH_SET_INFO_LOG_LEVEL;
 	/// `int rocksdb_options_get_info_log_level(rocksdb_options_t*);`
 	private static final MethodHandle MH_GET_INFO_LOG_LEVEL;
+	/// `void rocksdb_options_set_ratelimiter(rocksdb_options_t* opt, rocksdb_ratelimiter_t* limiter);`
+	private static final MethodHandle MH_SET_RATELIMITER;
 
 	static {
 		MH_CREATE = NativeLibrary.lookup("rocksdb_options_create",
@@ -208,6 +210,9 @@ public final class Options extends NativeObject {
 
 		MH_GET_INFO_LOG_LEVEL = NativeLibrary.lookup("rocksdb_options_get_info_log_level",
 				FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
+
+		MH_SET_RATELIMITER = NativeLibrary.lookup("rocksdb_options_set_ratelimiter",
+				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
 	}
 
@@ -575,6 +580,19 @@ public final class Options extends NativeObject {
 			return LogLevel.fromValue((int) MH_GET_INFO_LOG_LEVEL.invokeExact(ptr()));
 		} catch (Throwable t) {
 			throw new RocksDBException("getInfoLogLevel failed", t);
+		}
+	}
+
+	/// Attaches a [RateLimiter] to throttle compaction and flush I/O.
+	///
+	/// The rate limiter uses shared ownership: this call does not transfer
+	/// ownership — both objects may be closed independently.
+	public Options setRateLimiter(RateLimiter rateLimiter) {
+		try {
+			MH_SET_RATELIMITER.invokeExact(ptr(), rateLimiter.ptr());
+			return this;
+		} catch (Throwable t) {
+			throw new RocksDBException("setRateLimiter failed", t);
 		}
 	}
 

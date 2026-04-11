@@ -143,6 +143,7 @@ files so agents can quickly find the right file to extend.
 | Compaction control      | `CompactOptions.java`; `RocksDB.compactRange`, `suggestCompactRange`, `disableFileDeletions`, `enableFileDeletions`       |
 | Secondary DB            | `SecondaryDB.java`                                                                                                        |
 | Blob DB                 | `BlobDB.java`; blob options in `Options.java`; `PrepopulateBlobCache.java`; `RocksDB.openWithBlobFiles`                   |
+| Rate Limiter            | `RateLimiter.java`; `Options.setRateLimiter`                                                                              |
 
 ---
 

@@ -19,7 +19,7 @@ import java.util.Set;
 ///     byte[] value = db.get("key".getBytes());
 /// }
 /// ```
-public final class ReadWriteDB extends NativeObject implements RocksDbHandle {
+public final class ReadWriteDB extends NativeObject {
 
 	private final WriteOptions writeOpts;
 	private final ReadOptions readOpts;

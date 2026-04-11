@@ -14,7 +14,7 @@ import java.util.OptionalLong;
 ///     byte[] value = db.get("key".getBytes());
 /// }
 /// ```
-public final class ReadOnlyDB extends NativeObject implements RocksDbHandle {
+public final class ReadOnlyDB extends NativeObject {
 
 	private final ReadOptions readOpts;
 

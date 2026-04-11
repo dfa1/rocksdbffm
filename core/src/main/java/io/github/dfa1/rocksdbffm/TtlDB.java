@@ -22,7 +22,7 @@ import java.util.OptionalLong;
 ///     byte[] value = db.get("key".getBytes());
 /// }
 /// ```
-public final class TtlDB extends NativeObject implements RocksDbHandle {
+public final class TtlDB extends NativeObject {
 
 	private final WriteOptions writeOpts;
 	private final ReadOptions readOpts;

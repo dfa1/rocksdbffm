@@ -103,6 +103,8 @@ This project is currently experimental. The table below tracks parity with `rock
 | WAL Iterator               |   ❌    | Change log streaming                                                                                                                             |
 | Rate Limiter               |   ❌    | Write rate limiting                                                                                                                              |
 | Secondary DB               |   ✅    | `SecondaryDB`; `tryCatchUpWithPrimary`, get, iterator, snapshot, properties                                                                      |
+| Blob DB                    |   ❌    | `BlobBD`; properties                                                                                                                             |
+| Logger                     |   ❌    | Logger + callback                                                                                                                                |
 
 ## Design Choices
 

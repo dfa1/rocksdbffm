@@ -27,7 +27,7 @@ import java.util.OptionalLong;
 ///     }
 /// }
 /// ```
-public final class OptimisticTransactionDB extends NativeObject implements RocksDbHandle {
+public final class OptimisticTransactionDB extends NativeObject {
 
 	// -----------------------------------------------------------------------
 	// Method handles unique to OptimisticTransactionDB
@@ -57,14 +57,14 @@ public final class OptimisticTransactionDB extends NativeObject implements Rocks
 	// Instance state
 	// -----------------------------------------------------------------------
 
-	private final MemorySegment otxnDb;    // rocksdb_optimistictransactiondb_t* — for begin/close
+	private final MemorySegment baseDb;    // rocksdb_t* — for direct ops via shared helpers
 	private final WriteOptions writeOpts;
 	private final ReadOptions readOpts;
 
-	OptimisticTransactionDB(MemorySegment otxnDb, MemorySegment baseDb,
+	OptimisticTransactionDB(MemorySegment ptr, MemorySegment baseDb,
 	                        WriteOptions writeOpts, ReadOptions readOpts) {
-		super(baseDb);  // NativeObject (and RocksDbHandle) exposes rocksdb_t* via ptr()
-		this.otxnDb = otxnDb;
+		super(ptr);
+		this.baseDb = baseDb;
 		this.writeOpts = writeOpts;
 		this.readOpts = readOpts;
 	}
@@ -86,7 +86,7 @@ public final class OptimisticTransactionDB extends NativeObject implements Rocks
 	public Transaction beginTransaction(WriteOptions writeOptions, OptimisticTransactionOptions txnOptions) {
 		try {
 			MemorySegment txnPtr = (MemorySegment) MH_BEGIN.invokeExact(
-					otxnDb, writeOptions.ptr(), txnOptions.ptr(), MemorySegment.NULL);
+					ptr(), writeOptions.ptr(), txnOptions.ptr(), MemorySegment.NULL);
 			return new Transaction(txnPtr);
 		} catch (Throwable t) {
 			throw new RocksDBException("beginTransaction failed", t);
@@ -99,19 +99,19 @@ public final class OptimisticTransactionDB extends NativeObject implements Rocks
 
 	/// Direct put, bypassing any active transaction. Slow path: allocates native memory.
 	public void put(byte[] key, byte[] value) {
-		RocksDB.putBytes(ptr(), writeOpts.ptr(), key, value);
+		RocksDB.putBytes(baseDb, writeOpts.ptr(), key, value);
 	}
 
 	/// Zero-copy put: wraps the direct buffers' native memory without heap→native copy.
 	public void put(ByteBuffer key, ByteBuffer value) {
-		RocksDB.putSegment(ptr(), writeOpts.ptr(),
+		RocksDB.putSegment(baseDb, writeOpts.ptr(),
 				MemorySegment.ofBuffer(key), key.remaining(),
 				MemorySegment.ofBuffer(value), value.remaining());
 	}
 
 	/// Zero-copy put: caller supplies pre-allocated native segments.
 	public void put(MemorySegment key, MemorySegment value) {
-		RocksDB.putSegment(ptr(), writeOpts.ptr(), key, key.byteSize(), value, value.byteSize());
+		RocksDB.putSegment(baseDb, writeOpts.ptr(), key, key.byteSize(), value, value.byteSize());
 	}
 
 	// -----------------------------------------------------------------------
@@ -121,25 +121,25 @@ public final class OptimisticTransactionDB extends NativeObject implements Rocks
 	/// Direct get, reading committed data only. Returns `null` if not found.
 	/// Uses PinnableSlice to avoid an intermediate copy from the block cache.
 	public byte[] get(byte[] key) {
-		return RocksDB.getBytes(ptr(), readOpts.ptr(), key);
+		return RocksDB.getBytes(baseDb, readOpts.ptr(), key);
 	}
 
 	/// Direct get with explicit [ReadOptions], e.g. for snapshot-pinned reads. Returns `null` if not found.
 	public byte[] get(ReadOptions readOptions, byte[] key) {
-		return RocksDB.getBytes(ptr(), readOptions.ptr(), key);
+		return RocksDB.getBytes(baseDb, readOptions.ptr(), key);
 	}
 
 	/// Single-copy get via PinnableSlice + direct output [ByteBuffer].
 	/// Returns the actual value length, or -1 if not found.
 	public int get(ByteBuffer key, ByteBuffer value) {
-		return RocksDB.getIntoBuffer(ptr(), readOpts.ptr(),
+		return RocksDB.getIntoBuffer(baseDb, readOpts.ptr(),
 				MemorySegment.ofBuffer(key), key.remaining(), value);
 	}
 
 	/// Zero-copy get via PinnableSlice into a caller-supplied native segment.
 	/// Returns the actual value length.
 	public long get(MemorySegment key, MemorySegment value) {
-		return RocksDB.getIntoSegment(ptr(), readOpts.ptr(), key, key.byteSize(), value);
+		return RocksDB.getIntoSegment(baseDb, readOpts.ptr(), key, key.byteSize(), value);
 	}
 
 	// -----------------------------------------------------------------------
@@ -148,17 +148,17 @@ public final class OptimisticTransactionDB extends NativeObject implements Rocks
 
 	/// Direct delete, bypassing any active transaction. Slow path.
 	public void delete(byte[] key) {
-		RocksDB.deleteBytes(ptr(), writeOpts.ptr(), key);
+		RocksDB.deleteBytes(baseDb, writeOpts.ptr(), key);
 	}
 
 	/// Zero-copy for direct [ByteBuffer]s.
 	public void delete(ByteBuffer key) {
-		RocksDB.deleteSegment(ptr(), writeOpts.ptr(), MemorySegment.ofBuffer(key), key.remaining());
+		RocksDB.deleteSegment(baseDb, writeOpts.ptr(), MemorySegment.ofBuffer(key), key.remaining());
 	}
 
 	/// Zero-copy native-first path.
 	public void delete(MemorySegment key) {
-		RocksDB.deleteSegment(ptr(), writeOpts.ptr(), key, key.byteSize());
+		RocksDB.deleteSegment(baseDb, writeOpts.ptr(), key, key.byteSize());
 	}
 
 	// -----------------------------------------------------------------------
@@ -167,12 +167,12 @@ public final class OptimisticTransactionDB extends NativeObject implements Rocks
 
 	/// Returns a new iterator using the database's default read options.
 	public RocksIterator newIterator() {
-		return RocksIterator.create(ptr(), readOpts.ptr());
+		return RocksIterator.create(baseDb, readOpts.ptr());
 	}
 
 	/// Returns a new iterator using the supplied [ReadOptions].
 	public RocksIterator newIterator(ReadOptions readOptions) {
-		return RocksIterator.create(ptr(), readOptions.ptr());
+		return RocksIterator.create(baseDb, readOptions.ptr());
 	}
 
 	// -----------------------------------------------------------------------
@@ -182,7 +182,7 @@ public final class OptimisticTransactionDB extends NativeObject implements Rocks
 	/// Creates a snapshot of the current DB state.
 	/// The returned snapshot must be closed after use.
 	public Snapshot getSnapshot() {
-		return RocksDB.createSnapshot(ptr());
+		return RocksDB.createSnapshot(baseDb);
 	}
 
 	// -----------------------------------------------------------------------
@@ -191,14 +191,14 @@ public final class OptimisticTransactionDB extends NativeObject implements Rocks
 
 	/// Flushes all memtable data to SST files on disk.
 	public void flush(FlushOptions flushOptions) {
-		RocksDB.flush(ptr(), flushOptions);
+		RocksDB.flush(baseDb, flushOptions);
 	}
 
 	/// Flushes the WAL (write-ahead log) to disk.
 	///
 	/// @param sync if `true`, performs an `fsync` after writing
 	public void flushWal(boolean sync) {
-		RocksDB.flushWal(ptr(), sync);
+		RocksDB.flushWal(baseDb, sync);
 	}
 
 	// -----------------------------------------------------------------------
@@ -207,12 +207,12 @@ public final class OptimisticTransactionDB extends NativeObject implements Rocks
 
 	/// Returns the value of a DB property as a string, or [Optional#empty()] if not supported.
 	public Optional<String> getProperty(Property property) {
-		return RocksDB.getProperty(ptr(), property);
+		return RocksDB.getProperty(baseDb, property);
 	}
 
 	/// Returns the value of a numeric DB property, or [OptionalLong#empty()] if not supported.
 	public OptionalLong getLongProperty(Property property) {
-		return RocksDB.getLongProperty(ptr(), property);
+		return RocksDB.getLongProperty(baseDb, property);
 	}
 
 	// -----------------------------------------------------------------------
@@ -223,7 +223,7 @@ public final class OptimisticTransactionDB extends NativeObject implements Rocks
 	protected void tryClose(MemorySegment ptr) throws Throwable {
 		writeOpts.close();
 		readOpts.close();
-		MH_CLOSE_BASE_DB.invokeExact(ptr);
-		MH_CLOSE.invokeExact(otxnDb);
+		MH_CLOSE_BASE_DB.invokeExact(baseDb);
+		MH_CLOSE.invokeExact(ptr);
 	}
 }

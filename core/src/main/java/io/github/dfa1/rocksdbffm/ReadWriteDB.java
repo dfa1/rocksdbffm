@@ -125,26 +125,6 @@ public final class ReadWriteDB extends NativeObject {
 	}
 
 	// -----------------------------------------------------------------------
-	// Merge
-	// -----------------------------------------------------------------------
-
-	/// Applies a merge operand to `key`. Slow path: copies key/value.
-	public void merge(byte[] key, byte[] value) {
-		RocksDB.mergeBytes(ptr(), writeOpts.ptr(), key, value);
-	}
-
-	/// Zero-copy for direct [ByteBuffer]s. Both buffers must be direct (`ByteBuffer.allocateDirect`);
-	/// heap buffers will throw [IllegalArgumentException].
-	public void merge(ByteBuffer key, ByteBuffer value) {
-		RocksDB.mergeBuffer(ptr(), writeOpts.ptr(), key, value);
-	}
-
-	/// Zero-copy native-first path.
-	public void merge(MemorySegment key, MemorySegment value) {
-		RocksDB.mergeSegment(ptr(), writeOpts.ptr(), key, value);
-	}
-
-	// -----------------------------------------------------------------------
 	// KeyMayExist (Bloom filter check)
 	// -----------------------------------------------------------------------
 

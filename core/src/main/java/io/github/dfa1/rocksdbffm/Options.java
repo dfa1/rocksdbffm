@@ -99,9 +99,6 @@ public final class Options extends NativeObject {
 	private static final MethodHandle MH_SET_ENV;
 	/// `void rocksdb_options_set_sst_file_manager(rocksdb_options_t* opt, rocksdb_sst_file_manager_t* sfm);`
 	private static final MethodHandle MH_SET_SST_FILE_MANAGER;
-	/// `void rocksdb_options_set_uint64add_merge_operator(rocksdb_options_t*);`
-	private static final MethodHandle MH_SET_UINT64ADD_MERGE_OPERATOR;
-
 	static {
 		MH_CREATE = NativeLibrary.lookup("rocksdb_options_create",
 				FunctionDescriptor.of(ValueLayout.ADDRESS));
@@ -225,9 +222,6 @@ public final class Options extends NativeObject {
 
 		MH_SET_SST_FILE_MANAGER = NativeLibrary.lookup("rocksdb_options_set_sst_file_manager",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-
-		MH_SET_UINT64ADD_MERGE_OPERATOR = NativeLibrary.lookup("rocksdb_options_set_uint64add_merge_operator",
-				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
 	}
 
@@ -633,19 +627,6 @@ public final class Options extends NativeObject {
 			return this;
 		} catch (Throwable t) {
 			throw new RocksDBException("setRateLimiter failed", t);
-		}
-	}
-
-	/// Configures the built-in UInt64Add merge operator.
-	///
-	/// Values are treated as little-endian `uint64_t`; merge operands are summed into
-	/// the base value. Useful for counters and accumulators.
-	public Options setUInt64AddMergeOperator() {
-		try {
-			MH_SET_UINT64ADD_MERGE_OPERATOR.invokeExact(ptr());
-			return this;
-		} catch (Throwable t) {
-			throw new RocksDBException("setUInt64AddMergeOperator failed", t);
 		}
 	}
 

@@ -43,8 +43,6 @@ public final class SstFileWriter extends NativeObject {
 	private static final MethodHandle MH_DELETE;
 	/// `void rocksdb_sstfilewriter_delete_range(rocksdb_sstfilewriter_t* writer, const char* begin_key, size_t begin_keylen, const char* end_key, size_t end_keylen, char** errptr);`
 	private static final MethodHandle MH_DELETE_RANGE;
-	/// `void rocksdb_sstfilewriter_merge(rocksdb_sstfilewriter_t* writer, const char* key, size_t keylen, const char* val, size_t vallen, char** errptr);`
-	private static final MethodHandle MH_MERGE;
 	/// `void rocksdb_sstfilewriter_finish(rocksdb_sstfilewriter_t* writer, char** errptr);`
 	private static final MethodHandle MH_FINISH;
 	/// `void rocksdb_sstfilewriter_file_size(rocksdb_sstfilewriter_t* writer, uint64_t* file_size);`
@@ -82,13 +80,6 @@ public final class SstFileWriter extends NativeObject {
 						ValueLayout.ADDRESS));
 
 		MH_DELETE_RANGE = NativeLibrary.lookup("rocksdb_sstfilewriter_delete_range",
-				FunctionDescriptor.ofVoid(
-						ValueLayout.ADDRESS,
-						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
-						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
-						ValueLayout.ADDRESS));
-
-		MH_MERGE = NativeLibrary.lookup("rocksdb_sstfilewriter_merge",
 				FunctionDescriptor.ofVoid(
 						ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
@@ -200,22 +191,6 @@ public final class SstFileWriter extends NativeObject {
 			Native.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("sstfilewriter deleteRange failed", t);
-		}
-	}
-
-	/// Appends a merge entry. Keys must be added in strictly ascending order.
-	public void merge(byte[] key, byte[] value) {
-		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
-			MemorySegment keyNative = Native.toNative(arena, key);
-			MemorySegment valNative = Native.toNative(arena, value);
-			MH_MERGE.invokeExact(ptr(),
-					keyNative, (long) key.length,
-					valNative, (long) value.length,
-					err);
-			Native.checkError(err);
-		} catch (Throwable t) {
-			throw RocksDBException.wrap("sstfilewriter merge failed", t);
 		}
 	}
 

@@ -91,8 +91,6 @@ This project is currently experimental. The table below tracks parity with `rock
 | Statistics                 |   ✅    | TickerType, HistogramType, StatsLevel                                                                                                            |
 | Compression                |   ✅    | `CompressionType` enum (NO/Snappy/zlib/bz2/LZ4/LZ4HC/Xpress/Zstd); `Options.setCompression`; `CompressionType.getSupportedTypes()` runtime probe |
 | Column Families            |   ❌    | Key namespace isolation                                                                                                                          |
-| Merge                      |   ✅    | `merge` on `RocksDB` and `WriteBatch`                                                                                                            |
-| MergeOperator              |   ❌    | custom `MergeOperator` via FFM upcall stubs                                                                                                      |
 | MultiGet                   |   ❌    | Bulk reads                                                                                                                                       |
 | DeleteRange                |   ✅    | Range tombstones; `deleteRange` on `RocksDB` and `WriteBatch`; all three access tiers                                                            |
 | Compaction control         |   ✅    | `compactRange` (all three tiers + `CompactOptions`), `suggestCompactRange`, `disableFileDeletions`, `enableFileDeletions`                        |
@@ -112,8 +110,13 @@ This project is currently experimental. The table below tracks parity with `rock
 | Advanced memtable config   |   ❌    |                                                                                                                                                  |
 | Perf Context               |   ✅    | `PerfContext`, `PerfLevel`, `PerfMetric`; `setPerfLevel`, `reset`, `metric`, `report`                                                            |
 | Persistent Cache           |   🚫    | Not exposed in `rocksdb/c.h` — C++ only (`NewPersistentCache`); requires a custom C shim to bridge                                               |
-| Uint64AddOperator          |   ✅    | `Options.setUInt64AddMergeOperator()`; built-in little-endian uint64 accumulator                                                                 |
 | Background Jobs            |   🚧    | Tier 1: `cancelAllBackgroundWork`, `disableManualCompaction`, `enableManualCompaction`, `waitForCompact(WaitForCompactOptions)`; Tier 3–5 (Options tuning, Env thread pools, FIFO/Universal options) pending |
+
+## Under Construction
+
+These features are planned but not yet implemented:
+
+- **Merge / MergeOperator:** `merge` on `RocksDB`, `WriteBatch`, `SstFileWriter`; `setUInt64AddMergeOperator` on `Options`; custom `MergeOperator` via FFM upcall stubs.
 
 ## Design Choices
 

@@ -74,8 +74,6 @@ public final class RocksDB {
 	private static final MethodHandle MH_PROPERTY_VALUE;
 	/// `int rocksdb_property_int(rocksdb_t* db, const char* propname, uint64_t* out_val);`
 	private static final MethodHandle MH_PROPERTY_INT;
-	/// `void rocksdb_merge(rocksdb_t* db, const rocksdb_writeoptions_t* options, const char* key, size_t keylen, const char* val, size_t vallen, char** errptr);`
-	private static final MethodHandle MH_MERGE;
 	/// `void rocksdb_delete_range_cf(rocksdb_t* db, const rocksdb_writeoptions_t* options, rocksdb_column_family_handle_t* column_family, const char* start_key, size_t start_key_len, const char* end_key, size_t end_key_len, char** errptr);`
 	private static final MethodHandle MH_DELETE_RANGE_CF;
 	/// `rocksdb_column_family_handle_t* rocksdb_get_default_column_family_handle(rocksdb_t* db);`
@@ -185,11 +183,6 @@ public final class RocksDB {
 		MH_PROPERTY_INT = NativeLibrary.lookup("rocksdb_property_int",
 				FunctionDescriptor.of(ValueLayout.JAVA_INT,
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-
-		MH_MERGE = NativeLibrary.lookup("rocksdb_merge",
-				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS,
-						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
-						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
 
 		MH_DELETE_RANGE_CF = NativeLibrary.lookup("rocksdb_delete_range_cf",
 				FunctionDescriptor.ofVoid(
@@ -691,40 +684,6 @@ public final class RocksDB {
 
 	static void close(MemorySegment db) throws Throwable {
 		MH_CLOSE.invokeExact(db);
-	}
-
-	static void mergeBytes(MemorySegment db, MemorySegment writeOpts, byte[] key, byte[] value) {
-		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
-			MH_MERGE.invokeExact(db, writeOpts,
-					Native.toNative(arena, key), (long) key.length,
-					Native.toNative(arena, value), (long) value.length, err);
-			Native.checkError(err);
-		} catch (Throwable t) {
-			throw RocksDBException.wrap("merge failed", t);
-		}
-	}
-
-	static void mergeBuffer(MemorySegment db, MemorySegment writeOpts, ByteBuffer key, ByteBuffer value) {
-		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
-			MH_MERGE.invokeExact(db, writeOpts,
-					MemorySegment.ofBuffer(key), (long) key.remaining(),
-					MemorySegment.ofBuffer(value), (long) value.remaining(), err);
-			Native.checkError(err);
-		} catch (Throwable t) {
-			throw RocksDBException.wrap("merge failed", t);
-		}
-	}
-
-	static void mergeSegment(MemorySegment db, MemorySegment writeOpts, MemorySegment key, MemorySegment value) {
-		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
-			MH_MERGE.invokeExact(db, writeOpts, key, key.byteSize(), value, value.byteSize(), err);
-			Native.checkError(err);
-		} catch (Throwable t) {
-			throw RocksDBException.wrap("merge failed", t);
-		}
 	}
 
 	static void deleteRangeCfBytes(MemorySegment db, MemorySegment writeOpts, byte[] startKey, byte[] endKey) {

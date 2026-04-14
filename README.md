@@ -34,7 +34,9 @@ The code is mechanically generated, and it can be inspected easily (as it is nor
 
 ### 3. Safety
 
-FFM is much more safe than JNI: memory errors are not crashing the whole JVM.
+FFM improves safety over JNI on the Java side: accessing a closed or out-of-bounds `MemorySegment`
+throws an exception rather than silently corrupting memory. However, a bad pointer passed into a
+native call can still crash the JVM — FFM does not sandbox native execution.
 
 ### 4. Performance through Zero-Copy
 

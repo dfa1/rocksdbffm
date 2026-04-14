@@ -116,6 +116,11 @@ public final class RocksIterator extends NativeObject {
 		}
 	}
 
+	/// Package-private factory for a pre-created iterator pointer (e.g. from rocksdb_create_iterator_cf).
+	static RocksIterator create(MemorySegment iterPtr) {
+		return new RocksIterator(iterPtr);
+	}
+
 	// -----------------------------------------------------------------------
 	// Positioning
 	// -----------------------------------------------------------------------

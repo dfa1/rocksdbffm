@@ -50,6 +50,22 @@ public final class TransactionDB extends NativeObject {
 	/// `char* rocksdb_transactiondb_get(rocksdb_transactiondb_t* txn_db, const rocksdb_readoptions_t* options, const char* key, size_t klen, size_t* vlen, char** errptr);`
 	private static final MethodHandle MH_GET;
 
+	// Column-family variants
+	/// `void rocksdb_transactiondb_put_cf(rocksdb_transactiondb_t* txn_db, const rocksdb_writeoptions_t* options, rocksdb_column_family_handle_t* column_family, const char* key, size_t keylen, const char* val, size_t vallen, char** errptr);`
+	private static final MethodHandle MH_PUT_CF;
+	/// `void rocksdb_transactiondb_delete_cf(rocksdb_transactiondb_t* txn_db, const rocksdb_writeoptions_t* options, rocksdb_column_family_handle_t* column_family, const char* key, size_t keylen, char** errptr);`
+	private static final MethodHandle MH_DELETE_CF;
+	/// `rocksdb_pinnableslice_t* rocksdb_transactiondb_get_pinned_cf(rocksdb_transactiondb_t* txn_db, const rocksdb_readoptions_t* options, rocksdb_column_family_handle_t* column_family, const char* key, size_t keylen, char** errptr);`
+	private static final MethodHandle MH_GET_PINNED_CF;
+	/// `rocksdb_iterator_t* rocksdb_transactiondb_create_iterator_cf(rocksdb_transactiondb_t* txn_db, const rocksdb_readoptions_t* options, rocksdb_column_family_handle_t* column_family);`
+	private static final MethodHandle MH_CREATE_ITERATOR_CF;
+	/// `void rocksdb_transactiondb_flush_cf(rocksdb_transactiondb_t* txn_db, const rocksdb_flushoptions_t* options, rocksdb_column_family_handle_t* column_family, char** errptr);`
+	private static final MethodHandle MH_FLUSH_CF;
+	/// `const char* rocksdb_pinnableslice_value(const rocksdb_pinnableslice_t* t, size_t* vlen);`
+	private static final MethodHandle MH_PINNABLESLICE_VALUE;
+	/// `void rocksdb_pinnableslice_destroy(rocksdb_pinnableslice_t* v);`
+	private static final MethodHandle MH_PINNABLESLICE_DESTROY;
+
 
 	static {
 		MH_CLOSE = NativeLibrary.lookup("rocksdb_transactiondb_close",
@@ -79,6 +95,40 @@ public final class TransactionDB extends NativeObject {
 						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
+		MH_PUT_CF = NativeLibrary.lookup("rocksdb_transactiondb_put_cf",
+				FunctionDescriptor.ofVoid(
+						ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS,
+						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
+						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
+						ValueLayout.ADDRESS));
+
+		MH_DELETE_CF = NativeLibrary.lookup("rocksdb_transactiondb_delete_cf",
+				FunctionDescriptor.ofVoid(
+						ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS,
+						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
+						ValueLayout.ADDRESS));
+
+		MH_GET_PINNED_CF = NativeLibrary.lookup("rocksdb_transactiondb_get_pinned_cf",
+				FunctionDescriptor.of(ValueLayout.ADDRESS,
+						ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS,
+						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
+						ValueLayout.ADDRESS));
+
+		MH_CREATE_ITERATOR_CF = NativeLibrary.lookup("rocksdb_transactiondb_create_iterator_cf",
+				FunctionDescriptor.of(ValueLayout.ADDRESS,
+						ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+		MH_FLUSH_CF = NativeLibrary.lookup("rocksdb_transactiondb_flush_cf",
+				FunctionDescriptor.ofVoid(
+						ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+		MH_PINNABLESLICE_VALUE = NativeLibrary.lookup("rocksdb_pinnableslice_value",
+				FunctionDescriptor.of(ValueLayout.ADDRESS,
+						ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+		MH_PINNABLESLICE_DESTROY = NativeLibrary.lookup("rocksdb_pinnableslice_destroy",
+				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+
 
 		MH_CREATE_SNAPSHOT = NativeLibrary.lookup("rocksdb_transactiondb_create_snapshot",
 				FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
@@ -101,11 +151,13 @@ public final class TransactionDB extends NativeObject {
 	// Instance state
 	// -----------------------------------------------------------------------
 
+	private final MemorySegment baseDb;  // rocksdb_t* — for CF management and CF property queries
 	private final WriteOptions writeOpts; // default write options for direct ops
 	private final ReadOptions readOpts;  // default read options for direct ops
 
-	TransactionDB(MemorySegment ptr, WriteOptions writeOpts, ReadOptions readOpts) {
+	TransactionDB(MemorySegment ptr, MemorySegment baseDb, WriteOptions writeOpts, ReadOptions readOpts) {
 		super(ptr);
+		this.baseDb = baseDb;
 		this.writeOpts = writeOpts;
 		this.readOpts = readOpts;
 	}
@@ -383,6 +435,187 @@ public final class TransactionDB extends NativeObject {
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("delete failed", t);
 		}
+	}
+
+	// -----------------------------------------------------------------------
+	// Column family management
+	// -----------------------------------------------------------------------
+
+	/// Creates a new column family described by `descriptor` and returns its handle.
+	public ColumnFamilyHandle createColumnFamily(ColumnFamilyDescriptor descriptor) {
+		return RocksDB.createCf(baseDb, descriptor);
+	}
+
+	/// Drops the column family identified by `handle`.
+	public void dropColumnFamily(ColumnFamilyHandle handle) {
+		RocksDB.dropCf(baseDb, handle);
+	}
+
+	// -----------------------------------------------------------------------
+	// Put — column family overloads
+	// -----------------------------------------------------------------------
+
+	/// Stores `value` under `key` in `cf`, bypassing any active transaction. Slow path.
+	public void put(ColumnFamilyHandle cf, byte[] key, byte[] value) {
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = Native.errHolder(arena);
+			MH_PUT_CF.invokeExact(ptr(), writeOpts.ptr(), cf.ptr(),
+					Native.toNative(arena, key), (long) key.length,
+					Native.toNative(arena, value), (long) value.length, err);
+			Native.checkError(err);
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("put failed", t);
+		}
+	}
+
+	/// Zero-copy put into `cf` for direct [java.nio.ByteBuffer]s.
+	public void put(ColumnFamilyHandle cf, java.nio.ByteBuffer key, java.nio.ByteBuffer value) {
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = Native.errHolder(arena);
+			MH_PUT_CF.invokeExact(ptr(), writeOpts.ptr(), cf.ptr(),
+					MemorySegment.ofBuffer(key), (long) key.remaining(),
+					MemorySegment.ofBuffer(value), (long) value.remaining(), err);
+			Native.checkError(err);
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("put failed", t);
+		}
+	}
+
+	/// Zero-copy put into `cf` for [MemorySegment]s.
+	public void put(ColumnFamilyHandle cf, MemorySegment key, MemorySegment value) {
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = Native.errHolder(arena);
+			MH_PUT_CF.invokeExact(ptr(), writeOpts.ptr(), cf.ptr(),
+					key, key.byteSize(), value, value.byteSize(), err);
+			Native.checkError(err);
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("put failed", t);
+		}
+	}
+
+	// -----------------------------------------------------------------------
+	// Get — column family overloads
+	// -----------------------------------------------------------------------
+
+	/// Get from `cf` via PinnableSlice. Returns `null` if not found.
+	public byte[] get(ColumnFamilyHandle cf, byte[] key) {
+		return get(cf, readOpts, key);
+	}
+
+	/// Get from `cf` with explicit [ReadOptions]. Returns `null` if not found.
+	public byte[] get(ColumnFamilyHandle cf, ReadOptions readOptions, byte[] key) {
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = Native.errHolder(arena);
+			MemorySegment pin = (MemorySegment) MH_GET_PINNED_CF.invokeExact(
+					ptr(), readOptions.ptr(), cf.ptr(),
+					Native.toNative(arena, key), (long) key.length, err);
+			Native.checkError(err);
+			if (MemorySegment.NULL.equals(pin)) {
+				return null;
+			}
+			MemorySegment valLenSeg = arena.allocate(ValueLayout.JAVA_LONG);
+			MemorySegment valPtr = (MemorySegment) MH_PINNABLESLICE_VALUE.invokeExact(pin, valLenSeg);
+			long valLen = valLenSeg.get(ValueLayout.JAVA_LONG, 0);
+			byte[] result = valPtr.reinterpret(valLen).toArray(ValueLayout.JAVA_BYTE);
+			MH_PINNABLESLICE_DESTROY.invokeExact(pin);
+			return result;
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("get failed", t);
+		}
+	}
+
+	// -----------------------------------------------------------------------
+	// Delete — column family overloads
+	// -----------------------------------------------------------------------
+
+	/// Removes `key` from `cf`, bypassing any active transaction. Slow path.
+	public void delete(ColumnFamilyHandle cf, byte[] key) {
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = Native.errHolder(arena);
+			MH_DELETE_CF.invokeExact(ptr(), writeOpts.ptr(), cf.ptr(),
+					Native.toNative(arena, key), (long) key.length, err);
+			Native.checkError(err);
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("delete failed", t);
+		}
+	}
+
+	/// Zero-copy delete from `cf` for direct [java.nio.ByteBuffer]s.
+	public void delete(ColumnFamilyHandle cf, java.nio.ByteBuffer key) {
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = Native.errHolder(arena);
+			MH_DELETE_CF.invokeExact(ptr(), writeOpts.ptr(), cf.ptr(),
+					MemorySegment.ofBuffer(key), (long) key.remaining(), err);
+			Native.checkError(err);
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("delete failed", t);
+		}
+	}
+
+	/// Zero-copy delete from `cf` for [MemorySegment]s.
+	public void delete(ColumnFamilyHandle cf, MemorySegment key) {
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = Native.errHolder(arena);
+			MH_DELETE_CF.invokeExact(ptr(), writeOpts.ptr(), cf.ptr(), key, key.byteSize(), err);
+			Native.checkError(err);
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("delete failed", t);
+		}
+	}
+
+	// -----------------------------------------------------------------------
+	// Iterator — column family overloads
+	// -----------------------------------------------------------------------
+
+	/// Returns a new iterator scoped to `cf` using the database's default read options.
+	public RocksIterator newIterator(ColumnFamilyHandle cf) {
+		try {
+			MemorySegment iterPtr = (MemorySegment) MH_CREATE_ITERATOR_CF.invokeExact(
+					ptr(), readOpts.ptr(), cf.ptr());
+			return RocksIterator.create(iterPtr);
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("newIterator failed", t);
+		}
+	}
+
+	/// Returns a new iterator scoped to `cf` with explicit [ReadOptions].
+	public RocksIterator newIterator(ColumnFamilyHandle cf, ReadOptions readOptions) {
+		try {
+			MemorySegment iterPtr = (MemorySegment) MH_CREATE_ITERATOR_CF.invokeExact(
+					ptr(), readOptions.ptr(), cf.ptr());
+			return RocksIterator.create(iterPtr);
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("newIterator failed", t);
+		}
+	}
+
+	// -----------------------------------------------------------------------
+	// Flush — column family overloads
+	// -----------------------------------------------------------------------
+
+	/// Flushes the memtable for `cf` to SST files.
+	public void flush(ColumnFamilyHandle cf, FlushOptions flushOptions) {
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = Native.errHolder(arena);
+			MH_FLUSH_CF.invokeExact(ptr(), flushOptions.ptr(), cf.ptr(), err);
+			Native.checkError(err);
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("flush failed", t);
+		}
+	}
+
+	// -----------------------------------------------------------------------
+	// DB Properties — column family overloads
+	// -----------------------------------------------------------------------
+
+	/// Returns the value of a property for `cf`, or [Optional#empty()] if not supported.
+	public Optional<String> getProperty(ColumnFamilyHandle cf, Property property) {
+		return RocksDB.getPropertyCf(baseDb, cf, property);
+	}
+
+	/// Returns the value of a numeric property for `cf`, or [OptionalLong#empty()] if not supported.
+	public OptionalLong getLongProperty(ColumnFamilyHandle cf, Property property) {
+		return RocksDB.getLongPropertyCf(baseDb, cf, property);
 	}
 
 	// -----------------------------------------------------------------------

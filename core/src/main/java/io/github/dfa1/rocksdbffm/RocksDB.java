@@ -6,8 +6,10 @@ import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalLong;
@@ -106,6 +108,47 @@ public final class RocksDB {
 	private static final MethodHandle MH_ENABLE_MANUAL_COMPACTION;
 	/// `void rocksdb_wait_for_compact(rocksdb_t* db, rocksdb_wait_for_compact_options_t* options, char** errptr);`
 	private static final MethodHandle MH_WAIT_FOR_COMPACT;
+
+	// -----------------------------------------------------------------------
+	// Column-family method handles
+	// -----------------------------------------------------------------------
+
+	/// `rocksdb_t* rocksdb_open_column_families(const rocksdb_options_t* options, const char* name, int num_column_families, const char* const* column_family_names, const rocksdb_options_t* const* column_family_options, rocksdb_column_family_handle_t** column_family_handles, char** errptr);`
+	private static final MethodHandle MH_OPEN_CF;
+	/// `char** rocksdb_list_column_families(const rocksdb_options_t* options, const char* name, size_t* lencf, char** errptr);`
+	private static final MethodHandle MH_LIST_CF;
+	/// `void rocksdb_list_column_families_destroy(char** list, size_t len);`
+	private static final MethodHandle MH_LIST_CF_DESTROY;
+	/// `rocksdb_column_family_handle_t* rocksdb_create_column_family(rocksdb_t* db, const rocksdb_options_t* column_family_options, const char* column_family_name, char** errptr);`
+	private static final MethodHandle MH_CREATE_CF;
+	/// `void rocksdb_drop_column_family(rocksdb_t* db, rocksdb_column_family_handle_t* handle, char** errptr);`
+	private static final MethodHandle MH_DROP_CF;
+	/// `void rocksdb_put_cf(rocksdb_t* db, const rocksdb_writeoptions_t* options, rocksdb_column_family_handle_t* column_family, const char* key, size_t keylen, const char* val, size_t vallen, char** errptr);`
+	private static final MethodHandle MH_PUT_CF;
+	/// `rocksdb_pinnableslice_t* rocksdb_get_pinned_cf(rocksdb_t* db, const rocksdb_readoptions_t* options, rocksdb_column_family_handle_t* column_family, const char* key, size_t keylen, char** errptr);`
+	private static final MethodHandle MH_GET_PINNED_CF;
+	/// `void rocksdb_delete_cf(rocksdb_t* db, const rocksdb_writeoptions_t* options, rocksdb_column_family_handle_t* column_family, const char* key, size_t keylen, char** errptr);`
+	private static final MethodHandle MH_DELETE_CF;
+	/// `unsigned char rocksdb_key_may_exist_cf(rocksdb_t* db, const rocksdb_readoptions_t* options, rocksdb_column_family_handle_t* column_family, const char* key, size_t key_len, char** value, size_t* val_len, const char* timestamp, size_t timestamp_len, unsigned char* value_found);`
+	private static final MethodHandle MH_KEY_MAY_EXIST_CF;
+	/// `rocksdb_iterator_t* rocksdb_create_iterator_cf(rocksdb_t* db, const rocksdb_readoptions_t* options, rocksdb_column_family_handle_t* column_family);`
+	private static final MethodHandle MH_CREATE_ITERATOR_CF;
+	/// `void rocksdb_flush_cf(rocksdb_t* db, const rocksdb_flushoptions_t* options, rocksdb_column_family_handle_t* column_family, char** errptr);`
+	private static final MethodHandle MH_FLUSH_CF;
+	/// `char* rocksdb_property_value_cf(rocksdb_t* db, rocksdb_column_family_handle_t* column_family, const char* propname);`
+	private static final MethodHandle MH_PROPERTY_VALUE_CF;
+	/// `int rocksdb_property_int_cf(rocksdb_t* db, rocksdb_column_family_handle_t* column_family, const char* propname, uint64_t* out_val);`
+	private static final MethodHandle MH_PROPERTY_INT_CF;
+	/// `rocksdb_t* rocksdb_open_for_read_only_column_families(const rocksdb_options_t* options, const char* name, int num_column_families, const char* const* column_family_names, const rocksdb_options_t* const* column_family_options, rocksdb_column_family_handle_t** column_family_handles, unsigned char error_if_wal_file_exists, char** errptr);`
+	private static final MethodHandle MH_OPEN_FOR_READ_ONLY_CF;
+	/// `rocksdb_t* rocksdb_open_column_families_with_ttl(const rocksdb_options_t* options, const char* name, int num_column_families, const char* const* column_family_names, const rocksdb_options_t* const* column_family_options, rocksdb_column_family_handle_t** column_family_handles, const int* ttls, char** errptr);`
+	private static final MethodHandle MH_OPEN_CF_WITH_TTL;
+	/// `rocksdb_transactiondb_t* rocksdb_transactiondb_open_column_families(const rocksdb_options_t* options, const rocksdb_transactiondb_options_t* txn_db_options, const char* name, int num_column_families, const char* const* column_family_names, const rocksdb_options_t* const* column_family_options, rocksdb_column_family_handle_t** column_family_handles, char** errptr);`
+	private static final MethodHandle MH_OPEN_TRANSACTION_CF;
+	/// `rocksdb_optimistictransactiondb_t* rocksdb_optimistictransactiondb_open_column_families(const rocksdb_options_t* options, const char* name, int num_column_families, const char* const* column_family_names, const rocksdb_options_t* const* column_family_options, rocksdb_column_family_handle_t** column_family_handles, char** errptr);`
+	private static final MethodHandle MH_OPEN_OPTIMISTIC_CF;
+	/// `rocksdb_t* rocksdb_transactiondb_get_base_db(rocksdb_transactiondb_t* txn_db);`
+	private static final MethodHandle MH_TRANSACTION_GET_BASE_DB;
 
 	static {
 		MH_OPEN = NativeLibrary.lookup("rocksdb_open",
@@ -255,6 +298,104 @@ public final class RocksDB {
 
 		MH_WAIT_FOR_COMPACT = NativeLibrary.lookup("rocksdb_wait_for_compact",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+		MH_OPEN_CF = NativeLibrary.lookup("rocksdb_open_column_families",
+				FunctionDescriptor.of(ValueLayout.ADDRESS,
+						ValueLayout.ADDRESS, ValueLayout.ADDRESS,
+						ValueLayout.JAVA_INT,
+						ValueLayout.ADDRESS, ValueLayout.ADDRESS,
+						ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+		MH_LIST_CF = NativeLibrary.lookup("rocksdb_list_column_families",
+				FunctionDescriptor.of(ValueLayout.ADDRESS,
+						ValueLayout.ADDRESS, ValueLayout.ADDRESS,
+						ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+		MH_LIST_CF_DESTROY = NativeLibrary.lookup("rocksdb_list_column_families_destroy",
+				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
+
+		MH_CREATE_CF = NativeLibrary.lookup("rocksdb_create_column_family",
+				FunctionDescriptor.of(ValueLayout.ADDRESS,
+						ValueLayout.ADDRESS, ValueLayout.ADDRESS,
+						ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+		MH_DROP_CF = NativeLibrary.lookup("rocksdb_drop_column_family",
+				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+		MH_PUT_CF = NativeLibrary.lookup("rocksdb_put_cf",
+				FunctionDescriptor.ofVoid(
+						ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS,
+						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
+						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
+						ValueLayout.ADDRESS));
+
+		MH_GET_PINNED_CF = NativeLibrary.lookup("rocksdb_get_pinned_cf",
+				FunctionDescriptor.of(ValueLayout.ADDRESS,
+						ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS,
+						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
+						ValueLayout.ADDRESS));
+
+		MH_DELETE_CF = NativeLibrary.lookup("rocksdb_delete_cf",
+				FunctionDescriptor.ofVoid(
+						ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS,
+						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
+						ValueLayout.ADDRESS));
+
+		MH_KEY_MAY_EXIST_CF = NativeLibrary.lookup("rocksdb_key_may_exist_cf",
+				FunctionDescriptor.of(ValueLayout.JAVA_BYTE,
+						ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS,
+						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
+						ValueLayout.ADDRESS, ValueLayout.ADDRESS,
+						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
+						ValueLayout.ADDRESS));
+
+		MH_CREATE_ITERATOR_CF = NativeLibrary.lookup("rocksdb_create_iterator_cf",
+				FunctionDescriptor.of(ValueLayout.ADDRESS,
+						ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+		MH_FLUSH_CF = NativeLibrary.lookup("rocksdb_flush_cf",
+				FunctionDescriptor.ofVoid(
+						ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+		MH_PROPERTY_VALUE_CF = NativeLibrary.lookup("rocksdb_property_value_cf",
+				FunctionDescriptor.of(ValueLayout.ADDRESS,
+						ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+		MH_PROPERTY_INT_CF = NativeLibrary.lookup("rocksdb_property_int_cf",
+				FunctionDescriptor.of(ValueLayout.JAVA_INT,
+						ValueLayout.ADDRESS, ValueLayout.ADDRESS,
+						ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+		MH_OPEN_FOR_READ_ONLY_CF = NativeLibrary.lookup("rocksdb_open_for_read_only_column_families",
+				FunctionDescriptor.of(ValueLayout.ADDRESS,
+						ValueLayout.ADDRESS, ValueLayout.ADDRESS,
+						ValueLayout.JAVA_INT,
+						ValueLayout.ADDRESS, ValueLayout.ADDRESS,
+						ValueLayout.ADDRESS, ValueLayout.JAVA_BYTE, ValueLayout.ADDRESS));
+
+		MH_OPEN_CF_WITH_TTL = NativeLibrary.lookup("rocksdb_open_column_families_with_ttl",
+				FunctionDescriptor.of(ValueLayout.ADDRESS,
+						ValueLayout.ADDRESS, ValueLayout.ADDRESS,
+						ValueLayout.JAVA_INT,
+						ValueLayout.ADDRESS, ValueLayout.ADDRESS,
+						ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+		MH_OPEN_TRANSACTION_CF = NativeLibrary.lookup("rocksdb_transactiondb_open_column_families",
+				FunctionDescriptor.of(ValueLayout.ADDRESS,
+						ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS,
+						ValueLayout.JAVA_INT,
+						ValueLayout.ADDRESS, ValueLayout.ADDRESS,
+						ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+		MH_OPEN_OPTIMISTIC_CF = NativeLibrary.lookup("rocksdb_optimistictransactiondb_open_column_families",
+				FunctionDescriptor.of(ValueLayout.ADDRESS,
+						ValueLayout.ADDRESS, ValueLayout.ADDRESS,
+						ValueLayout.JAVA_INT,
+						ValueLayout.ADDRESS, ValueLayout.ADDRESS,
+						ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+		MH_TRANSACTION_GET_BASE_DB = NativeLibrary.lookup("rocksdb_transactiondb_get_base_db",
+				FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 	}
 
 	private RocksDB() {
@@ -406,7 +547,8 @@ public final class RocksDB {
 					options.ptr(), txnDbOptions.ptr(), pathSeg, err);
 			Native.checkError(err);
 
-			return new TransactionDB(ptr, WriteOptions.newWriteOptions(), ReadOptions.newReadOptions());
+			MemorySegment baseDb = (MemorySegment) MH_TRANSACTION_GET_BASE_DB.invokeExact(ptr);
+			return new TransactionDB(ptr, baseDb, WriteOptions.newWriteOptions(), ReadOptions.newReadOptions());
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("openTransaction failed", t);
 		}
@@ -846,6 +988,537 @@ public final class RocksDB {
 			Native.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("ingestExternalFile failed", t);
+		}
+	}
+
+	// -----------------------------------------------------------------------
+	// Factory — column families
+	// -----------------------------------------------------------------------
+
+	/// Opens a read-write database at `path` with multiple column families.
+	///
+	/// The `descriptors` list must include a descriptor for every existing column family in the
+	/// database, including the default column family (`"default"`). The `handles` list is cleared
+	/// and populated with one [ColumnFamilyHandle] per descriptor, in the same order. The caller
+	/// is responsible for closing each handle.
+	public static ReadWriteDB openWithColumnFamilies(Options options, Path path,
+	                                                 List<ColumnFamilyDescriptor> descriptors,
+	                                                 List<ColumnFamilyHandle> handles) {
+		int n = descriptors.size();
+		List<Options> tempOptions = new ArrayList<>();
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = Native.errHolder(arena);
+			MemorySegment pathSeg = arena.allocateFrom(path.toString());
+
+			MemorySegment namesArr = arena.allocate(ValueLayout.ADDRESS, n);
+			MemorySegment optsArr = arena.allocate(ValueLayout.ADDRESS, n);
+			MemorySegment handlesArr = arena.allocate(ValueLayout.ADDRESS, n);
+
+			for (int i = 0; i < n; i++) {
+				ColumnFamilyDescriptor desc = descriptors.get(i);
+				namesArr.setAtIndex(ValueLayout.ADDRESS, i,
+						arena.allocateFrom(new String(desc.name(), StandardCharsets.UTF_8)));
+				Options cfOpts = desc.options();
+				if (cfOpts == null) {
+					cfOpts = Options.newOptions();
+					tempOptions.add(cfOpts);
+				}
+				optsArr.setAtIndex(ValueLayout.ADDRESS, i, cfOpts.ptr());
+			}
+
+			MemorySegment ptr = (MemorySegment) MH_OPEN_CF.invokeExact(
+					options.ptr(), pathSeg, n, namesArr, optsArr, handlesArr, err);
+			Native.checkError(err);
+
+			handles.clear();
+			for (int i = 0; i < n; i++) {
+				handles.add(ColumnFamilyHandle.wrap(handlesArr.getAtIndex(ValueLayout.ADDRESS, i)));
+			}
+
+			return new ReadWriteDB(ptr, WriteOptions.newWriteOptions(), ReadOptions.newReadOptions());
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("openWithColumnFamilies failed", t);
+		} finally {
+			for (Options o : tempOptions) {
+				o.close();
+			}
+		}
+	}
+
+	/// Opens a read-only database at `path` with multiple column families.
+	///
+	/// The `handles` list is cleared and populated with one [ColumnFamilyHandle] per descriptor.
+	public static ReadOnlyDB openReadOnlyWithColumnFamilies(Options options, Path path,
+	                                                        List<ColumnFamilyDescriptor> descriptors,
+	                                                        List<ColumnFamilyHandle> handles) {
+		return openReadOnlyWithColumnFamilies(options, path, descriptors, handles, false);
+	}
+
+	/// Opens a read-only database at `path` with multiple column families.
+	///
+	/// @param errorIfWalFileExists if `true`, fails when unrecovered WAL files are present
+	public static ReadOnlyDB openReadOnlyWithColumnFamilies(Options options, Path path,
+	                                                        List<ColumnFamilyDescriptor> descriptors,
+	                                                        List<ColumnFamilyHandle> handles,
+	                                                        boolean errorIfWalFileExists) {
+		int n = descriptors.size();
+		List<Options> tempOptions = new ArrayList<>();
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = Native.errHolder(arena);
+			MemorySegment pathSeg = arena.allocateFrom(path.toString());
+			MemorySegment namesArr = arena.allocate(ValueLayout.ADDRESS, n);
+			MemorySegment optsArr = arena.allocate(ValueLayout.ADDRESS, n);
+			MemorySegment handlesArr = arena.allocate(ValueLayout.ADDRESS, n);
+			for (int i = 0; i < n; i++) {
+				ColumnFamilyDescriptor desc = descriptors.get(i);
+				namesArr.setAtIndex(ValueLayout.ADDRESS, i,
+						arena.allocateFrom(new String(desc.name(), StandardCharsets.UTF_8)));
+				Options cfOpts = desc.options();
+				if (cfOpts == null) {
+					cfOpts = Options.newOptions();
+					tempOptions.add(cfOpts);
+				}
+				optsArr.setAtIndex(ValueLayout.ADDRESS, i, cfOpts.ptr());
+			}
+			MemorySegment ptr = (MemorySegment) MH_OPEN_FOR_READ_ONLY_CF.invokeExact(
+					options.ptr(), pathSeg, n, namesArr, optsArr, handlesArr,
+					errorIfWalFileExists ? (byte) 1 : (byte) 0, err);
+			Native.checkError(err);
+			handles.clear();
+			for (int i = 0; i < n; i++) {
+				handles.add(ColumnFamilyHandle.wrap(handlesArr.getAtIndex(ValueLayout.ADDRESS, i)));
+			}
+			return new ReadOnlyDB(ptr, ReadOptions.newReadOptions());
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("openReadOnlyWithColumnFamilies failed", t);
+		} finally {
+			for (Options o : tempOptions) {
+				o.close();
+			}
+		}
+	}
+
+	/// Opens a TTL-aware read-write database at `path` with multiple column families.
+	///
+	/// Each column family is paired with its own TTL from `ttls` (index-aligned with `descriptors`).
+	/// A TTL of [Duration#ZERO] disables expiry for that column family.
+	/// The `handles` list is cleared and populated with one [ColumnFamilyHandle] per descriptor.
+	public static TtlDB openWithColumnFamiliesAndTtl(Options options, Path path,
+	                                                  List<ColumnFamilyDescriptor> descriptors,
+	                                                  List<Duration> ttls,
+	                                                  List<ColumnFamilyHandle> handles) {
+		int n = descriptors.size();
+		List<Options> tempOptions = new ArrayList<>();
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = Native.errHolder(arena);
+			MemorySegment pathSeg = arena.allocateFrom(path.toString());
+			MemorySegment namesArr = arena.allocate(ValueLayout.ADDRESS, n);
+			MemorySegment optsArr = arena.allocate(ValueLayout.ADDRESS, n);
+			MemorySegment handlesArr = arena.allocate(ValueLayout.ADDRESS, n);
+			MemorySegment ttlsArr = arena.allocate(ValueLayout.JAVA_INT, n);
+			for (int i = 0; i < n; i++) {
+				ColumnFamilyDescriptor desc = descriptors.get(i);
+				namesArr.setAtIndex(ValueLayout.ADDRESS, i,
+						arena.allocateFrom(new String(desc.name(), StandardCharsets.UTF_8)));
+				Options cfOpts = desc.options();
+				if (cfOpts == null) {
+					cfOpts = Options.newOptions();
+					tempOptions.add(cfOpts);
+				}
+				optsArr.setAtIndex(ValueLayout.ADDRESS, i, cfOpts.ptr());
+				ttlsArr.setAtIndex(ValueLayout.JAVA_INT, i, (int) ttls.get(i).toSeconds());
+			}
+			MemorySegment ptr = (MemorySegment) MH_OPEN_CF_WITH_TTL.invokeExact(
+					options.ptr(), pathSeg, n, namesArr, optsArr, handlesArr, ttlsArr, err);
+			Native.checkError(err);
+			handles.clear();
+			for (int i = 0; i < n; i++) {
+				handles.add(ColumnFamilyHandle.wrap(handlesArr.getAtIndex(ValueLayout.ADDRESS, i)));
+			}
+			Duration globalTtl = ttls.isEmpty() ? Duration.ZERO : ttls.get(0);
+			return new TtlDB(ptr, WriteOptions.newWriteOptions(), ReadOptions.newReadOptions(), globalTtl);
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("openWithColumnFamiliesAndTtl failed", t);
+		} finally {
+			for (Options o : tempOptions) {
+				o.close();
+			}
+		}
+	}
+
+	/// Opens a [TransactionDB] at `path` with multiple column families.
+	///
+	/// The `handles` list is cleared and populated with one [ColumnFamilyHandle] per descriptor.
+	public static TransactionDB openTransactionWithColumnFamilies(Options options,
+	                                                               TransactionDBOptions txnDbOptions,
+	                                                               Path path,
+	                                                               List<ColumnFamilyDescriptor> descriptors,
+	                                                               List<ColumnFamilyHandle> handles) {
+		int n = descriptors.size();
+		List<Options> tempOptions = new ArrayList<>();
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = Native.errHolder(arena);
+			MemorySegment pathSeg = arena.allocateFrom(path.toString());
+			MemorySegment namesArr = arena.allocate(ValueLayout.ADDRESS, n);
+			MemorySegment optsArr = arena.allocate(ValueLayout.ADDRESS, n);
+			MemorySegment handlesArr = arena.allocate(ValueLayout.ADDRESS, n);
+			for (int i = 0; i < n; i++) {
+				ColumnFamilyDescriptor desc = descriptors.get(i);
+				namesArr.setAtIndex(ValueLayout.ADDRESS, i,
+						arena.allocateFrom(new String(desc.name(), StandardCharsets.UTF_8)));
+				Options cfOpts = desc.options();
+				if (cfOpts == null) {
+					cfOpts = Options.newOptions();
+					tempOptions.add(cfOpts);
+				}
+				optsArr.setAtIndex(ValueLayout.ADDRESS, i, cfOpts.ptr());
+			}
+			MemorySegment ptr = (MemorySegment) MH_OPEN_TRANSACTION_CF.invokeExact(
+					options.ptr(), txnDbOptions.ptr(), pathSeg, n, namesArr, optsArr, handlesArr, err);
+			Native.checkError(err);
+			handles.clear();
+			for (int i = 0; i < n; i++) {
+				handles.add(ColumnFamilyHandle.wrap(handlesArr.getAtIndex(ValueLayout.ADDRESS, i)));
+			}
+			MemorySegment baseDb = (MemorySegment) MH_TRANSACTION_GET_BASE_DB.invokeExact(ptr);
+			return new TransactionDB(ptr, baseDb, WriteOptions.newWriteOptions(), ReadOptions.newReadOptions());
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("openTransactionWithColumnFamilies failed", t);
+		} finally {
+			for (Options o : tempOptions) {
+				o.close();
+			}
+		}
+	}
+
+	/// Opens an [OptimisticTransactionDB] at `path` with multiple column families.
+	///
+	/// The `handles` list is cleared and populated with one [ColumnFamilyHandle] per descriptor.
+	public static OptimisticTransactionDB openOptimisticWithColumnFamilies(Options options, Path path,
+	                                                                        List<ColumnFamilyDescriptor> descriptors,
+	                                                                        List<ColumnFamilyHandle> handles) {
+		int n = descriptors.size();
+		List<Options> tempOptions = new ArrayList<>();
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = Native.errHolder(arena);
+			MemorySegment pathSeg = arena.allocateFrom(path.toString());
+			MemorySegment namesArr = arena.allocate(ValueLayout.ADDRESS, n);
+			MemorySegment optsArr = arena.allocate(ValueLayout.ADDRESS, n);
+			MemorySegment handlesArr = arena.allocate(ValueLayout.ADDRESS, n);
+			for (int i = 0; i < n; i++) {
+				ColumnFamilyDescriptor desc = descriptors.get(i);
+				namesArr.setAtIndex(ValueLayout.ADDRESS, i,
+						arena.allocateFrom(new String(desc.name(), StandardCharsets.UTF_8)));
+				Options cfOpts = desc.options();
+				if (cfOpts == null) {
+					cfOpts = Options.newOptions();
+					tempOptions.add(cfOpts);
+				}
+				optsArr.setAtIndex(ValueLayout.ADDRESS, i, cfOpts.ptr());
+			}
+			MemorySegment ptr = (MemorySegment) MH_OPEN_OPTIMISTIC_CF.invokeExact(
+					options.ptr(), pathSeg, n, namesArr, optsArr, handlesArr, err);
+			Native.checkError(err);
+			handles.clear();
+			for (int i = 0; i < n; i++) {
+				handles.add(ColumnFamilyHandle.wrap(handlesArr.getAtIndex(ValueLayout.ADDRESS, i)));
+			}
+			MemorySegment baseDb = (MemorySegment) MH_GET_BASE_DB.invokeExact(ptr);
+			return new OptimisticTransactionDB(ptr, baseDb, WriteOptions.newWriteOptions(), ReadOptions.newReadOptions());
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("openOptimisticWithColumnFamilies failed", t);
+		} finally {
+			for (Options o : tempOptions) {
+				o.close();
+			}
+		}
+	}
+
+	/// Lists the names of all column families in the database at `path`.
+	public static List<byte[]> listColumnFamilies(Options options, Path path) {
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = Native.errHolder(arena);
+			MemorySegment pathSeg = arena.allocateFrom(path.toString());
+			MemorySegment lenSeg = arena.allocate(ValueLayout.JAVA_LONG);
+
+			MemorySegment namesPtr = (MemorySegment) MH_LIST_CF.invokeExact(
+					options.ptr(), pathSeg, lenSeg, err);
+			Native.checkError(err);
+
+			long count = lenSeg.get(ValueLayout.JAVA_LONG, 0);
+			List<byte[]> result = new ArrayList<>((int) count);
+			MemorySegment namesArr = namesPtr.reinterpret(ValueLayout.ADDRESS.byteSize() * count);
+			for (int i = 0; i < count; i++) {
+				MemorySegment namePtr = namesArr.getAtIndex(ValueLayout.ADDRESS, i);
+				result.add(namePtr.reinterpret(Long.MAX_VALUE).getString(0)
+						.getBytes(StandardCharsets.UTF_8));
+			}
+			MH_LIST_CF_DESTROY.invokeExact(namesPtr, count);
+			return result;
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("listColumnFamilies failed", t);
+		}
+	}
+
+	// -----------------------------------------------------------------------
+	// Package-private CF helpers
+	// -----------------------------------------------------------------------
+
+	static ColumnFamilyHandle createCf(MemorySegment db, ColumnFamilyDescriptor descriptor) {
+		List<Options> tempOptions = new ArrayList<>(1);
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = Native.errHolder(arena);
+			Options cfOpts = descriptor.options();
+			if (cfOpts == null) {
+				cfOpts = Options.newOptions();
+				tempOptions.add(cfOpts);
+			}
+			MemorySegment nameSeg = arena.allocateFrom(
+					new String(descriptor.name(), StandardCharsets.UTF_8));
+			MemorySegment handle = (MemorySegment) MH_CREATE_CF.invokeExact(
+					db, cfOpts.ptr(), nameSeg, err);
+			Native.checkError(err);
+			return ColumnFamilyHandle.wrap(handle);
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("createColumnFamily failed", t);
+		} finally {
+			for (Options o : tempOptions) {
+				o.close();
+			}
+		}
+	}
+
+	static void dropCf(MemorySegment db, ColumnFamilyHandle handle) {
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = Native.errHolder(arena);
+			MH_DROP_CF.invokeExact(db, handle.ptr(), err);
+			Native.checkError(err);
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("dropColumnFamily failed", t);
+		}
+	}
+
+	/// byte[] put with explicit column family — slow path.
+	static void putCfBytes(MemorySegment db, MemorySegment writeOpts, ColumnFamilyHandle cf,
+	                       byte[] key, byte[] value) {
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = Native.errHolder(arena);
+			MH_PUT_CF.invokeExact(db, writeOpts, cf.ptr(),
+					Native.toNative(arena, key), (long) key.length,
+					Native.toNative(arena, value), (long) value.length, err);
+			Native.checkError(err);
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("put failed", t);
+		}
+	}
+
+	/// MemorySegment put with explicit column family — zero-copy.
+	static void putCfSegment(MemorySegment db, MemorySegment writeOpts, ColumnFamilyHandle cf,
+	                         MemorySegment key, long keyLen, MemorySegment val, long valLen) {
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = Native.errHolder(arena);
+			MH_PUT_CF.invokeExact(db, writeOpts, cf.ptr(), key, keyLen, val, valLen, err);
+			Native.checkError(err);
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("put failed", t);
+		}
+	}
+
+	/// byte[] get with explicit column family via PinnableSlice. Returns `null` if not found.
+	static byte[] getCfBytes(MemorySegment db, MemorySegment readOpts, ColumnFamilyHandle cf,
+	                         byte[] key) {
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = Native.errHolder(arena);
+			MemorySegment pin = (MemorySegment) MH_GET_PINNED_CF.invokeExact(
+					db, readOpts, cf.ptr(), Native.toNative(arena, key), (long) key.length, err);
+			Native.checkError(err);
+			if (MemorySegment.NULL.equals(pin)) {
+				return null;
+			}
+			MemorySegment valLenSeg = arena.allocate(ValueLayout.JAVA_LONG);
+			MemorySegment valPtr = (MemorySegment) MH_PINNABLESLICE_VALUE.invokeExact(pin, valLenSeg);
+			long valLen = valLenSeg.get(ValueLayout.JAVA_LONG, 0);
+			byte[] result = valPtr.reinterpret(valLen).toArray(ValueLayout.JAVA_BYTE);
+			MH_PINNABLESLICE_DESTROY.invokeExact(pin);
+			return result;
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("get failed", t);
+		}
+	}
+
+	/// ByteBuffer get with explicit column family via PinnableSlice.
+	/// Returns actual value length, or -1 if not found.
+	static int getCfIntoBuffer(MemorySegment db, MemorySegment readOpts, ColumnFamilyHandle cf,
+	                           MemorySegment key, long keyLen, ByteBuffer value) {
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = Native.errHolder(arena);
+			MemorySegment pin = (MemorySegment) MH_GET_PINNED_CF.invokeExact(
+					db, readOpts, cf.ptr(), key, keyLen, err);
+			Native.checkError(err);
+			if (MemorySegment.NULL.equals(pin)) {
+				return -1;
+			}
+			MemorySegment valLenSeg = arena.allocate(ValueLayout.JAVA_LONG);
+			MemorySegment valPtr = (MemorySegment) MH_PINNABLESLICE_VALUE.invokeExact(pin, valLenSeg);
+			long valLen = valLenSeg.get(ValueLayout.JAVA_LONG, 0);
+			int toCopy = (int) Math.min(valLen, value.remaining());
+			MemorySegment.ofBuffer(value).copyFrom(valPtr.reinterpret(toCopy));
+			value.position(value.position() + toCopy);
+			MH_PINNABLESLICE_DESTROY.invokeExact(pin);
+			return (int) valLen;
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("get failed", t);
+		}
+	}
+
+	/// MemorySegment get with explicit column family via PinnableSlice.
+	/// Returns actual value length.
+	static long getCfIntoSegment(MemorySegment db, MemorySegment readOpts, ColumnFamilyHandle cf,
+	                             MemorySegment key, long keyLen, MemorySegment value) {
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = Native.errHolder(arena);
+			MemorySegment pin = (MemorySegment) MH_GET_PINNED_CF.invokeExact(
+					db, readOpts, cf.ptr(), key, keyLen, err);
+			Native.checkError(err);
+			MemorySegment valLenSeg = arena.allocate(ValueLayout.JAVA_LONG);
+			MemorySegment valPtr = (MemorySegment) MH_PINNABLESLICE_VALUE.invokeExact(pin, valLenSeg);
+			long valLen = valLenSeg.get(ValueLayout.JAVA_LONG, 0);
+			long toCopy = Math.min(valLen, value.byteSize());
+			value.copyFrom(valPtr.reinterpret(toCopy));
+			MH_PINNABLESLICE_DESTROY.invokeExact(pin);
+			return valLen;
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("get failed", t);
+		}
+	}
+
+	/// byte[] delete with explicit column family — slow path.
+	static void deleteCfBytes(MemorySegment db, MemorySegment writeOpts, ColumnFamilyHandle cf,
+	                          byte[] key) {
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = Native.errHolder(arena);
+			MH_DELETE_CF.invokeExact(db, writeOpts, cf.ptr(),
+					Native.toNative(arena, key), (long) key.length, err);
+			Native.checkError(err);
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("delete failed", t);
+		}
+	}
+
+	/// MemorySegment delete with explicit column family — zero-copy.
+	static void deleteCfSegment(MemorySegment db, MemorySegment writeOpts, ColumnFamilyHandle cf,
+	                            MemorySegment key, long keyLen) {
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = Native.errHolder(arena);
+			MH_DELETE_CF.invokeExact(db, writeOpts, cf.ptr(), key, keyLen, err);
+			Native.checkError(err);
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("delete failed", t);
+		}
+	}
+
+	/// deleteRange with explicit column family — slow path.
+	static void deleteRangeCfBytesExplicit(MemorySegment db, MemorySegment writeOpts,
+	                                       ColumnFamilyHandle cf,
+	                                       byte[] startKey, byte[] endKey) {
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = Native.errHolder(arena);
+			MH_DELETE_RANGE_CF.invokeExact(db, writeOpts, cf.ptr(),
+					Native.toNative(arena, startKey), (long) startKey.length,
+					Native.toNative(arena, endKey), (long) endKey.length, err);
+			Native.checkError(err);
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("deleteRange failed", t);
+		}
+	}
+
+	/// deleteRange with explicit column family — zero-copy for direct ByteBuffers.
+	static void deleteRangeCfBufferExplicit(MemorySegment db, MemorySegment writeOpts,
+	                                        ColumnFamilyHandle cf,
+	                                        ByteBuffer startKey, ByteBuffer endKey) {
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = Native.errHolder(arena);
+			MH_DELETE_RANGE_CF.invokeExact(db, writeOpts, cf.ptr(),
+					MemorySegment.ofBuffer(startKey), (long) startKey.remaining(),
+					MemorySegment.ofBuffer(endKey), (long) endKey.remaining(), err);
+			Native.checkError(err);
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("deleteRange failed", t);
+		}
+	}
+
+	/// deleteRange with explicit column family — zero-copy for MemorySegments.
+	static void deleteRangeCfSegmentExplicit(MemorySegment db, MemorySegment writeOpts,
+	                                         ColumnFamilyHandle cf,
+	                                         MemorySegment startKey, MemorySegment endKey) {
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = Native.errHolder(arena);
+			MH_DELETE_RANGE_CF.invokeExact(db, writeOpts, cf.ptr(),
+					startKey, startKey.byteSize(), endKey, endKey.byteSize(), err);
+			Native.checkError(err);
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("deleteRange failed", t);
+		}
+	}
+
+	static boolean keyMayExistCfSegment(MemorySegment db, MemorySegment roOpts,
+	                                    ColumnFamilyHandle cf,
+	                                    MemorySegment key, long keyLen) throws Throwable {
+		return ((byte) MH_KEY_MAY_EXIST_CF.invokeExact(db, roOpts, cf.ptr(), key, keyLen,
+				MemorySegment.NULL, MemorySegment.NULL,
+				MemorySegment.NULL, 0L, MemorySegment.NULL)) != 0;
+	}
+
+	static RocksIterator createIteratorCf(MemorySegment db, MemorySegment readOpts,
+	                                      ColumnFamilyHandle cf) {
+		try {
+			MemorySegment iterPtr = (MemorySegment) MH_CREATE_ITERATOR_CF.invokeExact(
+					db, readOpts, cf.ptr());
+			return RocksIterator.create(iterPtr);
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("newIterator failed", t);
+		}
+	}
+
+	static void flushCf(MemorySegment db, FlushOptions flushOptions, ColumnFamilyHandle cf) {
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = Native.errHolder(arena);
+			MH_FLUSH_CF.invokeExact(db, flushOptions.ptr(), cf.ptr(), err);
+			Native.checkError(err);
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("flush failed", t);
+		}
+	}
+
+	static Optional<String> getPropertyCf(MemorySegment db, ColumnFamilyHandle cf,
+	                                       Property property) {
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment propSeg = arena.allocateFrom(property.propertyName());
+			MemorySegment result = (MemorySegment) MH_PROPERTY_VALUE_CF.invokeExact(
+					db, cf.ptr(), propSeg);
+			if (MemorySegment.NULL.equals(result)) {
+				return Optional.empty();
+			}
+			String value = result.reinterpret(Long.MAX_VALUE).getString(0);
+			Native.free(result);
+			return Optional.of(value);
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("getProperty failed", t);
+		}
+	}
+
+	static OptionalLong getLongPropertyCf(MemorySegment db, ColumnFamilyHandle cf,
+	                                      Property property) {
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment propSeg = arena.allocateFrom(property.propertyName());
+			MemorySegment out = arena.allocate(ValueLayout.JAVA_LONG);
+			int rc = (int) MH_PROPERTY_INT_CF.invokeExact(db, cf.ptr(), propSeg, out);
+			if (rc != 0) {
+				return OptionalLong.empty();
+			}
+			return OptionalLong.of(out.get(ValueLayout.JAVA_LONG, 0));
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("getLongProperty failed", t);
 		}
 	}
 

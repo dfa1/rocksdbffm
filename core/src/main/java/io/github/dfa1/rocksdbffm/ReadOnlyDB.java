@@ -51,6 +51,29 @@ public final class ReadOnlyDB extends NativeObject {
 		return RocksDB.getIntoSegment(ptr(), readOpts.ptr(), key, key.byteSize(), value);
 	}
 
+	/// Returns the value for `key` in `cf`, or `null` if not found.
+	public byte[] get(ColumnFamilyHandle cf, byte[] key) {
+		return RocksDB.getCfBytes(ptr(), readOpts.ptr(), cf, key);
+	}
+
+	/// Get from `cf` with explicit [ReadOptions]. Returns `null` if not found.
+	public byte[] get(ColumnFamilyHandle cf, ReadOptions readOptions, byte[] key) {
+		return RocksDB.getCfBytes(ptr(), readOptions.ptr(), cf, key);
+	}
+
+	/// Single-copy get from `cf` via PinnableSlice + direct output [ByteBuffer].
+	/// Returns the actual value length, or -1 if not found.
+	public int get(ColumnFamilyHandle cf, ByteBuffer key, ByteBuffer value) {
+		return RocksDB.getCfIntoBuffer(ptr(), readOpts.ptr(), cf,
+				MemorySegment.ofBuffer(key), key.remaining(), value);
+	}
+
+	/// Zero-copy get from `cf` into a caller-supplied native segment.
+	/// Returns the actual value length.
+	public long get(ColumnFamilyHandle cf, MemorySegment key, MemorySegment value) {
+		return RocksDB.getCfIntoSegment(ptr(), readOpts.ptr(), cf, key, key.byteSize(), value);
+	}
+
 	// -----------------------------------------------------------------------
 	// Iterator
 	// -----------------------------------------------------------------------
@@ -63,6 +86,16 @@ public final class ReadOnlyDB extends NativeObject {
 	/// Returns a new iterator using the supplied [ReadOptions].
 	public RocksIterator newIterator(ReadOptions readOptions) {
 		return RocksIterator.create(ptr(), readOptions.ptr());
+	}
+
+	/// Returns a new iterator scoped to `cf` using the default read options.
+	public RocksIterator newIterator(ColumnFamilyHandle cf) {
+		return RocksDB.createIteratorCf(ptr(), readOpts.ptr(), cf);
+	}
+
+	/// Returns a new iterator scoped to `cf` with explicit [ReadOptions].
+	public RocksIterator newIterator(ColumnFamilyHandle cf, ReadOptions readOptions) {
+		return RocksDB.createIteratorCf(ptr(), readOptions.ptr(), cf);
 	}
 
 	// -----------------------------------------------------------------------
@@ -86,6 +119,16 @@ public final class ReadOnlyDB extends NativeObject {
 	/// Returns the value of a numeric DB property, or [OptionalLong#empty()] if not supported.
 	public OptionalLong getLongProperty(Property property) {
 		return RocksDB.getLongProperty(ptr(), property);
+	}
+
+	/// Returns the value of a property scoped to `cf`, or [Optional#empty()] if not supported.
+	public Optional<String> getProperty(ColumnFamilyHandle cf, Property property) {
+		return RocksDB.getPropertyCf(ptr(), cf, property);
+	}
+
+	/// Returns the value of a numeric property scoped to `cf`, or [OptionalLong#empty()] if not supported.
+	public OptionalLong getLongProperty(ColumnFamilyHandle cf, Property property) {
+		return RocksDB.getLongPropertyCf(ptr(), cf, property);
 	}
 
 	// -----------------------------------------------------------------------

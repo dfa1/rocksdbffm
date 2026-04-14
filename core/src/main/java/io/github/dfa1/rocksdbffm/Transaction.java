@@ -19,6 +19,16 @@ import java.lang.invoke.MethodHandle;
 /// ```
 public final class Transaction extends NativeObject {
 
+	/// `rocksdb_pinnableslice_t* rocksdb_transaction_get_pinned_cf(rocksdb_transaction_t* txn, const rocksdb_readoptions_t* options, rocksdb_column_family_handle_t* column_family, const char* key, size_t klen, char** errptr);`
+	private static final MethodHandle MH_GET_PINNED_CF;
+	/// `char* rocksdb_transaction_get_for_update_cf(rocksdb_transaction_t* txn, const rocksdb_readoptions_t* options, rocksdb_column_family_handle_t* column_family, const char* key, size_t klen, size_t* vlen, unsigned char exclusive, char** errptr);`
+	private static final MethodHandle MH_GET_FOR_UPDATE_CF;
+	/// `void rocksdb_transaction_put_cf(rocksdb_transaction_t* txn, rocksdb_column_family_handle_t* column_family, const char* key, size_t klen, const char* val, size_t vlen, char** errptr);`
+	private static final MethodHandle MH_PUT_CF;
+	/// `void rocksdb_transaction_delete_cf(rocksdb_transaction_t* txn, rocksdb_column_family_handle_t* column_family, const char* key, size_t klen, char** errptr);`
+	private static final MethodHandle MH_DELETE_CF;
+	/// `rocksdb_iterator_t* rocksdb_transaction_create_iterator_cf(rocksdb_transaction_t* txn, const rocksdb_readoptions_t* options, rocksdb_column_family_handle_t* column_family);`
+	private static final MethodHandle MH_CREATE_ITERATOR_CF;
 	/// `void rocksdb_transaction_commit(rocksdb_transaction_t* txn, char** errptr);`
 	private static final MethodHandle MH_COMMIT;
 	/// `void rocksdb_transaction_rollback(rocksdb_transaction_t* txn, char** errptr);`
@@ -93,6 +103,36 @@ public final class Transaction extends NativeObject {
 		MH_PINNABLESLICE_DESTROY = NativeLibrary.lookup("rocksdb_pinnableslice_destroy",
 				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
+
+		MH_PUT_CF = NativeLibrary.lookup("rocksdb_transaction_put_cf",
+				FunctionDescriptor.ofVoid(
+						ValueLayout.ADDRESS, ValueLayout.ADDRESS,
+						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
+						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
+						ValueLayout.ADDRESS));
+
+		MH_DELETE_CF = NativeLibrary.lookup("rocksdb_transaction_delete_cf",
+				FunctionDescriptor.ofVoid(
+						ValueLayout.ADDRESS, ValueLayout.ADDRESS,
+						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
+						ValueLayout.ADDRESS));
+
+		MH_GET_PINNED_CF = NativeLibrary.lookup("rocksdb_transaction_get_pinned_cf",
+				FunctionDescriptor.of(ValueLayout.ADDRESS,
+						ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS,
+						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
+						ValueLayout.ADDRESS));
+
+		MH_GET_FOR_UPDATE_CF = NativeLibrary.lookup("rocksdb_transaction_get_for_update_cf",
+				FunctionDescriptor.of(ValueLayout.ADDRESS,
+						ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS,
+						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
+						ValueLayout.ADDRESS, ValueLayout.JAVA_BYTE,
+						ValueLayout.ADDRESS));
+
+		MH_CREATE_ITERATOR_CF = NativeLibrary.lookup("rocksdb_transaction_create_iterator_cf",
+				FunctionDescriptor.of(ValueLayout.ADDRESS,
+						ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
 		// Note: must be freed with rocksdb_free, not rocksdb_release_snapshot
 		MH_GET_SNAPSHOT = NativeLibrary.lookup("rocksdb_transaction_get_snapshot",
@@ -192,6 +232,97 @@ public final class Transaction extends NativeObject {
 			return result;
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("Native call failed", t);
+		}
+	}
+
+	// -----------------------------------------------------------------------
+	// Write operations — column family overloads
+	// -----------------------------------------------------------------------
+
+	/// Stages a put into `cf` inside this transaction. Slow path: allocates native memory.
+	public void put(ColumnFamilyHandle cf, byte[] key, byte[] value) {
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = Native.errHolder(arena);
+			MH_PUT_CF.invokeExact(ptr(), cf.ptr(),
+					Native.toNative(arena, key), (long) key.length,
+					Native.toNative(arena, value), (long) value.length, err);
+			Native.checkError(err);
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("Native call failed", t);
+		}
+	}
+
+	/// Stages a delete of `key` from `cf` inside this transaction. Slow path.
+	public void delete(ColumnFamilyHandle cf, byte[] key) {
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = Native.errHolder(arena);
+			MH_DELETE_CF.invokeExact(ptr(), cf.ptr(),
+					Native.toNative(arena, key), (long) key.length, err);
+			Native.checkError(err);
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("Native call failed", t);
+		}
+	}
+
+	// -----------------------------------------------------------------------
+	// Read operations — column family overloads
+	// -----------------------------------------------------------------------
+
+	/// Reads `key` from `cf` within this transaction via PinnableSlice. Returns `null` if not found.
+	public byte[] get(ColumnFamilyHandle cf, ReadOptions readOptions, byte[] key) {
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = Native.errHolder(arena);
+			MemorySegment pin = (MemorySegment) MH_GET_PINNED_CF.invokeExact(
+					ptr(), readOptions.ptr(), cf.ptr(),
+					Native.toNative(arena, key), (long) key.length, err);
+			Native.checkError(err);
+			if (MemorySegment.NULL.equals(pin)) {
+				return null;
+			}
+			MemorySegment valLenSeg = arena.allocate(ValueLayout.JAVA_LONG);
+			MemorySegment valPtr = (MemorySegment) MH_PINNABLESLICE_VALUE.invokeExact(pin, valLenSeg);
+			long valLen = valLenSeg.get(ValueLayout.JAVA_LONG, 0);
+			byte[] result = valPtr.reinterpret(valLen).toArray(ValueLayout.JAVA_BYTE);
+			MH_PINNABLESLICE_DESTROY.invokeExact(pin);
+			return result;
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("Native call failed", t);
+		}
+	}
+
+	/// Reads `key` from `cf` and acquires a lock for the duration of this transaction.
+	/// Returns `null` if not found.
+	///
+	/// @param exclusive if true, acquires an exclusive (write) lock; otherwise a shared (read) lock
+	public byte[] getForUpdate(ColumnFamilyHandle cf, ReadOptions readOptions, byte[] key, boolean exclusive) {
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = Native.errHolder(arena);
+			MemorySegment k = Native.toNative(arena, key);
+			MemorySegment valLenSeg = arena.allocate(ValueLayout.JAVA_LONG);
+			MemorySegment valPtr = (MemorySegment) MH_GET_FOR_UPDATE_CF.invokeExact(
+					ptr(), readOptions.ptr(), cf.ptr(), k, (long) key.length,
+					valLenSeg, exclusive ? (byte) 1 : (byte) 0, err);
+			Native.checkError(err);
+			if (MemorySegment.NULL.equals(valPtr)) {
+				return null;
+			}
+			long valLen = valLenSeg.get(ValueLayout.JAVA_LONG, 0);
+			byte[] result = valPtr.reinterpret(valLen).toArray(ValueLayout.JAVA_BYTE);
+			Native.free(valPtr);
+			return result;
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("Native call failed", t);
+		}
+	}
+
+	/// Returns a new iterator scoped to `cf` within this transaction.
+	public RocksIterator newIterator(ColumnFamilyHandle cf, ReadOptions readOptions) {
+		try {
+			MemorySegment iterPtr = (MemorySegment) MH_CREATE_ITERATOR_CF.invokeExact(
+					ptr(), readOptions.ptr(), cf.ptr());
+			return RocksIterator.create(iterPtr);
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("newIterator failed", t);
 		}
 	}
 

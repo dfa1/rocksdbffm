@@ -79,7 +79,7 @@ class NullSafetyTest {
 	@Test
 	void get_nullReadOptions(@TempDir Path dir) {
 		try (var db = RocksDB.open(dir)) {
-			assertThatThrownBy(() -> db.get(null, "k".getBytes()))
+			assertThatThrownBy(() -> db.get((ReadOptions) null, "k".getBytes()))
 					.isInstanceOf(RuntimeException.class);
 		}
 	}
@@ -157,7 +157,7 @@ class NullSafetyTest {
 	@Test
 	void keyMayExist_nullReadOptions(@TempDir Path dir) {
 		try (var db = RocksDB.open(dir)) {
-			assertThatThrownBy(() -> db.keyMayExist(null, "k".getBytes()))
+			assertThatThrownBy(() -> db.keyMayExist((ReadOptions) null, "k".getBytes()))
 					.isInstanceOf(RuntimeException.class);
 		}
 	}
@@ -194,7 +194,7 @@ class NullSafetyTest {
 	@Test
 	void newIterator_nullReadOptions(@TempDir Path dir) {
 		try (var db = RocksDB.open(dir)) {
-			assertThatThrownBy(() -> db.newIterator(null))
+			assertThatThrownBy(() -> db.newIterator((ReadOptions) null))
 					.isInstanceOf(RuntimeException.class);
 		}
 	}

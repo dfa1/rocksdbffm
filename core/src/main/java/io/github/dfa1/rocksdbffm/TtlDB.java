@@ -179,6 +179,186 @@ public final class TtlDB extends NativeObject {
 	}
 
 	// -----------------------------------------------------------------------
+	// Column family management
+	// -----------------------------------------------------------------------
+
+	/// Creates a new column family described by `descriptor` and returns its handle.
+	public ColumnFamilyHandle createColumnFamily(ColumnFamilyDescriptor descriptor) {
+		return RocksDB.createCf(ptr(), descriptor);
+	}
+
+	/// Drops the column family identified by `handle`.
+	public void dropColumnFamily(ColumnFamilyHandle handle) {
+		RocksDB.dropCf(ptr(), handle);
+	}
+
+	// -----------------------------------------------------------------------
+	// Put — column family overloads
+	// -----------------------------------------------------------------------
+
+	/// Stores `value` under `key` in `cf`. Slow path: copies key/value into native memory.
+	public void put(ColumnFamilyHandle cf, byte[] key, byte[] value) {
+		RocksDB.putCfBytes(ptr(), writeOpts.ptr(), cf, key, value);
+	}
+
+	/// Zero-copy put into `cf` for direct [ByteBuffer]s.
+	public void put(ColumnFamilyHandle cf, ByteBuffer key, ByteBuffer value) {
+		RocksDB.putCfSegment(ptr(), writeOpts.ptr(), cf,
+				MemorySegment.ofBuffer(key), key.remaining(),
+				MemorySegment.ofBuffer(value), value.remaining());
+	}
+
+	/// Zero-copy put into `cf` for [MemorySegment]s.
+	public void put(ColumnFamilyHandle cf, MemorySegment key, MemorySegment value) {
+		RocksDB.putCfSegment(ptr(), writeOpts.ptr(), cf, key, key.byteSize(), value, value.byteSize());
+	}
+
+	// -----------------------------------------------------------------------
+	// Get — column family overloads
+	// -----------------------------------------------------------------------
+
+	/// Returns the value for `key` in `cf`, or `null` if not found.
+	public byte[] get(ColumnFamilyHandle cf, byte[] key) {
+		return RocksDB.getCfBytes(ptr(), readOpts.ptr(), cf, key);
+	}
+
+	/// Get from `cf` with explicit [ReadOptions]. Returns `null` if not found.
+	public byte[] get(ColumnFamilyHandle cf, ReadOptions readOptions, byte[] key) {
+		return RocksDB.getCfBytes(ptr(), readOptions.ptr(), cf, key);
+	}
+
+	/// Single-copy get from `cf` via PinnableSlice + direct output [ByteBuffer].
+	/// Returns the actual value length, or -1 if not found.
+	public int get(ColumnFamilyHandle cf, ByteBuffer key, ByteBuffer value) {
+		return RocksDB.getCfIntoBuffer(ptr(), readOpts.ptr(), cf,
+				MemorySegment.ofBuffer(key), key.remaining(), value);
+	}
+
+	/// Zero-copy get from `cf` into a caller-supplied native segment.
+	/// Returns the actual value length.
+	public long get(ColumnFamilyHandle cf, MemorySegment key, MemorySegment value) {
+		return RocksDB.getCfIntoSegment(ptr(), readOpts.ptr(), cf, key, key.byteSize(), value);
+	}
+
+	// -----------------------------------------------------------------------
+	// Delete — column family overloads
+	// -----------------------------------------------------------------------
+
+	/// Removes `key` from `cf`. Slow path: copies the key into native memory.
+	public void delete(ColumnFamilyHandle cf, byte[] key) {
+		RocksDB.deleteCfBytes(ptr(), writeOpts.ptr(), cf, key);
+	}
+
+	/// Zero-copy delete from `cf` for direct [ByteBuffer]s.
+	public void delete(ColumnFamilyHandle cf, ByteBuffer key) {
+		RocksDB.deleteCfSegment(ptr(), writeOpts.ptr(), cf, MemorySegment.ofBuffer(key), key.remaining());
+	}
+
+	/// Zero-copy delete from `cf` for [MemorySegment]s.
+	public void delete(ColumnFamilyHandle cf, MemorySegment key) {
+		RocksDB.deleteCfSegment(ptr(), writeOpts.ptr(), cf, key, key.byteSize());
+	}
+
+	// -----------------------------------------------------------------------
+	// DeleteRange — column family overloads
+	// -----------------------------------------------------------------------
+
+	/// Deletes all keys in `[startKey, endKey)` within `cf`. Slow path.
+	public void deleteRange(ColumnFamilyHandle cf, byte[] startKey, byte[] endKey) {
+		RocksDB.deleteRangeCfBytesExplicit(ptr(), writeOpts.ptr(), cf, startKey, endKey);
+	}
+
+	/// Zero-copy deleteRange for direct [ByteBuffer]s.
+	public void deleteRange(ColumnFamilyHandle cf, ByteBuffer startKey, ByteBuffer endKey) {
+		RocksDB.deleteRangeCfBufferExplicit(ptr(), writeOpts.ptr(), cf, startKey, endKey);
+	}
+
+	/// Zero-copy deleteRange for [MemorySegment]s.
+	public void deleteRange(ColumnFamilyHandle cf, MemorySegment startKey, MemorySegment endKey) {
+		RocksDB.deleteRangeCfSegmentExplicit(ptr(), writeOpts.ptr(), cf, startKey, endKey);
+	}
+
+	// -----------------------------------------------------------------------
+	// KeyMayExist — column family overloads
+	// -----------------------------------------------------------------------
+
+	/// Returns `false` if `key` definitely does not exist in `cf`; `true` means it _may_ exist.
+	public boolean keyMayExist(ColumnFamilyHandle cf, byte[] key) {
+		try (var arena = Arena.ofConfined()) {
+			return RocksDB.keyMayExistCfSegment(ptr(), readOpts.ptr(), cf,
+					Native.toNative(arena, key), key.length);
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("keyMayExist failed", t);
+		}
+	}
+
+	/// [#keyMayExist(ColumnFamilyHandle, byte\[\])] with explicit [ReadOptions].
+	public boolean keyMayExist(ColumnFamilyHandle cf, ReadOptions readOptions, byte[] key) {
+		try (var arena = Arena.ofConfined()) {
+			return RocksDB.keyMayExistCfSegment(ptr(), readOptions.ptr(), cf,
+					Native.toNative(arena, key), key.length);
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("keyMayExist failed", t);
+		}
+	}
+
+	/// Zero-copy for direct [ByteBuffer]s.
+	public boolean keyMayExist(ColumnFamilyHandle cf, ByteBuffer key) {
+		try {
+			return RocksDB.keyMayExistCfSegment(ptr(), readOpts.ptr(), cf,
+					MemorySegment.ofBuffer(key), key.remaining());
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("keyMayExist failed", t);
+		}
+	}
+
+	/// Zero-copy for [MemorySegment]s.
+	public boolean keyMayExist(ColumnFamilyHandle cf, MemorySegment key) {
+		try {
+			return RocksDB.keyMayExistCfSegment(ptr(), readOpts.ptr(), cf, key, key.byteSize());
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("keyMayExist failed", t);
+		}
+	}
+
+	// -----------------------------------------------------------------------
+	// Iterator — column family overloads
+	// -----------------------------------------------------------------------
+
+	/// Returns a new iterator scoped to `cf` using the default read options.
+	public RocksIterator newIterator(ColumnFamilyHandle cf) {
+		return RocksDB.createIteratorCf(ptr(), readOpts.ptr(), cf);
+	}
+
+	/// Returns a new iterator scoped to `cf` with explicit [ReadOptions].
+	public RocksIterator newIterator(ColumnFamilyHandle cf, ReadOptions readOptions) {
+		return RocksDB.createIteratorCf(ptr(), readOptions.ptr(), cf);
+	}
+
+	// -----------------------------------------------------------------------
+	// Flush — column family overloads
+	// -----------------------------------------------------------------------
+
+	/// Flushes the memtable for `cf` to SST files.
+	public void flush(ColumnFamilyHandle cf, FlushOptions flushOptions) {
+		RocksDB.flushCf(ptr(), flushOptions, cf);
+	}
+
+	// -----------------------------------------------------------------------
+	// DB Properties — column family overloads
+	// -----------------------------------------------------------------------
+
+	/// Returns the value of a property scoped to `cf`, or [Optional#empty()] if not supported.
+	public Optional<String> getProperty(ColumnFamilyHandle cf, Property property) {
+		return RocksDB.getPropertyCf(ptr(), cf, property);
+	}
+
+	/// Returns the value of a numeric property scoped to `cf`, or [OptionalLong#empty()] if not supported.
+	public OptionalLong getLongProperty(ColumnFamilyHandle cf, Property property) {
+		return RocksDB.getLongPropertyCf(ptr(), cf, property);
+	}
+
+	// -----------------------------------------------------------------------
 	// Write (batch)
 	// -----------------------------------------------------------------------
 

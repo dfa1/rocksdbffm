@@ -24,9 +24,11 @@ class SecondaryDBTest {
 			primary.put("seed".getBytes(), "value".getBytes());
 		}
 
-		// When / Then — secondary opens against an existing primary
+		// When — secondary opens against an existing primary
 		try (var opts = Options.newOptions();
 		     var secondary = RocksDB.openSecondary(opts, primaryDir, secondaryDir)) {
+
+			// Then
 			assertThat(secondary).isNotNull();
 		}
 	}
@@ -46,8 +48,10 @@ class SecondaryDBTest {
 		try (var opts = Options.newOptions();
 		     var secondary = RocksDB.openSecondary(opts, primaryDir, secondaryDir)) {
 
-			// When / Then
+			// When
 			secondary.tryCatchUpWithPrimary();
+
+			// Then — no exception
 		}
 	}
 
@@ -99,8 +103,11 @@ class SecondaryDBTest {
 		     var secondary = RocksDB.openSecondary(opts, primaryDir, secondaryDir)) {
 			secondary.tryCatchUpWithPrimary();
 
-			// When / Then
-			assertThat(secondary.get("missing".getBytes())).isNull();
+			// When
+			var result = secondary.get("missing".getBytes());
+
+			// Then
+			assertThat(result).isNull();
 		}
 	}
 
@@ -119,8 +126,11 @@ class SecondaryDBTest {
 		     var ro = ReadOptions.newReadOptions()) {
 			secondary.tryCatchUpWithPrimary();
 
-			// When / Then
-			assertThat(secondary.get(ro, "k".getBytes())).isEqualTo("v".getBytes());
+			// When
+			var result = secondary.get(ro, "k".getBytes());
+
+			// Then
+			assertThat(result).isEqualTo("v".getBytes());
 		}
 	}
 

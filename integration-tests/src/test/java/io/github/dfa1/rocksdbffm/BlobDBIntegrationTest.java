@@ -67,15 +67,25 @@ class BlobDBIntegrationTest {
 				.setBlobGcForceThreshold(0.8)
 				.setBlobFileStartingLevel(0)) {
 
-			// When / Then — options are readable back
-			assertThat(opts.getEnableBlobFiles()).isTrue();
-			assertThat(opts.getMinBlobSize()).isEqualTo(MemorySize.ofKB(4));
-			assertThat(opts.getBlobFileSize()).isEqualTo(MemorySize.ofMB(64));
-			assertThat(opts.getBlobCompressionType()).isEqualTo(CompressionType.NO_COMPRESSION);
-			assertThat(opts.getEnableBlobGc()).isTrue();
-			assertThat(opts.getBlobGcAgeCutoff()).isEqualTo(0.25);
-			assertThat(opts.getBlobGcForceThreshold()).isEqualTo(0.8);
-			assertThat(opts.getBlobFileStartingLevel()).isEqualTo(0);
+			// When
+			var enableBlobFiles = opts.getEnableBlobFiles();
+			var minBlobSize = opts.getMinBlobSize();
+			var blobFileSize = opts.getBlobFileSize();
+			var blobCompressionType = opts.getBlobCompressionType();
+			var enableBlobGc = opts.getEnableBlobGc();
+			var blobGcAgeCutoff = opts.getBlobGcAgeCutoff();
+			var blobGcForceThreshold = opts.getBlobGcForceThreshold();
+			var blobFileStartingLevel = opts.getBlobFileStartingLevel();
+
+			// Then — options are readable back
+			assertThat(enableBlobFiles).isTrue();
+			assertThat(minBlobSize).isEqualTo(MemorySize.ofKB(4));
+			assertThat(blobFileSize).isEqualTo(MemorySize.ofMB(64));
+			assertThat(blobCompressionType).isEqualTo(CompressionType.NO_COMPRESSION);
+			assertThat(enableBlobGc).isTrue();
+			assertThat(blobGcAgeCutoff).isEqualTo(0.25);
+			assertThat(blobGcForceThreshold).isEqualTo(0.8);
+			assertThat(blobFileStartingLevel).isEqualTo(0);
 
 			try (var db = RocksDB.openWithBlobFiles(opts, dir)) {
 				db.put("k".getBytes(), "v".getBytes());
@@ -124,8 +134,10 @@ class BlobDBIntegrationTest {
 			db.put("k".getBytes(), "v".getBytes());
 			db.flush(FlushOptions.newFlushOptions());
 
-			// When / Then — blob file count property is readable (value ≥ 0)
+			// When
 			var numBlobFiles = db.getLongProperty(Property.NUM_BLOB_FILES);
+
+			// Then — blob file count property is readable (value ≥ 0)
 			assertThat(numBlobFiles).isPresent();
 			assertThat(numBlobFiles.getAsLong()).isGreaterThanOrEqualTo(0);
 		}

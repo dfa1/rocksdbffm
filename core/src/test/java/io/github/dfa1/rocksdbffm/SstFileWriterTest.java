@@ -173,8 +173,10 @@ class SstFileWriterTest {
 	void ingest_emptyFileList_isNoOp(@TempDir Path dir) {
 		// Given
 		try (var db = RocksDB.open(dir)) {
-			// When / Then — empty list should not throw
+			// When
 			db.ingestExternalFile(List.of());
+
+			// Then — no exception
 		}
 	}
 
@@ -185,9 +187,11 @@ class SstFileWriterTest {
 
 		try (var opts = Options.newOptions().setCreateIfMissing(true);
 		     var writer = SstFileWriter.newSstFileWriter(opts)) {
-			// When / Then
-			assertThatThrownBy(() -> writer.open(sstPath))
-					.isInstanceOf(RocksDBException.class);
+			// When
+			var thrown = assertThatThrownBy(() -> writer.open(sstPath));
+
+			// Then
+			thrown.isInstanceOf(RocksDBException.class);
 		}
 	}
 
@@ -201,9 +205,11 @@ class SstFileWriterTest {
 			writer.open(sstPath);
 			writer.put("zzz".getBytes(), "v1".getBytes());
 
-			// When / Then — adding a key that sorts before the previous one must fail
-			assertThatThrownBy(() -> writer.put("aaa".getBytes(), "v2".getBytes()))
-					.isInstanceOf(RocksDBException.class);
+			// When
+			var thrown = assertThatThrownBy(() -> writer.put("aaa".getBytes(), "v2".getBytes()));
+
+			// Then — adding a key that sorts before the previous one must fail
+			thrown.isInstanceOf(RocksDBException.class);
 		}
 	}
 }

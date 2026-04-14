@@ -128,8 +128,10 @@ class BackupEngineIntegrationTest {
 			db.put("k".getBytes(), "v".getBytes());
 			engine.createNewBackup(db);
 
-			// When / Then — verify should succeed for a valid backup
+			// When
 			engine.verifyBackup(BackupId.of(1));
+
+			// Then — verify should succeed for a valid backup
 		}
 	}
 
@@ -144,9 +146,11 @@ class BackupEngineIntegrationTest {
 
 			engine.createNewBackup(db);
 
-			// When / Then — verifying a non-existent ID throws
-			assertThatThrownBy(() -> engine.verifyBackup(BackupId.of(999)))
-					.isInstanceOf(RocksDBException.class);
+			// When
+			var thrown = assertThatThrownBy(() -> engine.verifyBackup(BackupId.of(999)));
+
+			// Then — verifying a non-existent ID throws
+			thrown.isInstanceOf(RocksDBException.class);
 		}
 	}
 

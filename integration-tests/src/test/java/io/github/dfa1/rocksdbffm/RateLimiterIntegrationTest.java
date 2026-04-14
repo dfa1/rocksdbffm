@@ -71,10 +71,13 @@ class RateLimiterIntegrationTest {
 				     .setRateLimiter(limiter)) {
 			limiter.close();
 
-			// When / Then — Options (and the underlying shared_ptr) still valid
+			// When — Options (and the underlying shared_ptr) still valid
 			try (var db = RocksDB.open(opts, dir)) {
 				db.put("key".getBytes(), "value".getBytes());
-				assertThat(db.get("key".getBytes())).isEqualTo("value".getBytes());
+				var result = db.get("key".getBytes());
+
+				// Then
+				assertThat(result).isEqualTo("value".getBytes());
 			}
 		}
 	}

@@ -79,9 +79,11 @@ class FlushTest {
 		try (var db = RocksDB.open(dir)) {
 			db.put("k".getBytes(), "v".getBytes());
 
-			// When / Then — both sync modes complete without error
+			// When
 			db.flushWal(false);
 			db.flushWal(true);
+
+			// Then — both sync modes complete without error
 		}
 	}
 
@@ -114,9 +116,11 @@ class FlushTest {
 		     var db = RocksDB.openTransaction(opts, txnDbOpts, dir)) {
 			db.put("k".getBytes(), "v".getBytes());
 
-			// When / Then
+			// When
 			db.flushWal(false);
 			db.flushWal(true);
+
+			// Then — both sync modes complete without error
 		}
 	}
 }

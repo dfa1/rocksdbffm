@@ -114,10 +114,12 @@ class WalIteratorTest {
 			db.put("k".getBytes(), "v".getBytes());
 			SequenceNumber start = SequenceNumber.of(0);
 
-			// When/Then — double close must not crash
+			// When
 			WalIterator it = db.getUpdatesSince(start);
 			it.close();
 			it.close();
+
+			// Then — double close must not crash
 		}
 	}
 }

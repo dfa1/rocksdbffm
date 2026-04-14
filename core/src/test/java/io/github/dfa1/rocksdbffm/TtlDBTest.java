@@ -33,8 +33,11 @@ class TtlDBTest {
 
 			db.put("key".getBytes(), "value".getBytes());
 
-			// When / Then
-			assertThat(db.get("key".getBytes())).isEqualTo("value".getBytes());
+			// When
+			var result = db.get("key".getBytes());
+
+			// Then
+			assertThat(result).isEqualTo("value".getBytes());
 		}
 	}
 

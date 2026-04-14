@@ -80,7 +80,7 @@ class CompressionTypeTest {
 			supported = probe.getSupportedCompressions();
 		}
 
-		// When / Then — open a separate DB per compression type
+		// When — open a separate DB per compression type and verify round-trip
 		int i = 0;
 		for (CompressionType type : supported) {
 			Path dbPath = dir.resolve("db-" + i++);
@@ -88,8 +88,12 @@ class CompressionTypeTest {
 					.setCreateIfMissing(true)
 					.setCompression(type);
 			     ReadWriteDB db = RocksDB.open(opts, dbPath)) {
+				// When
 				db.put("key".getBytes(), "val".getBytes());
-				assertThat(db.get("key".getBytes()))
+				var result = db.get("key".getBytes());
+
+				// Then
+				assertThat(result)
 						.as("compression=%s", type)
 						.isEqualTo("val".getBytes());
 			}

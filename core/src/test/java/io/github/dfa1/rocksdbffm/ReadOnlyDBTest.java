@@ -226,8 +226,11 @@ class ReadOnlyDBTest {
 
 		try (var ro = RocksDB.openReadOnly(dir)) {
 
-			// When / Then
-			assertThat(ro.getLongProperty(Property.ESTIMATE_NUM_KEYS)).isPresent();
+			// When
+			var result = ro.getLongProperty(Property.ESTIMATE_NUM_KEYS);
+
+			// Then
+			assertThat(result).isPresent();
 		}
 	}
 
@@ -240,8 +243,11 @@ class ReadOnlyDBTest {
 
 		try (var ro = RocksDB.openReadOnly(dir)) {
 
-			// When / Then
-			assertThat(ro.getProperty(Property.STATS)).isPresent();
+			// When
+			var result = ro.getProperty(Property.STATS);
+
+			// Then
+			assertThat(result).isPresent();
 		}
 	}
 }

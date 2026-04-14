@@ -138,10 +138,16 @@ class RocksDBTest {
 				batch.put(("key-" + i).getBytes(), ("val-" + i).getBytes());
 			}
 
-			// When / Then (count is observable before commit)
-			assertThat(batch.count()).isEqualTo(50);
+			// When
+			var count = batch.count();
 
+			// Then — count is observable before commit
+			assertThat(count).isEqualTo(50);
+
+			// When
 			db.write(batch);
+
+			// Then
 			for (int i = 0; i < 50; i++) {
 				assertThat(db.get(("key-" + i).getBytes())).isEqualTo(("val-" + i).getBytes());
 			}
@@ -158,9 +164,11 @@ class RocksDBTest {
 		var dbPath = dir.resolve("nonexistent");
 
 		try (var opts = Options.newOptions().setCreateIfMissing(false)) {
-			// When / Then
-			assertThatThrownBy(() -> RocksDB.open(opts, dbPath))
-					.isInstanceOf(RocksDBException.class);
+			// When
+			var thrown = assertThatThrownBy(() -> RocksDB.open(opts, dbPath));
+
+			// Then
+			thrown.isInstanceOf(RocksDBException.class);
 		}
 	}
 

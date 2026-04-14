@@ -103,8 +103,16 @@ For every new feature:
 1. Write unit tests in JUnit 5 using `@TempDir`.
 2. **Always** follow the `// Given / // When / // Then` structure — every test, no exceptions.
    - `// Given` sets up state.
-   - `// When` performs the action under test.
-   - `// Then` asserts the outcome.
+   - `// When` performs the action under test — **never combine with `// Then`**. Extract the result into a local variable:
+     ```java
+     // When
+     var result = db.get("k".getBytes());
+
+     // Then
+     assertThat(result).isEqualTo("v".getBytes());
+     ```
+   - `// Then` asserts the outcome. The assertion always operates on the variable captured in `// When`, never inline.
+   - For void actions (`flush`, `put`, …) there is no return value to capture; just place the call under `// When` and put assertions (if any) under `// Then`.
    - For tests with no meaningful setup, use `// Given` with a blank line or a comment explaining why there is none.
 3. **Run tests:** `mvn test`
 

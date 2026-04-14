@@ -77,9 +77,13 @@ class MemorySizeTest {
 		var a = MemorySize.ofMB(1);
 		var b = MemorySize.ofKB(1024);
 
-		// When / Then
+		// When
+		var hashCodeA = a.hashCode();
+		var hashCodeB = b.hashCode();
+
+		// Then
 		assertThat(a).isEqualTo(b);
-		assertThat(a.hashCode()).isEqualTo(b.hashCode());
+		assertThat(hashCodeA).isEqualTo(hashCodeB);
 	}
 
 	@Test

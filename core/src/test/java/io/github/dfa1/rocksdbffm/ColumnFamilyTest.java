@@ -57,9 +57,13 @@ class ColumnFamilyTest {
 			db.put("key".getBytes(), "default-value".getBytes());
 			db.put(cf, "key".getBytes(), "cf-value".getBytes());
 
-			// When / Then
-			assertThat(db.get("key".getBytes())).isEqualTo("default-value".getBytes());
-			assertThat(db.get(cf, "key".getBytes())).isEqualTo("cf-value".getBytes());
+			// When
+			var defaultResult = db.get("key".getBytes());
+			var cfResult = db.get(cf, "key".getBytes());
+
+			// Then
+			assertThat(defaultResult).isEqualTo("default-value".getBytes());
+			assertThat(cfResult).isEqualTo("cf-value".getBytes());
 		}
 	}
 
@@ -205,8 +209,11 @@ class ColumnFamilyTest {
 		     var cf = db.createColumnFamily(ColumnFamilyDescriptor.of("cf1"))) {
 			db.put(cf, "k".getBytes(), "v".getBytes());
 
-			// When / Then
-			assertThat(db.keyMayExist(cf, "k".getBytes())).isTrue();
+			// When
+			var result = db.keyMayExist(cf, "k".getBytes());
+
+			// Then
+			assertThat(result).isTrue();
 		}
 	}
 
@@ -216,8 +223,11 @@ class ColumnFamilyTest {
 		try (var db = RocksDB.open(dir);
 		     var cf = db.createColumnFamily(ColumnFamilyDescriptor.of("cf1"))) {
 
-			// When / Then
-			assertThat(db.keyMayExist(cf, "absent".getBytes())).isFalse();
+			// When
+			var result = db.keyMayExist(cf, "absent".getBytes());
+
+			// Then
+			assertThat(result).isFalse();
 		}
 	}
 
@@ -347,8 +357,10 @@ class ColumnFamilyTest {
 		     var flushOpts = FlushOptions.newFlushOptions().setWait(true)) {
 			db.put(cf, "k".getBytes(), "v".getBytes());
 
-			// When / Then — no exception means flush succeeded
+			// When
 			db.flush(cf, flushOpts);
+
+			// Then — no exception means flush succeeded
 		}
 	}
 

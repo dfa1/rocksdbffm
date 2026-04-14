@@ -21,8 +21,10 @@ class BackgroundJobsTest {
 		try (var db = RocksDB.open(dir)) {
 			db.put("k".getBytes(), "v".getBytes());
 
-			// When / Then
+			// When
 			assertThatNoException().isThrownBy(() -> db.cancelAllBackgroundWork(false));
+
+			// Then — no exception
 		}
 	}
 
@@ -32,8 +34,10 @@ class BackgroundJobsTest {
 		try (var db = RocksDB.open(dir)) {
 			db.put("k".getBytes(), "v".getBytes());
 
-			// When / Then
+			// When
 			assertThatNoException().isThrownBy(() -> db.cancelAllBackgroundWork(true));
+
+			// Then — no exception
 		}
 	}
 
@@ -46,11 +50,13 @@ class BackgroundJobsTest {
 		// Given
 		try (var db = RocksDB.open(dir)) {
 
-			// When / Then
+			// When
 			assertThatNoException().isThrownBy(() -> {
 				db.disableManualCompaction();
 				db.enableManualCompaction();
 			});
+
+			// Then — no exception
 		}
 	}
 
@@ -83,8 +89,10 @@ class BackgroundJobsTest {
 
 			db.put("k".getBytes(), "v".getBytes());
 
-			// When / Then
+			// When
 			assertThatNoException().isThrownBy(() -> db.waitForCompact(opts));
+
+			// Then — no exception
 		}
 	}
 
@@ -96,8 +104,10 @@ class BackgroundJobsTest {
 
 			db.put("k".getBytes(), "v".getBytes());
 
-			// When / Then
+			// When
 			assertThatNoException().isThrownBy(() -> db.waitForCompact(opts));
+
+			// Then — no exception
 		}
 	}
 
@@ -109,8 +119,10 @@ class BackgroundJobsTest {
 
 			db.put("k".getBytes(), "v".getBytes());
 
-			// When / Then
+			// When
 			assertThatNoException().isThrownBy(() -> db.waitForCompact(opts));
+
+			// Then — no exception
 		}
 	}
 

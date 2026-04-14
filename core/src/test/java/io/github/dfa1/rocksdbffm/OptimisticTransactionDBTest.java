@@ -65,8 +65,11 @@ class OptimisticTransactionDBTest {
 		try (var opts = Options.newOptions().setCreateIfMissing(true);
 		     var db = RocksDB.openOptimistic(opts, dir)) {
 
-			// When / Then
-			assertThat(db.get("missing".getBytes())).isNull();
+			// When
+			var result = db.get("missing".getBytes());
+
+			// Then
+			assertThat(result).isNull();
 		}
 	}
 
@@ -374,8 +377,10 @@ class OptimisticTransactionDBTest {
 
 			db.put("k".getBytes(), "v".getBytes());
 
-			// When / Then — no exception
+			// When
 			db.flush(fo);
+
+			// Then — no exception
 		}
 	}
 
@@ -391,8 +396,11 @@ class OptimisticTransactionDBTest {
 
 			db.put("k".getBytes(), "v".getBytes());
 
-			// When / Then
-			assertThat(db.getLongProperty(Property.ESTIMATE_NUM_KEYS)).isPresent();
+			// When
+			var result = db.getLongProperty(Property.ESTIMATE_NUM_KEYS);
+
+			// Then
+			assertThat(result).isPresent();
 		}
 	}
 }

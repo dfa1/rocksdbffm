@@ -135,8 +135,10 @@ class PropertyTest {
 
 			db.put("k".getBytes(), "v".getBytes());
 
-			// When / Then
+			// When
 			OptionalLong keys = db.getLongProperty(Property.ESTIMATE_NUM_KEYS);
+
+			// Then
 			assertThat(keys).isPresent();
 			assertThat(keys.getAsLong()).isGreaterThanOrEqualTo(0);
 		}

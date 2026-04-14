@@ -23,8 +23,11 @@ class KeyMayExistTest {
 		// Given
 		try (var db = RocksDB.open(dir)) {
 
-			// When / Then — Bloom filter must rule out a key that was never written
-			assertThat(db.keyMayExist("ghost".getBytes())).isFalse();
+			// When
+			var result = db.keyMayExist("ghost".getBytes());
+
+			// Then — Bloom filter must rule out a key that was never written
+			assertThat(result).isFalse();
 		}
 	}
 
@@ -34,8 +37,11 @@ class KeyMayExistTest {
 		try (var db = RocksDB.open(dir)) {
 			db.put("k".getBytes(), "v".getBytes());
 
-			// When / Then
-			assertThat(db.keyMayExist("k".getBytes())).isTrue();
+			// When
+			var result = db.keyMayExist("k".getBytes());
+
+			// Then
+			assertThat(result).isTrue();
 		}
 	}
 
@@ -47,8 +53,10 @@ class KeyMayExistTest {
 			db.put("k".getBytes(), "v".getBytes());
 			db.delete("k".getBytes());
 
-			// When / Then — result is unspecified but must not throw
+			// When
 			db.keyMayExist("k".getBytes());
+
+			// Then — result is unspecified but must not throw
 		}
 	}
 
@@ -87,8 +95,11 @@ class KeyMayExistTest {
 			ByteBuffer key = ByteBuffer.allocateDirect(5);
 			key.put("ghost".getBytes()).flip();
 
-			// When / Then
-			assertThat(db.keyMayExist(key)).isFalse();
+			// When
+			var result = db.keyMayExist(key);
+
+			// Then
+			assertThat(result).isFalse();
 		}
 	}
 
@@ -100,8 +111,11 @@ class KeyMayExistTest {
 			ByteBuffer key = ByteBuffer.allocateDirect(5);
 			key.put("hello".getBytes()).flip();
 
-			// When / Then
-			assertThat(db.keyMayExist(key)).isTrue();
+			// When
+			var result = db.keyMayExist(key);
+
+			// Then
+			assertThat(result).isTrue();
 		}
 	}
 
@@ -118,8 +132,11 @@ class KeyMayExistTest {
 			// allocateFrom adds a null terminator — use reinterpret to strip it
 			MemorySegment keyNoNul = key.reinterpret(5);
 
-			// When / Then
-			assertThat(db.keyMayExist(keyNoNul)).isFalse();
+			// When
+			var result = db.keyMayExist(keyNoNul);
+
+			// Then
+			assertThat(result).isFalse();
 		}
 	}
 
@@ -133,8 +150,11 @@ class KeyMayExistTest {
 			key.setAtIndex(ValueLayout.JAVA_BYTE, 0, (byte) 'h');
 			key.setAtIndex(ValueLayout.JAVA_BYTE, 1, (byte) 'i');
 
-			// When / Then
-			assertThat(db.keyMayExist(key)).isTrue();
+			// When
+			var result = db.keyMayExist(key);
+
+			// Then
+			assertThat(result).isTrue();
 		}
 	}
 
@@ -149,8 +169,11 @@ class KeyMayExistTest {
 		     var db = RocksDB.open(opts, dir);
 		     var cf = db.createColumnFamily(ColumnFamilyDescriptor.of("test"))) {
 
-			// When / Then
-			assertThat(db.keyMayExist(cf, "ghost".getBytes())).isFalse();
+			// When
+			var result = db.keyMayExist(cf, "ghost".getBytes());
+
+			// Then
+			assertThat(result).isFalse();
 		}
 	}
 
@@ -162,8 +185,11 @@ class KeyMayExistTest {
 		     var cf = db.createColumnFamily(ColumnFamilyDescriptor.of("test"))) {
 			db.put(cf, "k".getBytes(), "v".getBytes());
 
-			// When / Then
-			assertThat(db.keyMayExist(cf, "k".getBytes())).isTrue();
+			// When
+			var result = db.keyMayExist(cf, "k".getBytes());
+
+			// Then
+			assertThat(result).isTrue();
 		}
 	}
 
@@ -194,8 +220,11 @@ class KeyMayExistTest {
 			ByteBuffer key = ByteBuffer.allocateDirect(5);
 			key.put("ghost".getBytes()).flip();
 
-			// When / Then
-			assertThat(db.keyMayExist(cf, key)).isFalse();
+			// When
+			var result = db.keyMayExist(cf, key);
+
+			// Then
+			assertThat(result).isFalse();
 		}
 	}
 
@@ -209,8 +238,11 @@ class KeyMayExistTest {
 			ByteBuffer key = ByteBuffer.allocateDirect(5);
 			key.put("hello".getBytes()).flip();
 
-			// When / Then
-			assertThat(db.keyMayExist(cf, key)).isTrue();
+			// When
+			var result = db.keyMayExist(cf, key);
+
+			// Then
+			assertThat(result).isTrue();
 		}
 	}
 
@@ -223,8 +255,11 @@ class KeyMayExistTest {
 		     Arena arena = Arena.ofConfined()) {
 			MemorySegment key = arena.allocateFrom("ghost").reinterpret(5);
 
-			// When / Then
-			assertThat(db.keyMayExist(cf, key)).isFalse();
+			// When
+			var result = db.keyMayExist(cf, key);
+
+			// Then
+			assertThat(result).isFalse();
 		}
 	}
 
@@ -240,8 +275,11 @@ class KeyMayExistTest {
 			key.setAtIndex(ValueLayout.JAVA_BYTE, 0, (byte) 'h');
 			key.setAtIndex(ValueLayout.JAVA_BYTE, 1, (byte) 'i');
 
-			// When / Then
-			assertThat(db.keyMayExist(cf, key)).isTrue();
+			// When
+			var result = db.keyMayExist(cf, key);
+
+			// Then
+			assertThat(result).isTrue();
 		}
 	}
 
@@ -256,8 +294,11 @@ class KeyMayExistTest {
 		try (var opts = Options.newOptions().setCreateIfMissing(true);
 		     var db = RocksDB.openWithTtl(opts, dir, Duration.ofSeconds(60))) {
 
-			// When / Then — must not throw; result is unspecified
-			assertThat(db.keyMayExist("ghost".getBytes())).isIn(true, false);
+			// When
+			var result = db.keyMayExist("ghost".getBytes());
+
+			// Then — must not throw; result is unspecified
+			assertThat(result).isIn(true, false);
 		}
 	}
 
@@ -268,8 +309,11 @@ class KeyMayExistTest {
 		     var db = RocksDB.openWithTtl(opts, dir, Duration.ofSeconds(60))) {
 			db.put("k".getBytes(), "v".getBytes());
 
-			// When / Then
-			assertThat(db.keyMayExist("k".getBytes())).isTrue();
+			// When
+			var result = db.keyMayExist("k".getBytes());
+
+			// Then
+			assertThat(result).isTrue();
 		}
 	}
 
@@ -282,8 +326,11 @@ class KeyMayExistTest {
 			ByteBuffer key = ByteBuffer.allocateDirect(5);
 			key.put("hello".getBytes()).flip();
 
-			// When / Then
-			assertThat(db.keyMayExist(key)).isTrue();
+			// When
+			var result = db.keyMayExist(key);
+
+			// Then
+			assertThat(result).isTrue();
 		}
 	}
 
@@ -298,8 +345,11 @@ class KeyMayExistTest {
 			key.setAtIndex(ValueLayout.JAVA_BYTE, 0, (byte) 'h');
 			key.setAtIndex(ValueLayout.JAVA_BYTE, 1, (byte) 'i');
 
-			// When / Then
-			assertThat(db.keyMayExist(key)).isTrue();
+			// When
+			var result = db.keyMayExist(key);
+
+			// Then
+			assertThat(result).isTrue();
 		}
 	}
 
@@ -314,8 +364,11 @@ class KeyMayExistTest {
 		     var db = RocksDB.openWithTtl(opts, dir, Duration.ofSeconds(60));
 		     var cf = db.createColumnFamily(ColumnFamilyDescriptor.of("test"))) {
 
-			// When / Then — must not throw; result is unspecified
-			assertThat(db.keyMayExist(cf, "ghost".getBytes())).isIn(true, false);
+			// When
+			var result = db.keyMayExist(cf, "ghost".getBytes());
+
+			// Then — must not throw; result is unspecified
+			assertThat(result).isIn(true, false);
 		}
 	}
 
@@ -327,8 +380,11 @@ class KeyMayExistTest {
 		     var cf = db.createColumnFamily(ColumnFamilyDescriptor.of("test"))) {
 			db.put(cf, "k".getBytes(), "v".getBytes());
 
-			// When / Then
-			assertThat(db.keyMayExist(cf, "k".getBytes())).isTrue();
+			// When
+			var result = db.keyMayExist(cf, "k".getBytes());
+
+			// Then
+			assertThat(result).isTrue();
 		}
 	}
 
@@ -342,8 +398,11 @@ class KeyMayExistTest {
 			ByteBuffer key = ByteBuffer.allocateDirect(5);
 			key.put("hello".getBytes()).flip();
 
-			// When / Then
-			assertThat(db.keyMayExist(cf, key)).isTrue();
+			// When
+			var result = db.keyMayExist(cf, key);
+
+			// Then
+			assertThat(result).isTrue();
 		}
 	}
 
@@ -359,8 +418,11 @@ class KeyMayExistTest {
 			key.setAtIndex(ValueLayout.JAVA_BYTE, 0, (byte) 'h');
 			key.setAtIndex(ValueLayout.JAVA_BYTE, 1, (byte) 'i');
 
-			// When / Then
-			assertThat(db.keyMayExist(cf, key)).isTrue();
+			// When
+			var result = db.keyMayExist(cf, key);
+
+			// Then
+			assertThat(result).isTrue();
 		}
 	}
 }

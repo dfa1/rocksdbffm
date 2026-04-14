@@ -22,9 +22,10 @@ class CompactionControlTest {
 			db.put("a".getBytes(), "1".getBytes());
 			db.put("b".getBytes(), "2".getBytes());
 
-			// When / Then
+			// When
 			db.compactRange();
 
+			// Then
 			assertThat(db.get("a".getBytes())).isEqualTo("1".getBytes());
 			assertThat(db.get("b".getBytes())).isEqualTo("2".getBytes());
 		}
@@ -58,9 +59,10 @@ class CompactionControlTest {
 		     var db = RocksDB.open(opts, dir)) {
 			db.put("k".getBytes(), "v".getBytes());
 
-			// When / Then — null means open-ended
+			// When — null means open-ended
 			db.compactRange((byte[]) null, (byte[]) null);
 
+			// Then
 			assertThat(db.get("k".getBytes())).isEqualTo("v".getBytes());
 		}
 	}
@@ -82,9 +84,10 @@ class CompactionControlTest {
 			ByteBuffer start = ByteBuffer.allocateDirect(startBytes.length).put(startBytes).flip();
 			ByteBuffer end = ByteBuffer.allocateDirect(endBytes.length).put(endBytes).flip();
 
-			// When / Then
+			// When
 			db.compactRange(start, end);
 
+			// Then
 			assertThat(db.get("a".getBytes())).isEqualTo("1".getBytes());
 		}
 	}
@@ -96,9 +99,10 @@ class CompactionControlTest {
 		     var db = RocksDB.open(opts, dir)) {
 			db.put("k".getBytes(), "v".getBytes());
 
-			// When / Then
+			// When
 			db.compactRange((ByteBuffer) null, (ByteBuffer) null);
 
+			// Then
 			assertThat(db.get("k".getBytes())).isEqualTo("v".getBytes());
 		}
 	}
@@ -139,9 +143,10 @@ class CompactionControlTest {
 
 			db.put("k".getBytes(), "v".getBytes());
 
-			// When / Then — no throw
+			// When
 			db.compactRange(compact, null, null);
 
+			// Then — no throw
 			assertThat(db.get("k".getBytes())).isEqualTo("v".getBytes());
 		}
 	}
@@ -190,8 +195,10 @@ class CompactionControlTest {
 			db.put("a".getBytes(), "1".getBytes());
 			db.put("z".getBytes(), "2".getBytes());
 
-			// When / Then — hint only; no guarantee of compaction, no exception
+			// When
 			db.suggestCompactRange("a".getBytes(), "z".getBytes());
+
+			// Then — hint only; no guarantee of compaction, no exception
 		}
 	}
 
@@ -202,8 +209,10 @@ class CompactionControlTest {
 		     var db = RocksDB.open(opts, dir)) {
 			db.put("k".getBytes(), "v".getBytes());
 
-			// When / Then
+			// When
 			db.suggestCompactRange(null, null);
+
+			// Then — no exception
 		}
 	}
 

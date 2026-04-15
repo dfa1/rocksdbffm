@@ -9,6 +9,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class BlobDBIntegrationTest {
 
+	/// 64 KB value — large enough to be stored in a blob file regardless of the min-blob-size setting.
+	private static final byte[] VALUE_64KB = "x".repeat(64 * 1024).getBytes();
+
 	@Test
 	void putGet_withBlobFiles(@TempDir Path dir) {
 		// Given
@@ -19,10 +22,10 @@ class BlobDBIntegrationTest {
 		     var db = RocksDB.openWithBlobFiles(opts, dir)) {
 
 			// When
-			db.put("k".getBytes(), "v".getBytes());
+			db.put("k".getBytes(), VALUE_64KB);
 
 			// Then
-			assertThat(db.get("k".getBytes())).isEqualTo("v".getBytes());
+			assertThat(db.get("k".getBytes())).isEqualTo(VALUE_64KB);
 		}
 	}
 
@@ -32,10 +35,10 @@ class BlobDBIntegrationTest {
 		try (var db = RocksDB.openWithBlobFiles(dir)) {
 
 			// When
-			db.put("hello".getBytes(), "world".getBytes());
+			db.put("hello".getBytes(), VALUE_64KB);
 
 			// Then
-			assertThat(db.get("hello".getBytes())).isEqualTo("world".getBytes());
+			assertThat(db.get("hello".getBytes())).isEqualTo(VALUE_64KB);
 		}
 	}
 
@@ -43,7 +46,7 @@ class BlobDBIntegrationTest {
 	void delete_removesKey(@TempDir Path dir) {
 		// Given
 		try (var db = RocksDB.openWithBlobFiles(dir)) {
-			db.put("k".getBytes(), "v".getBytes());
+			db.put("k".getBytes(), VALUE_64KB);
 
 			// When
 			db.delete("k".getBytes());
@@ -88,8 +91,8 @@ class BlobDBIntegrationTest {
 			assertThat(blobFileStartingLevel).isEqualTo(0);
 
 			try (var db = RocksDB.openWithBlobFiles(opts, dir)) {
-				db.put("k".getBytes(), "v".getBytes());
-				assertThat(db.get("k".getBytes())).isEqualTo("v".getBytes());
+				db.put("k".getBytes(), VALUE_64KB);
+				assertThat(db.get("k".getBytes())).isEqualTo(VALUE_64KB);
 			}
 		}
 	}
@@ -131,7 +134,7 @@ class BlobDBIntegrationTest {
 				.setMinBlobSize(MemorySize.ofBytes(0));
 		     var db = RocksDB.openWithBlobFiles(opts, dir)) {
 
-			db.put("k".getBytes(), "v".getBytes());
+			db.put("k".getBytes(), VALUE_64KB);
 			db.flush(FlushOptions.newFlushOptions());
 
 			// When
@@ -139,7 +142,7 @@ class BlobDBIntegrationTest {
 
 			// Then — blob file count property is readable (value ≥ 0)
 			assertThat(numBlobFiles).isPresent();
-			assertThat(numBlobFiles.getAsLong()).isGreaterThanOrEqualTo(0);
+			assertThat(numBlobFiles.getAsLong()).isGreaterThanOrEqualTo(1);
 		}
 	}
 }

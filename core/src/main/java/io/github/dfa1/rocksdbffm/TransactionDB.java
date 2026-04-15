@@ -170,9 +170,9 @@ public final class TransactionDB extends NativeObject {
 	/// Blocks until the flush completes when [FlushOptions#isWait()] is `true`.
 	public void flush(FlushOptions flushOptions) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = RocksDB.errHolder(arena);
 			MH_FLUSH.invokeExact(ptr(), flushOptions.ptr(), err);
-			Native.checkError(err);
+			RocksDB.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("flush failed", t);
 		}
@@ -183,9 +183,9 @@ public final class TransactionDB extends NativeObject {
 	/// @param sync if `true`, performs an `fsync` after writing
 	public void flushWal(boolean sync) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = RocksDB.errHolder(arena);
 			MH_FLUSH_WAL.invokeExact(ptr(), sync ? (byte) 1 : (byte) 0, err);
-			Native.checkError(err);
+			RocksDB.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("flushWal failed", t);
 		}
@@ -236,11 +236,11 @@ public final class TransactionDB extends NativeObject {
 	/// Direct put, bypassing any active transaction. Slow path: allocates native memory.
 	public void put(byte[] key, byte[] value) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
-			MemorySegment k = Native.toNative(arena, key);
-			MemorySegment v = Native.toNative(arena, value);
+			MemorySegment err = RocksDB.errHolder(arena);
+			MemorySegment k = RocksDB.toNative(arena, key);
+			MemorySegment v = RocksDB.toNative(arena, value);
 			MH_PUT.invokeExact(ptr(), writeOpts.ptr(), k, (long) key.length, v, (long) value.length, err);
-			Native.checkError(err);
+			RocksDB.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("put failed", t);
 		}
@@ -249,12 +249,12 @@ public final class TransactionDB extends NativeObject {
 	/// Zero-copy put: wraps the direct buffers' native memory without heap→native copy.
 	public void put(java.nio.ByteBuffer key, java.nio.ByteBuffer value) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = RocksDB.errHolder(arena);
 			MH_PUT.invokeExact(ptr(), writeOpts.ptr(),
 					MemorySegment.ofBuffer(key), (long) key.remaining(),
 					MemorySegment.ofBuffer(value), (long) value.remaining(),
 					err);
-			Native.checkError(err);
+			RocksDB.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("put failed", t);
 		}
@@ -263,9 +263,9 @@ public final class TransactionDB extends NativeObject {
 	/// Zero-copy put: caller supplies pre-allocated native segments.
 	public void put(MemorySegment key, MemorySegment value) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = RocksDB.errHolder(arena);
 			MH_PUT.invokeExact(ptr(), writeOpts.ptr(), key, key.byteSize(), value, value.byteSize(), err);
-			Native.checkError(err);
+			RocksDB.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("put failed", t);
 		}
@@ -274,14 +274,14 @@ public final class TransactionDB extends NativeObject {
 	/// Direct get with explicit ReadOptions (e.g. for snapshot-pinned reads). Returns `null` if not found.
 	public byte[] get(ReadOptions readOptions, byte[] key) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
-			MemorySegment k = Native.toNative(arena, key);
+			MemorySegment err = RocksDB.errHolder(arena);
+			MemorySegment k = RocksDB.toNative(arena, key);
 			MemorySegment valLenSeg = arena.allocate(ValueLayout.JAVA_LONG);
 
 			MemorySegment valPtr = (MemorySegment) MH_GET.invokeExact(
 					ptr(), readOptions.ptr(), k, (long) key.length, valLenSeg, err);
 
-			Native.checkError(err);
+			RocksDB.checkError(err);
 
 			if (MemorySegment.NULL.equals(valPtr)) {
 				return null;
@@ -289,7 +289,7 @@ public final class TransactionDB extends NativeObject {
 
 			long valLen = valLenSeg.get(ValueLayout.JAVA_LONG, 0);
 			byte[] result = valPtr.reinterpret(valLen).toArray(ValueLayout.JAVA_BYTE);
-			Native.free(valPtr);
+			RocksDB.free(valPtr);
 			return result;
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("Native call failed", t);
@@ -299,14 +299,14 @@ public final class TransactionDB extends NativeObject {
 	/// Direct get, reading committed data only. Returns `null` if not found. Slow path.
 	public byte[] get(byte[] key) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
-			MemorySegment k = Native.toNative(arena, key);
+			MemorySegment err = RocksDB.errHolder(arena);
+			MemorySegment k = RocksDB.toNative(arena, key);
 			MemorySegment valLenSeg = arena.allocate(ValueLayout.JAVA_LONG);
 
 			MemorySegment valPtr = (MemorySegment) MH_GET.invokeExact(
 					ptr(), readOpts.ptr(), k, (long) key.length, valLenSeg, err);
 
-			Native.checkError(err);
+			RocksDB.checkError(err);
 
 			if (MemorySegment.NULL.equals(valPtr)) {
 				return null;
@@ -314,7 +314,7 @@ public final class TransactionDB extends NativeObject {
 
 			long valLen = valLenSeg.get(ValueLayout.JAVA_LONG, 0);
 			byte[] result = valPtr.reinterpret(valLen).toArray(ValueLayout.JAVA_BYTE);
-			Native.free(valPtr);
+			RocksDB.free(valPtr);
 			return result;
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("get failed", t);
@@ -325,13 +325,13 @@ public final class TransactionDB extends NativeObject {
 	/// Returns the actual value length, or -1 if not found.
 	public int get(java.nio.ByteBuffer key, java.nio.ByteBuffer value) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = RocksDB.errHolder(arena);
 			MemorySegment valLenSeg = arena.allocate(ValueLayout.JAVA_LONG);
 			MemorySegment valPtr = (MemorySegment) MH_GET.invokeExact(
 					ptr(), readOpts.ptr(),
 					MemorySegment.ofBuffer(key), (long) key.remaining(),
 					valLenSeg, err);
-			Native.checkError(err);
+			RocksDB.checkError(err);
 			if (MemorySegment.NULL.equals(valPtr)) {
 				return -1;
 			}
@@ -339,7 +339,7 @@ public final class TransactionDB extends NativeObject {
 			int toCopy = (int) Math.min(valLen, value.remaining());
 			MemorySegment.ofBuffer(value).copyFrom(valPtr.reinterpret(toCopy));
 			value.position(value.position() + toCopy);
-			Native.free(valPtr);
+			RocksDB.free(valPtr);
 			return (int) valLen;
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("get failed", t);
@@ -350,18 +350,18 @@ public final class TransactionDB extends NativeObject {
 	/// Returns the actual value length, or -1 if not found.
 	public long get(MemorySegment key, MemorySegment value) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = RocksDB.errHolder(arena);
 			MemorySegment valLenSeg = arena.allocate(ValueLayout.JAVA_LONG);
 			MemorySegment valPtr = (MemorySegment) MH_GET.invokeExact(
 					ptr(), readOpts.ptr(), key, key.byteSize(), valLenSeg, err);
-			Native.checkError(err);
+			RocksDB.checkError(err);
 			if (MemorySegment.NULL.equals(valPtr)) {
 				return -1L;
 			}
 			long valLen = valLenSeg.get(ValueLayout.JAVA_LONG, 0);
 			long toCopy = Math.min(valLen, value.byteSize());
 			value.copyFrom(valPtr.reinterpret(toCopy));
-			Native.free(valPtr);
+			RocksDB.free(valPtr);
 			return valLen;
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("get failed", t);
@@ -380,7 +380,7 @@ public final class TransactionDB extends NativeObject {
 				return Optional.empty();
 			}
 			String value = result.reinterpret(Long.MAX_VALUE).getString(0);
-			Native.free(result);
+			RocksDB.free(result);
 			return Optional.of(value);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("getProperty failed", t);
@@ -405,10 +405,10 @@ public final class TransactionDB extends NativeObject {
 	/// Direct delete, bypassing any active transaction. Slow path.
 	public void delete(byte[] key) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
-			MemorySegment k = Native.toNative(arena, key);
+			MemorySegment err = RocksDB.errHolder(arena);
+			MemorySegment k = RocksDB.toNative(arena, key);
 			MH_DELETE.invokeExact(ptr(), writeOpts.ptr(), k, (long) key.length, err);
-			Native.checkError(err);
+			RocksDB.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("delete failed", t);
 		}
@@ -417,10 +417,10 @@ public final class TransactionDB extends NativeObject {
 	/// Zero-copy for direct [java.nio.ByteBuffer]s.
 	public void delete(java.nio.ByteBuffer key) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = RocksDB.errHolder(arena);
 			MH_DELETE.invokeExact(ptr(), writeOpts.ptr(),
 					MemorySegment.ofBuffer(key), (long) key.remaining(), err);
-			Native.checkError(err);
+			RocksDB.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("delete failed", t);
 		}
@@ -429,9 +429,9 @@ public final class TransactionDB extends NativeObject {
 	/// Zero-copy native-first path.
 	public void delete(MemorySegment key) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = RocksDB.errHolder(arena);
 			MH_DELETE.invokeExact(ptr(), writeOpts.ptr(), key, key.byteSize(), err);
-			Native.checkError(err);
+			RocksDB.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("delete failed", t);
 		}
@@ -458,11 +458,11 @@ public final class TransactionDB extends NativeObject {
 	/// Stores `value` under `key` in `cf`, bypassing any active transaction. Slow path.
 	public void put(ColumnFamilyHandle cf, byte[] key, byte[] value) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = RocksDB.errHolder(arena);
 			MH_PUT_CF.invokeExact(ptr(), writeOpts.ptr(), cf.ptr(),
-					Native.toNative(arena, key), (long) key.length,
-					Native.toNative(arena, value), (long) value.length, err);
-			Native.checkError(err);
+					RocksDB.toNative(arena, key), (long) key.length,
+					RocksDB.toNative(arena, value), (long) value.length, err);
+			RocksDB.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("put failed", t);
 		}
@@ -471,11 +471,11 @@ public final class TransactionDB extends NativeObject {
 	/// Zero-copy put into `cf` for direct [java.nio.ByteBuffer]s.
 	public void put(ColumnFamilyHandle cf, java.nio.ByteBuffer key, java.nio.ByteBuffer value) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = RocksDB.errHolder(arena);
 			MH_PUT_CF.invokeExact(ptr(), writeOpts.ptr(), cf.ptr(),
 					MemorySegment.ofBuffer(key), (long) key.remaining(),
 					MemorySegment.ofBuffer(value), (long) value.remaining(), err);
-			Native.checkError(err);
+			RocksDB.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("put failed", t);
 		}
@@ -484,10 +484,10 @@ public final class TransactionDB extends NativeObject {
 	/// Zero-copy put into `cf` for [MemorySegment]s.
 	public void put(ColumnFamilyHandle cf, MemorySegment key, MemorySegment value) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = RocksDB.errHolder(arena);
 			MH_PUT_CF.invokeExact(ptr(), writeOpts.ptr(), cf.ptr(),
 					key, key.byteSize(), value, value.byteSize(), err);
-			Native.checkError(err);
+			RocksDB.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("put failed", t);
 		}
@@ -505,11 +505,11 @@ public final class TransactionDB extends NativeObject {
 	/// Get from `cf` with explicit [ReadOptions]. Returns `null` if not found.
 	public byte[] get(ColumnFamilyHandle cf, ReadOptions readOptions, byte[] key) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = RocksDB.errHolder(arena);
 			MemorySegment pin = (MemorySegment) MH_GET_PINNED_CF.invokeExact(
 					ptr(), readOptions.ptr(), cf.ptr(),
-					Native.toNative(arena, key), (long) key.length, err);
-			Native.checkError(err);
+					RocksDB.toNative(arena, key), (long) key.length, err);
+			RocksDB.checkError(err);
 			if (MemorySegment.NULL.equals(pin)) {
 				return null;
 			}
@@ -531,10 +531,10 @@ public final class TransactionDB extends NativeObject {
 	/// Removes `key` from `cf`, bypassing any active transaction. Slow path.
 	public void delete(ColumnFamilyHandle cf, byte[] key) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = RocksDB.errHolder(arena);
 			MH_DELETE_CF.invokeExact(ptr(), writeOpts.ptr(), cf.ptr(),
-					Native.toNative(arena, key), (long) key.length, err);
-			Native.checkError(err);
+					RocksDB.toNative(arena, key), (long) key.length, err);
+			RocksDB.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("delete failed", t);
 		}
@@ -543,10 +543,10 @@ public final class TransactionDB extends NativeObject {
 	/// Zero-copy delete from `cf` for direct [java.nio.ByteBuffer]s.
 	public void delete(ColumnFamilyHandle cf, java.nio.ByteBuffer key) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = RocksDB.errHolder(arena);
 			MH_DELETE_CF.invokeExact(ptr(), writeOpts.ptr(), cf.ptr(),
 					MemorySegment.ofBuffer(key), (long) key.remaining(), err);
-			Native.checkError(err);
+			RocksDB.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("delete failed", t);
 		}
@@ -555,9 +555,9 @@ public final class TransactionDB extends NativeObject {
 	/// Zero-copy delete from `cf` for [MemorySegment]s.
 	public void delete(ColumnFamilyHandle cf, MemorySegment key) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = RocksDB.errHolder(arena);
 			MH_DELETE_CF.invokeExact(ptr(), writeOpts.ptr(), cf.ptr(), key, key.byteSize(), err);
-			Native.checkError(err);
+			RocksDB.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("delete failed", t);
 		}
@@ -596,9 +596,9 @@ public final class TransactionDB extends NativeObject {
 	/// Flushes the memtable for `cf` to SST files.
 	public void flush(ColumnFamilyHandle cf, FlushOptions flushOptions) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = RocksDB.errHolder(arena);
 			MH_FLUSH_CF.invokeExact(ptr(), flushOptions.ptr(), cf.ptr(), err);
-			Native.checkError(err);
+			RocksDB.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("flush failed", t);
 		}

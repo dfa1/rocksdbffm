@@ -167,10 +167,10 @@ public final class BackupEngine extends NativeObject {
 	/// The `backupPath` directory is created if it does not exist.
 	public static BackupEngine open(Options options, Path backupPath) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = RocksDB.errHolder(arena);
 			MemorySegment pathSeg = arena.allocateFrom(backupPath.toString());
 			MemorySegment ptr = (MemorySegment) MH_OPEN.invokeExact(options.ptr(), pathSeg, err);
-			Native.checkError(err);
+			RocksDB.checkError(err);
 			return new BackupEngine(ptr);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("BackupEngine.open failed", t);
@@ -183,9 +183,9 @@ public final class BackupEngine extends NativeObject {
 	/// sharing strategy, custom env, etc.).
 	public static BackupEngine open(BackupEngineOptions options, Env env) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = RocksDB.errHolder(arena);
 			MemorySegment ptr = (MemorySegment) MH_OPEN_OPTS.invokeExact(options.ptr(), env.ptr(), err);
-			Native.checkError(err);
+			RocksDB.checkError(err);
 			return new BackupEngine(ptr);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("BackupEngine.open failed", t);
@@ -231,9 +231,9 @@ public final class BackupEngine extends NativeObject {
 
 	private void createBackup(MemorySegment dbPtr, boolean flush) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = RocksDB.errHolder(arena);
 			MH_CREATE_NEW_BACKUP_FLUSH.invokeExact(ptr(), dbPtr, flush ? (byte) 1 : (byte) 0, err);
-			Native.checkError(err);
+			RocksDB.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("createNewBackup failed", t);
 		}
@@ -246,9 +246,9 @@ public final class BackupEngine extends NativeObject {
 	/// Deletes all but the `numBackupsToKeep` most recent backups.
 	public void purgeOldBackups(int numBackupsToKeep) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = RocksDB.errHolder(arena);
 			MH_PURGE_OLD_BACKUPS.invokeExact(ptr(), numBackupsToKeep, err);
-			Native.checkError(err);
+			RocksDB.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("purgeOldBackups failed", t);
 		}
@@ -259,9 +259,9 @@ public final class BackupEngine extends NativeObject {
 	/// @throws RocksDBException if the backup is corrupt or not found
 	public void verifyBackup(BackupId backupId) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = RocksDB.errHolder(arena);
 			MH_VERIFY_BACKUP.invokeExact(ptr(), backupId.toNativeInt(), err);
-			Native.checkError(err);
+			RocksDB.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("verifyBackup failed", t);
 		}
@@ -282,11 +282,11 @@ public final class BackupEngine extends NativeObject {
 	/// Restores the most recent backup to `dbDir` with WAL files written to `walDir`.
 	public void restoreDbFromLatestBackup(Path dbDir, Path walDir, RestoreOptions restoreOptions) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = RocksDB.errHolder(arena);
 			MemorySegment dbDirSeg = arena.allocateFrom(dbDir.toString());
 			MemorySegment walDirSeg = arena.allocateFrom(walDir.toString());
 			MH_RESTORE_FROM_LATEST.invokeExact(ptr(), dbDirSeg, walDirSeg, restoreOptions.ptr(), err);
-			Native.checkError(err);
+			RocksDB.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("restoreDbFromLatestBackup failed", t);
 		}
@@ -300,12 +300,12 @@ public final class BackupEngine extends NativeObject {
 	/// Restores the backup identified by `backupId` to `dbDir` with WAL files written to `walDir`.
 	public void restoreDbFromBackup(BackupId backupId, Path dbDir, Path walDir, RestoreOptions restoreOptions) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = RocksDB.errHolder(arena);
 			MemorySegment dbDirSeg = arena.allocateFrom(dbDir.toString());
 			MemorySegment walDirSeg = arena.allocateFrom(walDir.toString());
 			MH_RESTORE_FROM_BACKUP.invokeExact(ptr(), dbDirSeg, walDirSeg,
 					restoreOptions.ptr(), backupId.toNativeInt(), err);
-			Native.checkError(err);
+			RocksDB.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("restoreDbFromBackup failed", t);
 		}

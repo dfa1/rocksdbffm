@@ -61,9 +61,9 @@ public final class SecondaryDB extends NativeObject {
 	/// if the primary has not yet flushed a write.
 	public void tryCatchUpWithPrimary() {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = RocksDB.errHolder(arena);
 			MH_CATCH_UP.invokeExact(ptr(), err);
-			Native.checkError(err);
+			RocksDB.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("tryCatchUpWithPrimary failed", t);
 		}

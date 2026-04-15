@@ -151,11 +151,11 @@ public final class Transaction extends NativeObject {
 	/// Stages a put inside this transaction. Slow path: allocates native memory for key/value.
 	public void put(byte[] key, byte[] value) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
-			MemorySegment k = Native.toNative(arena, key);
-			MemorySegment v = Native.toNative(arena, value);
+			MemorySegment err = RocksDB.errHolder(arena);
+			MemorySegment k = RocksDB.toNative(arena, key);
+			MemorySegment v = RocksDB.toNative(arena, value);
 			MH_PUT.invokeExact(ptr(), k, (long) key.length, v, (long) value.length, err);
-			Native.checkError(err);
+			RocksDB.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("Native call failed", t);
 		}
@@ -164,10 +164,10 @@ public final class Transaction extends NativeObject {
 	/// Stages a delete inside this transaction. Slow path: allocates native memory for key.
 	public void delete(byte[] key) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
-			MemorySegment k = Native.toNative(arena, key);
+			MemorySegment err = RocksDB.errHolder(arena);
+			MemorySegment k = RocksDB.toNative(arena, key);
 			MH_DELETE.invokeExact(ptr(), k, (long) key.length, err);
-			Native.checkError(err);
+			RocksDB.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("Native call failed", t);
 		}
@@ -183,13 +183,13 @@ public final class Transaction extends NativeObject {
 	/// Slow path: allocates native memory for the key.
 	public byte[] get(ReadOptions readOptions, byte[] key) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
-			MemorySegment k = Native.toNative(arena, key);
+			MemorySegment err = RocksDB.errHolder(arena);
+			MemorySegment k = RocksDB.toNative(arena, key);
 
 			MemorySegment pin = (MemorySegment) MH_GET_PINNED.invokeExact(
 					ptr(), readOptions.ptr(), k, (long) key.length, err);
 
-			Native.checkError(err);
+			RocksDB.checkError(err);
 
 			if (MemorySegment.NULL.equals(pin)) {
 				return null;
@@ -212,15 +212,15 @@ public final class Transaction extends NativeObject {
 	/// @param exclusive if true, acquires an exclusive (write) lock; otherwise a shared (read) lock
 	public byte[] getForUpdate(ReadOptions readOptions, byte[] key, boolean exclusive) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
-			MemorySegment k = Native.toNative(arena, key);
+			MemorySegment err = RocksDB.errHolder(arena);
+			MemorySegment k = RocksDB.toNative(arena, key);
 			MemorySegment valLenSeg = arena.allocate(ValueLayout.JAVA_LONG);
 
 			MemorySegment valPtr = (MemorySegment) MH_GET_FOR_UPDATE.invokeExact(
 					ptr(), readOptions.ptr(), k, (long) key.length,
 					valLenSeg, exclusive ? (byte) 1 : (byte) 0, err);
 
-			Native.checkError(err);
+			RocksDB.checkError(err);
 
 			if (MemorySegment.NULL.equals(valPtr)) {
 				return null;
@@ -228,7 +228,7 @@ public final class Transaction extends NativeObject {
 
 			long valLen = valLenSeg.get(ValueLayout.JAVA_LONG, 0);
 			byte[] result = valPtr.reinterpret(valLen).toArray(ValueLayout.JAVA_BYTE);
-			Native.free(valPtr);
+			RocksDB.free(valPtr);
 			return result;
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("Native call failed", t);
@@ -242,11 +242,11 @@ public final class Transaction extends NativeObject {
 	/// Stages a put into `cf` inside this transaction. Slow path: allocates native memory.
 	public void put(ColumnFamilyHandle cf, byte[] key, byte[] value) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = RocksDB.errHolder(arena);
 			MH_PUT_CF.invokeExact(ptr(), cf.ptr(),
-					Native.toNative(arena, key), (long) key.length,
-					Native.toNative(arena, value), (long) value.length, err);
-			Native.checkError(err);
+					RocksDB.toNative(arena, key), (long) key.length,
+					RocksDB.toNative(arena, value), (long) value.length, err);
+			RocksDB.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("Native call failed", t);
 		}
@@ -255,10 +255,10 @@ public final class Transaction extends NativeObject {
 	/// Stages a delete of `key` from `cf` inside this transaction. Slow path.
 	public void delete(ColumnFamilyHandle cf, byte[] key) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = RocksDB.errHolder(arena);
 			MH_DELETE_CF.invokeExact(ptr(), cf.ptr(),
-					Native.toNative(arena, key), (long) key.length, err);
-			Native.checkError(err);
+					RocksDB.toNative(arena, key), (long) key.length, err);
+			RocksDB.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("Native call failed", t);
 		}
@@ -271,11 +271,11 @@ public final class Transaction extends NativeObject {
 	/// Reads `key` from `cf` within this transaction via PinnableSlice. Returns `null` if not found.
 	public byte[] get(ColumnFamilyHandle cf, ReadOptions readOptions, byte[] key) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = RocksDB.errHolder(arena);
 			MemorySegment pin = (MemorySegment) MH_GET_PINNED_CF.invokeExact(
 					ptr(), readOptions.ptr(), cf.ptr(),
-					Native.toNative(arena, key), (long) key.length, err);
-			Native.checkError(err);
+					RocksDB.toNative(arena, key), (long) key.length, err);
+			RocksDB.checkError(err);
 			if (MemorySegment.NULL.equals(pin)) {
 				return null;
 			}
@@ -296,19 +296,19 @@ public final class Transaction extends NativeObject {
 	/// @param exclusive if true, acquires an exclusive (write) lock; otherwise a shared (read) lock
 	public byte[] getForUpdate(ColumnFamilyHandle cf, ReadOptions readOptions, byte[] key, boolean exclusive) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
-			MemorySegment k = Native.toNative(arena, key);
+			MemorySegment err = RocksDB.errHolder(arena);
+			MemorySegment k = RocksDB.toNative(arena, key);
 			MemorySegment valLenSeg = arena.allocate(ValueLayout.JAVA_LONG);
 			MemorySegment valPtr = (MemorySegment) MH_GET_FOR_UPDATE_CF.invokeExact(
 					ptr(), readOptions.ptr(), cf.ptr(), k, (long) key.length,
 					valLenSeg, exclusive ? (byte) 1 : (byte) 0, err);
-			Native.checkError(err);
+			RocksDB.checkError(err);
 			if (MemorySegment.NULL.equals(valPtr)) {
 				return null;
 			}
 			long valLen = valLenSeg.get(ValueLayout.JAVA_LONG, 0);
 			byte[] result = valPtr.reinterpret(valLen).toArray(ValueLayout.JAVA_BYTE);
-			Native.free(valPtr);
+			RocksDB.free(valPtr);
 			return result;
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("Native call failed", t);
@@ -352,9 +352,9 @@ public final class Transaction extends NativeObject {
 	/// Commits all staged operations in this transaction.
 	public void commit() {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = RocksDB.errHolder(arena);
 			MH_COMMIT.invokeExact(ptr(), err);
-			Native.checkError(err);
+			RocksDB.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("Native call failed", t);
 		}
@@ -363,9 +363,9 @@ public final class Transaction extends NativeObject {
 	/// Rolls back all staged operations in this transaction.
 	public void rollback() {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = RocksDB.errHolder(arena);
 			MH_ROLLBACK.invokeExact(ptr(), err);
-			Native.checkError(err);
+			RocksDB.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("Native call failed", t);
 		}
@@ -383,9 +383,9 @@ public final class Transaction extends NativeObject {
 	/// Rolls back to the most recent savepoint set by [#setSavePoint()].
 	public void rollbackToSavePoint() {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = RocksDB.errHolder(arena);
 			MH_ROLLBACK_TO_SAVEPOINT.invokeExact(ptr(), err);
-			Native.checkError(err);
+			RocksDB.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("Native call failed", t);
 		}

@@ -69,7 +69,7 @@ public final class Snapshot extends NativeObject {
 	@Override
 	protected void tryClose(MemorySegment ptr) throws Throwable {
 		if (MemorySegment.NULL.equals(dbPtr)) {
-			Native.free(ptr);
+			RocksDB.free(ptr);
 		} else {
 			MH_RELEASE.invokeExact(dbPtr, ptr);
 		}

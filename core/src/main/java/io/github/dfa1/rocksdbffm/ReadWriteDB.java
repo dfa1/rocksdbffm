@@ -132,7 +132,7 @@ public final class ReadWriteDB extends NativeObject {
 	/// Slow path: copies the key into native memory.
 	public boolean keyMayExist(byte[] key) {
 		try (Arena arena = Arena.ofConfined()) {
-			return RocksDB.keyMayExistSegment(ptr(), readOpts.ptr(), Native.toNative(arena, key), key.length);
+			return RocksDB.keyMayExistSegment(ptr(), readOpts.ptr(), RocksDB.toNative(arena, key), key.length);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("keyMayExist failed", t);
 		}
@@ -141,7 +141,7 @@ public final class ReadWriteDB extends NativeObject {
 	/// [#keyMayExist(byte\[\])] with explicit [ReadOptions].
 	public boolean keyMayExist(ReadOptions readOptions, byte[] key) {
 		try (Arena arena = Arena.ofConfined()) {
-			return RocksDB.keyMayExistSegment(ptr(), readOptions.ptr(), Native.toNative(arena, key), key.length);
+			return RocksDB.keyMayExistSegment(ptr(), readOptions.ptr(), RocksDB.toNative(arena, key), key.length);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("keyMayExist failed", t);
 		}
@@ -509,7 +509,7 @@ public final class ReadWriteDB extends NativeObject {
 	public boolean keyMayExist(ColumnFamilyHandle cf, byte[] key) {
 		try (Arena arena = Arena.ofConfined()) {
 			return RocksDB.keyMayExistCfSegment(ptr(), readOpts.ptr(), cf,
-					Native.toNative(arena, key), key.length);
+					RocksDB.toNative(arena, key), key.length);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("keyMayExist failed", t);
 		}
@@ -519,7 +519,7 @@ public final class ReadWriteDB extends NativeObject {
 	public boolean keyMayExist(ColumnFamilyHandle cf, ReadOptions readOptions, byte[] key) {
 		try (Arena arena = Arena.ofConfined()) {
 			return RocksDB.keyMayExistCfSegment(ptr(), readOptions.ptr(), cf,
-					Native.toNative(arena, key), key.length);
+					RocksDB.toNative(arena, key), key.length);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("keyMayExist failed", t);
 		}

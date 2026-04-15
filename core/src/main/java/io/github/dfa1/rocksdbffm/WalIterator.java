@@ -89,9 +89,9 @@ public final class WalIterator extends NativeObject {
 	/// @throws RocksDBException if an error occurred
 	public void checkStatus() {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = RocksDB.errHolder(arena);
 			MH_STATUS.invokeExact(ptr(), err);
-			Native.checkError(err);
+			RocksDB.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("wal_iter_status failed", t);
 		}

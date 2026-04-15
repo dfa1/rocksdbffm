@@ -104,8 +104,8 @@ public final class WriteBatch extends NativeObject {
 	// TODO: experimental zig-like interface => but in the end it could be easier just to allocate the arena as part of the batch
 	public void put(Arena arena, byte[] key, byte[] value) {
 		try {
-			MemorySegment k = Native.toNative(arena, key);
-			MemorySegment v = Native.toNative(arena, value);
+			MemorySegment k = RocksDB.toNative(arena, key);
+			MemorySegment v = RocksDB.toNative(arena, value);
 			MH_PUT.invokeExact(ptr(), k, (long) key.length, v, (long) value.length);
 		} catch (Throwable t) {
 			throw new RocksDBException("writebatch put failed", t);
@@ -114,8 +114,8 @@ public final class WriteBatch extends NativeObject {
 
 	public void put(byte[] key, byte[] value) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment k = Native.toNative(arena, key);
-			MemorySegment v = Native.toNative(arena, value);
+			MemorySegment k = RocksDB.toNative(arena, key);
+			MemorySegment v = RocksDB.toNative(arena, value);
 			MH_PUT.invokeExact(ptr(), k, (long) key.length, v, (long) value.length);
 		} catch (Throwable t) {
 			throw new RocksDBException("writebatch put failed", t);
@@ -124,7 +124,7 @@ public final class WriteBatch extends NativeObject {
 
 	public void delete(byte[] key) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment k = Native.toNative(arena, key);
+			MemorySegment k = RocksDB.toNative(arena, key);
 			MH_DELETE.invokeExact(ptr(), k, (long) key.length);
 		} catch (Throwable t) {
 			throw new RocksDBException("writebatch delete failed", t);
@@ -135,8 +135,8 @@ public final class WriteBatch extends NativeObject {
 	public void deleteRange(byte[] startKey, byte[] endKey) {
 		try (Arena arena = Arena.ofConfined()) {
 			MH_DELETE_RANGE.invokeExact(ptr(),
-					Native.toNative(arena, startKey), (long) startKey.length,
-					Native.toNative(arena, endKey), (long) endKey.length);
+					RocksDB.toNative(arena, startKey), (long) startKey.length,
+					RocksDB.toNative(arena, endKey), (long) endKey.length);
 		} catch (Throwable t) {
 			throw new RocksDBException("writebatch deleteRange failed", t);
 		}
@@ -172,8 +172,8 @@ public final class WriteBatch extends NativeObject {
 	public void put(ColumnFamilyHandle cf, byte[] key, byte[] value) {
 		try (Arena arena = Arena.ofConfined()) {
 			MH_PUT_CF.invokeExact(ptr(), cf.ptr(),
-					Native.toNative(arena, key), (long) key.length,
-					Native.toNative(arena, value), (long) value.length);
+					RocksDB.toNative(arena, key), (long) key.length,
+					RocksDB.toNative(arena, value), (long) value.length);
 		} catch (Throwable t) {
 			throw new RocksDBException("writebatch put_cf failed", t);
 		}
@@ -204,7 +204,7 @@ public final class WriteBatch extends NativeObject {
 	public void delete(ColumnFamilyHandle cf, byte[] key) {
 		try (Arena arena = Arena.ofConfined()) {
 			MH_DELETE_CF.invokeExact(ptr(), cf.ptr(),
-					Native.toNative(arena, key), (long) key.length);
+					RocksDB.toNative(arena, key), (long) key.length);
 		} catch (Throwable t) {
 			throw new RocksDBException("writebatch delete_cf failed", t);
 		}
@@ -233,8 +233,8 @@ public final class WriteBatch extends NativeObject {
 	public void deleteRange(ColumnFamilyHandle cf, byte[] startKey, byte[] endKey) {
 		try (Arena arena = Arena.ofConfined()) {
 			MH_DELETE_RANGE_CF.invokeExact(ptr(), cf.ptr(),
-					Native.toNative(arena, startKey), (long) startKey.length,
-					Native.toNative(arena, endKey), (long) endKey.length);
+					RocksDB.toNative(arena, startKey), (long) startKey.length,
+					RocksDB.toNative(arena, endKey), (long) endKey.length);
 		} catch (Throwable t) {
 			throw new RocksDBException("writebatch deleteRange_cf failed", t);
 		}

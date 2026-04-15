@@ -84,9 +84,9 @@ public final class Checkpoint extends NativeObject {
 
 	private static Checkpoint create(MemorySegment dbPtr) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = RocksDB.errHolder(arena);
 			var ptr = (MemorySegment) MH_CREATE.invokeExact(dbPtr, err);
-			Native.checkError(err);
+			RocksDB.checkError(err);
 			return new Checkpoint(ptr);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("newCheckpoint failed", t);
@@ -107,10 +107,10 @@ public final class Checkpoint extends NativeObject {
 	// TODO: expose MemorySize for logSizeForFlush
 	public void exportTo(Path checkpointDir, long logSizeForFlush) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = RocksDB.errHolder(arena);
 			var dirSeg = arena.allocateFrom(checkpointDir.toString());
 			MH_EXPORT.invokeExact(ptr(), dirSeg, logSizeForFlush, err);
-			Native.checkError(err);
+			RocksDB.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("Native call failed", t);
 		}

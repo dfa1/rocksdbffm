@@ -149,6 +149,9 @@ public final class RocksDB {
 	private static final MethodHandle MH_OPEN_OPTIMISTIC_CF;
 	/// `rocksdb_t* rocksdb_transactiondb_get_base_db(rocksdb_transactiondb_t* txn_db);`
 	private static final MethodHandle MH_TRANSACTION_GET_BASE_DB;
+	/// `void rocksdb_free(void* ptr);`
+	static final MethodHandle MH_FREE = NativeLibrary.lookup("rocksdb_free",
+			FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
 	static {
 		MH_OPEN = NativeLibrary.lookup("rocksdb_open",
@@ -411,10 +414,10 @@ public final class RocksDB {
 	/// the path does not exist.
 	public static ReadWriteDB open(Options options, Path path) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = errHolder(arena);
 			MemorySegment pathSeg = arena.allocateFrom(path.toString());
 			MemorySegment ptr = (MemorySegment) MH_OPEN.invokeExact(options.ptr(), pathSeg, err);
-			Native.checkError(err);
+			checkError(err);
 			return new ReadWriteDB(ptr, WriteOptions.newWriteOptions(), ReadOptions.newReadOptions());
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("open failed", t);
@@ -434,11 +437,11 @@ public final class RocksDB {
 	/// range. A `ttl` of [Duration#ZERO] disables expiry entirely.
 	public static TtlDB openWithTtl(Options options, Path path, Duration ttl) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = errHolder(arena);
 			MemorySegment pathSeg = arena.allocateFrom(path.toString());
 			MemorySegment ptr = (MemorySegment) MH_OPEN_WITH_TTL.invokeExact(
 					options.ptr(), pathSeg, (int) ttl.toSeconds(), err);
-			Native.checkError(err);
+			checkError(err);
 			return new TtlDB(ptr, WriteOptions.newWriteOptions(), ReadOptions.newReadOptions(), ttl);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("openWithTtl failed", t);
@@ -460,10 +463,10 @@ public final class RocksDB {
 	/// and any other blob options before calling this method.
 	public static BlobDB openWithBlobFiles(Options options, Path path) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = errHolder(arena);
 			MemorySegment pathSeg = arena.allocateFrom(path.toString());
 			MemorySegment ptr = (MemorySegment) MH_OPEN.invokeExact(options.ptr(), pathSeg, err);
-			Native.checkError(err);
+			checkError(err);
 			return new BlobDB(ptr, WriteOptions.newWriteOptions(), ReadOptions.newReadOptions());
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("openWithBlobFiles failed", t);
@@ -487,11 +490,11 @@ public final class RocksDB {
 	/// @param errorIfWalFileExists if `true`, fails when unrecovered WAL files are present
 	public static ReadOnlyDB openReadOnly(Options options, Path path, boolean errorIfWalFileExists) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = errHolder(arena);
 			MemorySegment pathSeg = arena.allocateFrom(path.toString());
 			MemorySegment ptr = (MemorySegment) MH_OPEN_FOR_READ_ONLY.invokeExact(
 					options.ptr(), pathSeg, errorIfWalFileExists ? (byte) 1 : (byte) 0, err);
-			Native.checkError(err);
+			checkError(err);
 			return new ReadOnlyDB(ptr, ReadOptions.newReadOptions());
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("openReadOnly failed", t);
@@ -519,13 +522,13 @@ public final class RocksDB {
 	/// @param secondaryPath a dedicated directory for this secondary's own MANIFEST/WAL tails
 	public static SecondaryDB openSecondary(Options options, Path primaryPath, Path secondaryPath) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = errHolder(arena);
 			MemorySegment primary = arena.allocateFrom(primaryPath.toString());
 			MemorySegment secondary = arena.allocateFrom(secondaryPath.toString());
 
 			MemorySegment ptr = (MemorySegment) MH_OPEN_SECONDARY.invokeExact(
 					options.ptr(), primary, secondary, err);
-			Native.checkError(err);
+			checkError(err);
 
 			return new SecondaryDB(ptr, ReadOptions.newReadOptions());
 		} catch (Throwable t) {
@@ -540,12 +543,12 @@ public final class RocksDB {
 	/// Opens a [TransactionDB] (pessimistic / locking transactions) at `path`.
 	public static TransactionDB openTransaction(Options options, TransactionDBOptions txnDbOptions, Path path) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = errHolder(arena);
 			MemorySegment pathSeg = arena.allocateFrom(path.toString());
 
 			MemorySegment ptr = (MemorySegment) MH_OPEN_TRANSACTION.invokeExact(
 					options.ptr(), txnDbOptions.ptr(), pathSeg, err);
-			Native.checkError(err);
+			checkError(err);
 
 			MemorySegment baseDb = (MemorySegment) MH_TRANSACTION_GET_BASE_DB.invokeExact(ptr);
 			return new TransactionDB(ptr, baseDb, WriteOptions.newWriteOptions(), ReadOptions.newReadOptions());
@@ -557,12 +560,12 @@ public final class RocksDB {
 	/// Opens an [OptimisticTransactionDB] (conflict-detection-at-commit) at `path`.
 	public static OptimisticTransactionDB openOptimistic(Options options, Path path) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = errHolder(arena);
 			MemorySegment pathSeg = arena.allocateFrom(path.toString());
 
 			MemorySegment ptr = (MemorySegment) MH_OPEN_OPTIMISTIC.invokeExact(
 					options.ptr(), pathSeg, err);
-			Native.checkError(err);
+			checkError(err);
 
 			MemorySegment baseDb = (MemorySegment) MH_GET_BASE_DB.invokeExact(ptr);
 			return new OptimisticTransactionDB(ptr, baseDb, WriteOptions.newWriteOptions(), ReadOptions.newReadOptions());
@@ -578,10 +581,10 @@ public final class RocksDB {
 	/// byte[] get via PinnableSlice — zero-copy from block cache. Returns `null` if not found.
 	static byte[] getBytes(MemorySegment db, MemorySegment readOpts, byte[] key) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
-			MemorySegment k = Native.toNative(arena, key);
+			MemorySegment err = errHolder(arena);
+			MemorySegment k = toNative(arena, key);
 			MemorySegment pin = (MemorySegment) MH_GET_PINNED.invokeExact(db, readOpts, k, (long) key.length, err);
-			Native.checkError(err);
+			checkError(err);
 			if (MemorySegment.NULL.equals(pin)) {
 				return null;
 			}
@@ -600,9 +603,9 @@ public final class RocksDB {
 	/// Returns actual value length, or -1 if not found.
 	static int getIntoBuffer(MemorySegment db, MemorySegment readOpts, MemorySegment key, long keyLen, ByteBuffer value) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = errHolder(arena);
 			MemorySegment pin = (MemorySegment) MH_GET_PINNED.invokeExact(db, readOpts, key, keyLen, err);
-			Native.checkError(err);
+			checkError(err);
 			if (MemorySegment.NULL.equals(pin)) {
 				return -1;
 			}
@@ -623,9 +626,9 @@ public final class RocksDB {
 	/// Returns actual value length.
 	static long getIntoSegment(MemorySegment db, MemorySegment readOpts, MemorySegment key, long keyLen, MemorySegment value) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = errHolder(arena);
 			MemorySegment pin = (MemorySegment) MH_GET_PINNED.invokeExact(db, readOpts, key, keyLen, err);
-			Native.checkError(err);
+			checkError(err);
 			MemorySegment valLenSeg = arena.allocate(ValueLayout.JAVA_LONG);
 			MemorySegment valPtr = (MemorySegment) MH_PINNABLESLICE_VALUE.invokeExact(pin, valLenSeg);
 			long valLen = valLenSeg.get(ValueLayout.JAVA_LONG, 0);
@@ -641,11 +644,11 @@ public final class RocksDB {
 	/// byte[] put — slow path, allocates native memory.
 	static void putBytes(MemorySegment db, MemorySegment writeOpts, byte[] key, byte[] value) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
-			MemorySegment k = Native.toNative(arena, key);
-			MemorySegment v = Native.toNative(arena, value);
+			MemorySegment err = errHolder(arena);
+			MemorySegment k = toNative(arena, key);
+			MemorySegment v = toNative(arena, value);
 			MH_PUT.invokeExact(db, writeOpts, k, (long) key.length, v, (long) value.length, err);
-			Native.checkError(err);
+			checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("put failed", t);
 		}
@@ -654,11 +657,11 @@ public final class RocksDB {
 	/// byte[] put using the caller's arena.
 	static void putBytes(Arena arena, MemorySegment db, MemorySegment writeOpts, byte[] key, byte[] value) {
 		try {
-			MemorySegment err = Native.errHolder(arena);
-			MemorySegment k = Native.toNative(arena, key);
-			MemorySegment v = Native.toNative(arena, value);
+			MemorySegment err = errHolder(arena);
+			MemorySegment k = toNative(arena, key);
+			MemorySegment v = toNative(arena, value);
 			MH_PUT.invokeExact(db, writeOpts, k, (long) key.length, v, (long) value.length, err);
-			Native.checkError(err);
+			checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("put failed", t);
 		}
@@ -668,9 +671,9 @@ public final class RocksDB {
 	static void putSegment(MemorySegment db, MemorySegment writeOpts,
 	                       MemorySegment key, long keyLen, MemorySegment val, long valLen) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = errHolder(arena);
 			MH_PUT.invokeExact(db, writeOpts, key, keyLen, val, valLen, err);
-			Native.checkError(err);
+			checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("put failed", t);
 		}
@@ -680,9 +683,9 @@ public final class RocksDB {
 	static void putSegment(Arena arena, MemorySegment db, MemorySegment writeOpts,
 	                       MemorySegment key, long keyLen, MemorySegment val, long valLen) {
 		try {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = errHolder(arena);
 			MH_PUT.invokeExact(db, writeOpts, key, keyLen, val, valLen, err);
-			Native.checkError(err);
+			checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("put failed", t);
 		}
@@ -691,10 +694,10 @@ public final class RocksDB {
 	/// byte[] delete — slow path.
 	static void deleteBytes(MemorySegment db, MemorySegment writeOpts, byte[] key) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
-			MemorySegment k = Native.toNative(arena, key);
+			MemorySegment err = errHolder(arena);
+			MemorySegment k = toNative(arena, key);
 			MH_DELETE.invokeExact(db, writeOpts, k, (long) key.length, err);
-			Native.checkError(err);
+			checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("delete failed", t);
 		}
@@ -703,9 +706,9 @@ public final class RocksDB {
 	/// MemorySegment delete — zero-copy.
 	static void deleteSegment(MemorySegment db, MemorySegment writeOpts, MemorySegment key, long keyLen) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = errHolder(arena);
 			MH_DELETE.invokeExact(db, writeOpts, key, keyLen, err);
-			Native.checkError(err);
+			checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("delete failed", t);
 		}
@@ -713,9 +716,9 @@ public final class RocksDB {
 
 	static void flush(MemorySegment db, FlushOptions flushOptions) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = errHolder(arena);
 			MH_FLUSH.invokeExact(db, flushOptions.ptr(), err);
-			Native.checkError(err);
+			checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("flush failed", t);
 		}
@@ -747,9 +750,9 @@ public final class RocksDB {
 
 	static void waitForCompact(MemorySegment db, WaitForCompactOptions options) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = errHolder(arena);
 			MH_WAIT_FOR_COMPACT.invokeExact(db, options.ptr(), err);
-			Native.checkError(err);
+			checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("waitForCompact failed", t);
 		}
@@ -766,10 +769,10 @@ public final class RocksDB {
 
 	static WalIterator getUpdatesSince(MemorySegment db, SequenceNumber sequenceNumber) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = errHolder(arena);
 			MemorySegment iterPtr = (MemorySegment) MH_GET_UPDATES_SINCE.invokeExact(
 					db, sequenceNumber.toLong(), MemorySegment.NULL, err);
-			Native.checkError(err);
+			checkError(err);
 			return WalIterator.wrap(iterPtr);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("getUpdatesSince failed", t);
@@ -778,9 +781,9 @@ public final class RocksDB {
 
 	static void flushWal(MemorySegment db, boolean sync) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = errHolder(arena);
 			MH_FLUSH_WAL.invokeExact(db, sync ? (byte) 1 : (byte) 0, err);
-			Native.checkError(err);
+			checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("flushWal failed", t);
 		}
@@ -803,7 +806,7 @@ public final class RocksDB {
 				return Optional.empty();
 			}
 			String value = result.reinterpret(Long.MAX_VALUE).getString(0);
-			Native.free(result);
+			free(result);
 			return Optional.of(value);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("getProperty failed", t);
@@ -830,12 +833,12 @@ public final class RocksDB {
 
 	static void deleteRangeCfBytes(MemorySegment db, MemorySegment writeOpts, byte[] startKey, byte[] endKey) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = errHolder(arena);
 			MemorySegment cf = (MemorySegment) MH_GET_DEFAULT_CF.invokeExact(db);
 			MH_DELETE_RANGE_CF.invokeExact(db, writeOpts, cf,
-					Native.toNative(arena, startKey), (long) startKey.length,
-					Native.toNative(arena, endKey), (long) endKey.length, err);
-			Native.checkError(err);
+					toNative(arena, startKey), (long) startKey.length,
+					toNative(arena, endKey), (long) endKey.length, err);
+			checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("deleteRange failed", t);
 		}
@@ -844,12 +847,12 @@ public final class RocksDB {
 	static void deleteRangeCfBuffer(MemorySegment db, MemorySegment writeOpts,
 	                                ByteBuffer startKey, ByteBuffer endKey) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = errHolder(arena);
 			MemorySegment cf = (MemorySegment) MH_GET_DEFAULT_CF.invokeExact(db);
 			MH_DELETE_RANGE_CF.invokeExact(db, writeOpts, cf,
 					MemorySegment.ofBuffer(startKey), (long) startKey.remaining(),
 					MemorySegment.ofBuffer(endKey), (long) endKey.remaining(), err);
-			Native.checkError(err);
+			checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("deleteRange failed", t);
 		}
@@ -858,11 +861,11 @@ public final class RocksDB {
 	static void deleteRangeCfSegment(MemorySegment db, MemorySegment writeOpts,
 	                                 MemorySegment startKey, MemorySegment endKey) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = errHolder(arena);
 			MemorySegment cf = (MemorySegment) MH_GET_DEFAULT_CF.invokeExact(db);
 			MH_DELETE_RANGE_CF.invokeExact(db, writeOpts, cf,
 					startKey, startKey.byteSize(), endKey, endKey.byteSize(), err);
-			Native.checkError(err);
+			checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("deleteRange failed", t);
 		}
@@ -870,9 +873,9 @@ public final class RocksDB {
 
 	static void writeBatch(MemorySegment db, MemorySegment writeOpts, WriteBatch batch) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = errHolder(arena);
 			MH_WRITE.invokeExact(db, writeOpts, batch.ptr(), err);
-			Native.checkError(err);
+			checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("write failed", t);
 		}
@@ -880,9 +883,9 @@ public final class RocksDB {
 
 	static void writeBatch(Arena arena, MemorySegment db, MemorySegment writeOpts, WriteBatch batch) {
 		try {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = errHolder(arena);
 			MH_WRITE.invokeExact(db, writeOpts, batch.ptr(), err);
-			Native.checkError(err);
+			checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("write failed", t);
 		}
@@ -897,8 +900,8 @@ public final class RocksDB {
 
 	static void compactRangeBytes(MemorySegment db, byte[] startKey, byte[] endKey) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment s = startKey == null ? MemorySegment.NULL : Native.toNative(arena, startKey);
-			MemorySegment e = endKey == null ? MemorySegment.NULL : Native.toNative(arena, endKey);
+			MemorySegment s = startKey == null ? MemorySegment.NULL : toNative(arena, startKey);
+			MemorySegment e = endKey == null ? MemorySegment.NULL : toNative(arena, endKey);
 			MH_COMPACT_RANGE.invokeExact(db,
 					s, startKey == null ? 0L : (long) startKey.length,
 					e, endKey == null ? 0L : (long) endKey.length);
@@ -933,8 +936,8 @@ public final class RocksDB {
 
 	static void compactRangeOptBytes(MemorySegment db, CompactOptions opts, byte[] startKey, byte[] endKey) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment s = startKey == null ? MemorySegment.NULL : Native.toNative(arena, startKey);
-			MemorySegment e = endKey == null ? MemorySegment.NULL : Native.toNative(arena, endKey);
+			MemorySegment s = startKey == null ? MemorySegment.NULL : toNative(arena, startKey);
+			MemorySegment e = endKey == null ? MemorySegment.NULL : toNative(arena, endKey);
 			MH_COMPACT_RANGE_OPT.invokeExact(db, opts.ptr(),
 					s, startKey == null ? 0L : (long) startKey.length,
 					e, endKey == null ? 0L : (long) endKey.length);
@@ -945,13 +948,13 @@ public final class RocksDB {
 
 	static void suggestCompactRangeBytes(MemorySegment db, byte[] startKey, byte[] endKey) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
-			MemorySegment s = startKey == null ? MemorySegment.NULL : Native.toNative(arena, startKey);
-			MemorySegment e = endKey == null ? MemorySegment.NULL : Native.toNative(arena, endKey);
+			MemorySegment err = errHolder(arena);
+			MemorySegment s = startKey == null ? MemorySegment.NULL : toNative(arena, startKey);
+			MemorySegment e = endKey == null ? MemorySegment.NULL : toNative(arena, endKey);
 			MH_SUGGEST_COMPACT_RANGE.invokeExact(db,
 					s, startKey == null ? 0L : (long) startKey.length,
 					e, endKey == null ? 0L : (long) endKey.length, err);
-			Native.checkError(err);
+			checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("suggestCompactRange failed", t);
 		}
@@ -959,9 +962,9 @@ public final class RocksDB {
 
 	static void disableFileDeletions(MemorySegment db) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = errHolder(arena);
 			MH_DISABLE_FILE_DELETIONS.invokeExact(db, err);
-			Native.checkError(err);
+			checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("disableFileDeletions failed", t);
 		}
@@ -969,9 +972,9 @@ public final class RocksDB {
 
 	static void enableFileDeletions(MemorySegment db) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = errHolder(arena);
 			MH_ENABLE_FILE_DELETIONS.invokeExact(db, err);
-			Native.checkError(err);
+			checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("enableFileDeletions failed", t);
 		}
@@ -979,13 +982,13 @@ public final class RocksDB {
 
 	static void ingestExternalFile(MemorySegment db, List<Path> files, IngestExternalFileOptions options) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = errHolder(arena);
 			MemorySegment fileArray = arena.allocate(ValueLayout.ADDRESS, files.size());
 			for (int i = 0; i < files.size(); i++) {
 				fileArray.setAtIndex(ValueLayout.ADDRESS, i, arena.allocateFrom(files.get(i).toString()));
 			}
 			MH_INGEST_EXTERNAL_FILE.invokeExact(db, fileArray, (long) files.size(), options.ptr(), err);
-			Native.checkError(err);
+			checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("ingestExternalFile failed", t);
 		}
@@ -1007,7 +1010,7 @@ public final class RocksDB {
 		int n = descriptors.size();
 		List<Options> tempOptions = new ArrayList<>();
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = errHolder(arena);
 			MemorySegment pathSeg = arena.allocateFrom(path.toString());
 
 			MemorySegment namesArr = arena.allocate(ValueLayout.ADDRESS, n);
@@ -1028,7 +1031,7 @@ public final class RocksDB {
 
 			MemorySegment ptr = (MemorySegment) MH_OPEN_CF.invokeExact(
 					options.ptr(), pathSeg, n, namesArr, optsArr, handlesArr, err);
-			Native.checkError(err);
+			checkError(err);
 
 			handles.clear();
 			for (int i = 0; i < n; i++) {
@@ -1064,7 +1067,7 @@ public final class RocksDB {
 		int n = descriptors.size();
 		List<Options> tempOptions = new ArrayList<>();
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = errHolder(arena);
 			MemorySegment pathSeg = arena.allocateFrom(path.toString());
 			MemorySegment namesArr = arena.allocate(ValueLayout.ADDRESS, n);
 			MemorySegment optsArr = arena.allocate(ValueLayout.ADDRESS, n);
@@ -1083,7 +1086,7 @@ public final class RocksDB {
 			MemorySegment ptr = (MemorySegment) MH_OPEN_FOR_READ_ONLY_CF.invokeExact(
 					options.ptr(), pathSeg, n, namesArr, optsArr, handlesArr,
 					errorIfWalFileExists ? (byte) 1 : (byte) 0, err);
-			Native.checkError(err);
+			checkError(err);
 			handles.clear();
 			for (int i = 0; i < n; i++) {
 				handles.add(ColumnFamilyHandle.wrap(handlesArr.getAtIndex(ValueLayout.ADDRESS, i)));
@@ -1110,7 +1113,7 @@ public final class RocksDB {
 		int n = descriptors.size();
 		List<Options> tempOptions = new ArrayList<>();
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = errHolder(arena);
 			MemorySegment pathSeg = arena.allocateFrom(path.toString());
 			MemorySegment namesArr = arena.allocate(ValueLayout.ADDRESS, n);
 			MemorySegment optsArr = arena.allocate(ValueLayout.ADDRESS, n);
@@ -1130,7 +1133,7 @@ public final class RocksDB {
 			}
 			MemorySegment ptr = (MemorySegment) MH_OPEN_CF_WITH_TTL.invokeExact(
 					options.ptr(), pathSeg, n, namesArr, optsArr, handlesArr, ttlsArr, err);
-			Native.checkError(err);
+			checkError(err);
 			handles.clear();
 			for (int i = 0; i < n; i++) {
 				handles.add(ColumnFamilyHandle.wrap(handlesArr.getAtIndex(ValueLayout.ADDRESS, i)));
@@ -1157,7 +1160,7 @@ public final class RocksDB {
 		int n = descriptors.size();
 		List<Options> tempOptions = new ArrayList<>();
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = errHolder(arena);
 			MemorySegment pathSeg = arena.allocateFrom(path.toString());
 			MemorySegment namesArr = arena.allocate(ValueLayout.ADDRESS, n);
 			MemorySegment optsArr = arena.allocate(ValueLayout.ADDRESS, n);
@@ -1175,7 +1178,7 @@ public final class RocksDB {
 			}
 			MemorySegment ptr = (MemorySegment) MH_OPEN_TRANSACTION_CF.invokeExact(
 					options.ptr(), txnDbOptions.ptr(), pathSeg, n, namesArr, optsArr, handlesArr, err);
-			Native.checkError(err);
+			checkError(err);
 			handles.clear();
 			for (int i = 0; i < n; i++) {
 				handles.add(ColumnFamilyHandle.wrap(handlesArr.getAtIndex(ValueLayout.ADDRESS, i)));
@@ -1200,7 +1203,7 @@ public final class RocksDB {
 		int n = descriptors.size();
 		List<Options> tempOptions = new ArrayList<>();
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = errHolder(arena);
 			MemorySegment pathSeg = arena.allocateFrom(path.toString());
 			MemorySegment namesArr = arena.allocate(ValueLayout.ADDRESS, n);
 			MemorySegment optsArr = arena.allocate(ValueLayout.ADDRESS, n);
@@ -1218,7 +1221,7 @@ public final class RocksDB {
 			}
 			MemorySegment ptr = (MemorySegment) MH_OPEN_OPTIMISTIC_CF.invokeExact(
 					options.ptr(), pathSeg, n, namesArr, optsArr, handlesArr, err);
-			Native.checkError(err);
+			checkError(err);
 			handles.clear();
 			for (int i = 0; i < n; i++) {
 				handles.add(ColumnFamilyHandle.wrap(handlesArr.getAtIndex(ValueLayout.ADDRESS, i)));
@@ -1237,13 +1240,13 @@ public final class RocksDB {
 	/// Lists the names of all column families in the database at `path`.
 	public static List<byte[]> listColumnFamilies(Options options, Path path) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = errHolder(arena);
 			MemorySegment pathSeg = arena.allocateFrom(path.toString());
 			MemorySegment lenSeg = arena.allocate(ValueLayout.JAVA_LONG);
 
 			MemorySegment namesPtr = (MemorySegment) MH_LIST_CF.invokeExact(
 					options.ptr(), pathSeg, lenSeg, err);
-			Native.checkError(err);
+			checkError(err);
 
 			long count = lenSeg.get(ValueLayout.JAVA_LONG, 0);
 			List<byte[]> result = new ArrayList<>((int) count);
@@ -1267,7 +1270,7 @@ public final class RocksDB {
 	static ColumnFamilyHandle createCf(MemorySegment db, ColumnFamilyDescriptor descriptor) {
 		List<Options> tempOptions = new ArrayList<>(1);
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = errHolder(arena);
 			Options cfOpts = descriptor.options();
 			if (cfOpts == null) {
 				cfOpts = Options.newOptions();
@@ -1277,7 +1280,7 @@ public final class RocksDB {
 					new String(descriptor.name(), StandardCharsets.UTF_8));
 			MemorySegment handle = (MemorySegment) MH_CREATE_CF.invokeExact(
 					db, cfOpts.ptr(), nameSeg, err);
-			Native.checkError(err);
+			checkError(err);
 			return ColumnFamilyHandle.wrap(handle);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("createColumnFamily failed", t);
@@ -1290,9 +1293,9 @@ public final class RocksDB {
 
 	static void dropCf(MemorySegment db, ColumnFamilyHandle handle) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = errHolder(arena);
 			MH_DROP_CF.invokeExact(db, handle.ptr(), err);
-			Native.checkError(err);
+			checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("dropColumnFamily failed", t);
 		}
@@ -1302,11 +1305,11 @@ public final class RocksDB {
 	static void putCfBytes(MemorySegment db, MemorySegment writeOpts, ColumnFamilyHandle cf,
 	                       byte[] key, byte[] value) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = errHolder(arena);
 			MH_PUT_CF.invokeExact(db, writeOpts, cf.ptr(),
-					Native.toNative(arena, key), (long) key.length,
-					Native.toNative(arena, value), (long) value.length, err);
-			Native.checkError(err);
+					toNative(arena, key), (long) key.length,
+					toNative(arena, value), (long) value.length, err);
+			checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("put failed", t);
 		}
@@ -1316,9 +1319,9 @@ public final class RocksDB {
 	static void putCfSegment(MemorySegment db, MemorySegment writeOpts, ColumnFamilyHandle cf,
 	                         MemorySegment key, long keyLen, MemorySegment val, long valLen) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = errHolder(arena);
 			MH_PUT_CF.invokeExact(db, writeOpts, cf.ptr(), key, keyLen, val, valLen, err);
-			Native.checkError(err);
+			checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("put failed", t);
 		}
@@ -1328,10 +1331,10 @@ public final class RocksDB {
 	static byte[] getCfBytes(MemorySegment db, MemorySegment readOpts, ColumnFamilyHandle cf,
 	                         byte[] key) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = errHolder(arena);
 			MemorySegment pin = (MemorySegment) MH_GET_PINNED_CF.invokeExact(
-					db, readOpts, cf.ptr(), Native.toNative(arena, key), (long) key.length, err);
-			Native.checkError(err);
+					db, readOpts, cf.ptr(), toNative(arena, key), (long) key.length, err);
+			checkError(err);
 			if (MemorySegment.NULL.equals(pin)) {
 				return null;
 			}
@@ -1351,10 +1354,10 @@ public final class RocksDB {
 	static int getCfIntoBuffer(MemorySegment db, MemorySegment readOpts, ColumnFamilyHandle cf,
 	                           MemorySegment key, long keyLen, ByteBuffer value) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = errHolder(arena);
 			MemorySegment pin = (MemorySegment) MH_GET_PINNED_CF.invokeExact(
 					db, readOpts, cf.ptr(), key, keyLen, err);
-			Native.checkError(err);
+			checkError(err);
 			if (MemorySegment.NULL.equals(pin)) {
 				return -1;
 			}
@@ -1376,10 +1379,10 @@ public final class RocksDB {
 	static long getCfIntoSegment(MemorySegment db, MemorySegment readOpts, ColumnFamilyHandle cf,
 	                             MemorySegment key, long keyLen, MemorySegment value) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = errHolder(arena);
 			MemorySegment pin = (MemorySegment) MH_GET_PINNED_CF.invokeExact(
 					db, readOpts, cf.ptr(), key, keyLen, err);
-			Native.checkError(err);
+			checkError(err);
 			MemorySegment valLenSeg = arena.allocate(ValueLayout.JAVA_LONG);
 			MemorySegment valPtr = (MemorySegment) MH_PINNABLESLICE_VALUE.invokeExact(pin, valLenSeg);
 			long valLen = valLenSeg.get(ValueLayout.JAVA_LONG, 0);
@@ -1396,10 +1399,10 @@ public final class RocksDB {
 	static void deleteCfBytes(MemorySegment db, MemorySegment writeOpts, ColumnFamilyHandle cf,
 	                          byte[] key) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = errHolder(arena);
 			MH_DELETE_CF.invokeExact(db, writeOpts, cf.ptr(),
-					Native.toNative(arena, key), (long) key.length, err);
-			Native.checkError(err);
+					toNative(arena, key), (long) key.length, err);
+			checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("delete failed", t);
 		}
@@ -1409,9 +1412,9 @@ public final class RocksDB {
 	static void deleteCfSegment(MemorySegment db, MemorySegment writeOpts, ColumnFamilyHandle cf,
 	                            MemorySegment key, long keyLen) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = errHolder(arena);
 			MH_DELETE_CF.invokeExact(db, writeOpts, cf.ptr(), key, keyLen, err);
-			Native.checkError(err);
+			checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("delete failed", t);
 		}
@@ -1422,11 +1425,11 @@ public final class RocksDB {
 	                                       ColumnFamilyHandle cf,
 	                                       byte[] startKey, byte[] endKey) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = errHolder(arena);
 			MH_DELETE_RANGE_CF.invokeExact(db, writeOpts, cf.ptr(),
-					Native.toNative(arena, startKey), (long) startKey.length,
-					Native.toNative(arena, endKey), (long) endKey.length, err);
-			Native.checkError(err);
+					toNative(arena, startKey), (long) startKey.length,
+					toNative(arena, endKey), (long) endKey.length, err);
+			checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("deleteRange failed", t);
 		}
@@ -1437,11 +1440,11 @@ public final class RocksDB {
 	                                        ColumnFamilyHandle cf,
 	                                        ByteBuffer startKey, ByteBuffer endKey) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = errHolder(arena);
 			MH_DELETE_RANGE_CF.invokeExact(db, writeOpts, cf.ptr(),
 					MemorySegment.ofBuffer(startKey), (long) startKey.remaining(),
 					MemorySegment.ofBuffer(endKey), (long) endKey.remaining(), err);
-			Native.checkError(err);
+			checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("deleteRange failed", t);
 		}
@@ -1452,10 +1455,10 @@ public final class RocksDB {
 	                                         ColumnFamilyHandle cf,
 	                                         MemorySegment startKey, MemorySegment endKey) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = errHolder(arena);
 			MH_DELETE_RANGE_CF.invokeExact(db, writeOpts, cf.ptr(),
 					startKey, startKey.byteSize(), endKey, endKey.byteSize(), err);
-			Native.checkError(err);
+			checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("deleteRange failed", t);
 		}
@@ -1482,9 +1485,9 @@ public final class RocksDB {
 
 	static void flushCf(MemorySegment db, FlushOptions flushOptions, ColumnFamilyHandle cf) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = errHolder(arena);
 			MH_FLUSH_CF.invokeExact(db, flushOptions.ptr(), cf.ptr(), err);
-			Native.checkError(err);
+			checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("flush failed", t);
 		}
@@ -1500,7 +1503,7 @@ public final class RocksDB {
 				return Optional.empty();
 			}
 			String value = result.reinterpret(Long.MAX_VALUE).getString(0);
-			Native.free(result);
+			free(result);
 			return Optional.of(value);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("getProperty failed", t);
@@ -1522,4 +1525,40 @@ public final class RocksDB {
 		}
 	}
 
+	/// Creates a pre-zeroed error holder in the given arena.
+	/// Use this for RocksDB C calls that take `char** errptr`.
+	public static MemorySegment errHolder(Arena arena) {
+		MemorySegment holder = arena.allocate(ValueLayout.ADDRESS);
+		holder.set(ValueLayout.ADDRESS, 0, MemorySegment.NULL);
+		return holder;
+	}
+
+	/// Copies `bytes` into a new native memory segment allocated from `arena`.
+	/// No null-terminator is appended; use the byte length when passing to C functions.
+	public static MemorySegment toNative(Arena arena, byte[] bytes) {
+		MemorySegment seg = arena.allocate(bytes.length);
+		// TODO: check if this is better seg.copyFrom(MemorySegment.ofArray(bytes));
+		MemorySegment.copy(bytes, 0, seg, ValueLayout.JAVA_BYTE, 0, bytes.length);
+		return seg;
+	}
+
+	/// Frees a malloc'd pointer returned by the RocksDB C API.
+	public static void free(MemorySegment ptr) {
+		try {
+			MH_FREE.invokeExact(ptr);
+		} catch (Throwable ignored) {
+			// ignore errors as this is used in destructor-like code
+		}
+	}
+
+	/// Checks if the error holder contains a non-NULL pointer.
+	/// If so, throws a [RocksDBException] and frees the C string.
+	public static void checkError(MemorySegment errHolder) {
+		MemorySegment errPtr = errHolder.get(ValueLayout.ADDRESS, 0);
+		if (!MemorySegment.NULL.equals(errPtr)) {
+			String msg = errPtr.reinterpret(Long.MAX_VALUE).getString(0);
+			free(errPtr);
+			throw new RocksDBException(msg);
+		}
+	}
 }

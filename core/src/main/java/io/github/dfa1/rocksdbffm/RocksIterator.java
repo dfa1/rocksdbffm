@@ -146,7 +146,7 @@ public final class RocksIterator extends NativeObject {
 	/// Positions the iterator at the first key >= `target`. Slow path: copies key.
 	public void seek(byte[] target) {
 		try (Arena arena = Arena.ofConfined()) {
-			MH_SEEK.invokeExact(ptr(), Native.toNative(arena, target), (long) target.length);
+			MH_SEEK.invokeExact(ptr(), RocksDB.toNative(arena, target), (long) target.length);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("seek failed", t);
 		}
@@ -173,7 +173,7 @@ public final class RocksIterator extends NativeObject {
 	/// Positions the iterator at the last key <= `target`. Slow path: copies key.
 	public void seekForPrev(byte[] target) {
 		try (Arena arena = Arena.ofConfined()) {
-			MH_SEEK_FOR_PREV.invokeExact(ptr(), Native.toNative(arena, target), (long) target.length);
+			MH_SEEK_FOR_PREV.invokeExact(ptr(), RocksDB.toNative(arena, target), (long) target.length);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("seekForPrev failed", t);
 		}
@@ -233,9 +233,9 @@ public final class RocksIterator extends NativeObject {
 	/// Throws [RocksDBException] if an error occurred.
 	public void checkError() {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = RocksDB.errHolder(arena);
 			MH_GET_ERROR.invokeExact(ptr(), err);
-			Native.checkError(err);
+			RocksDB.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("getError failed", t);
 		}
@@ -245,9 +245,9 @@ public final class RocksIterator extends NativeObject {
 	/// Repositions to the same key if it still exists.
 	public void refresh() {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = RocksDB.errHolder(arena);
 			MH_REFRESH.invokeExact(ptr(), err);
-			Native.checkError(err);
+			RocksDB.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("refresh failed", t);
 		}

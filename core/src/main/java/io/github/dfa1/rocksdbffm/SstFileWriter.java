@@ -115,10 +115,10 @@ public final class SstFileWriter extends NativeObject {
 	/// Call [#finish()] to finalize the file before ingesting.
 	public void open(Path path) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = RocksDB.errHolder(arena);
 			MemorySegment pathSeg = arena.allocateFrom(path.toString());
 			MH_OPEN.invokeExact(ptr(), pathSeg, err);
-			Native.checkError(err);
+			RocksDB.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("sstfilewriter open failed", t);
 		}
@@ -127,14 +127,14 @@ public final class SstFileWriter extends NativeObject {
 	/// Appends a put entry. Keys must be added in strictly ascending order.
 	public void put(byte[] key, byte[] value) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
-			MemorySegment keyNative = Native.toNative(arena, key);
-			MemorySegment valNative = Native.toNative(arena, value);
+			MemorySegment err = RocksDB.errHolder(arena);
+			MemorySegment keyNative = RocksDB.toNative(arena, key);
+			MemorySegment valNative = RocksDB.toNative(arena, value);
 			MH_PUT.invokeExact(ptr(),
 					keyNative, (long) key.length,
 					valNative, (long) value.length,
 					err);
-			Native.checkError(err);
+			RocksDB.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("sstfilewriter put failed", t);
 		}
@@ -143,12 +143,12 @@ public final class SstFileWriter extends NativeObject {
 	/// Zero-copy [MemorySegment] overload of [#put(byte\[\], byte\[\])].
 	public void put(MemorySegment key, MemorySegment value) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = RocksDB.errHolder(arena);
 			MH_PUT.invokeExact(ptr(),
 					key, key.byteSize(),
 					value, value.byteSize(),
 					err);
-			Native.checkError(err);
+			RocksDB.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("sstfilewriter put failed", t);
 		}
@@ -157,10 +157,10 @@ public final class SstFileWriter extends NativeObject {
 	/// Appends a delete tombstone entry. Keys must be added in strictly ascending order.
 	public void delete(byte[] key) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
-			MemorySegment keyNative = Native.toNative(arena, key);
+			MemorySegment err = RocksDB.errHolder(arena);
+			MemorySegment keyNative = RocksDB.toNative(arena, key);
 			MH_DELETE.invokeExact(ptr(), keyNative, (long) key.length, err);
-			Native.checkError(err);
+			RocksDB.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("sstfilewriter delete failed", t);
 		}
@@ -169,9 +169,9 @@ public final class SstFileWriter extends NativeObject {
 	/// Zero-copy [MemorySegment] overload of [#delete(byte\[\])].
 	public void delete(MemorySegment key) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = RocksDB.errHolder(arena);
 			MH_DELETE.invokeExact(ptr(), key, key.byteSize(), err);
-			Native.checkError(err);
+			RocksDB.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("sstfilewriter delete failed", t);
 		}
@@ -181,14 +181,14 @@ public final class SstFileWriter extends NativeObject {
 	/// Keys must be added in strictly ascending order.
 	public void deleteRange(byte[] beginKey, byte[] endKey) {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
-			MemorySegment beginNative = Native.toNative(arena, beginKey);
-			MemorySegment endNative = Native.toNative(arena, endKey);
+			MemorySegment err = RocksDB.errHolder(arena);
+			MemorySegment beginNative = RocksDB.toNative(arena, beginKey);
+			MemorySegment endNative = RocksDB.toNative(arena, endKey);
 			MH_DELETE_RANGE.invokeExact(ptr(),
 					beginNative, (long) beginKey.length,
 					endNative, (long) endKey.length,
 					err);
-			Native.checkError(err);
+			RocksDB.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("sstfilewriter deleteRange failed", t);
 		}
@@ -198,9 +198,9 @@ public final class SstFileWriter extends NativeObject {
 	/// The file is now ready for ingestion via [RocksDB#ingestExternalFile].
 	public void finish() {
 		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment err = Native.errHolder(arena);
+			MemorySegment err = RocksDB.errHolder(arena);
 			MH_FINISH.invokeExact(ptr(), err);
-			Native.checkError(err);
+			RocksDB.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("sstfilewriter finish failed", t);
 		}

@@ -157,7 +157,7 @@ public final class PerfContext extends NativeObject {
 			return "";
 		}
 		String result = strPtr.reinterpret(Long.MAX_VALUE).getString(0);
-		Native.free(strPtr);
+		RocksDB.free(strPtr);
 		return result;
 	}
 

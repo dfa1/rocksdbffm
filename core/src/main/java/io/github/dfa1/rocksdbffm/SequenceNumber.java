@@ -30,7 +30,7 @@ public final class SequenceNumber implements Comparable<SequenceNumber> {
 		return new SequenceNumber(value);
 	}
 
-	/// Returns the raw `uint64_t` value, for passing to native calls.
+	/// Returns the raw `uint64_t` value.
 	public long toLong() {
 		return value;
 	}

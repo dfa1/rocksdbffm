@@ -64,7 +64,16 @@ boilerplate or improve safety. There is no legacy compatibility shim.
 
 Every type of RocksDB instance exposes only relevant operations in Java.
 For example, `rocksdb_open_for_read_only` is exposed as `ReadOnlyDB`, which
-does not expose any `put` or `delete` method (that would throw in `rocksdbjni`).
+does not expose any `put` or `delete` method.
+
+In `rocksdbjni`, the same `RocksDB` type is used for both read-write and read-only opens.
+Calling `put()` on a read-only instance compiles and runs, but fails at runtime:
+
+1. `RocksDB.put(byte[], byte[])` calls through JNI into `db->Put(...)`.
+2. The underlying C++ object is a `DBImplReadOnly`, which overrides every write method to return `Status::NotSupported("Not supported operation in read only mode.")`.
+3. The JNI layer converts that status into a thrown `RocksDBException`.
+
+Here the constraint is enforced at compile time — `ReadOnlyDB` simply has no `put`, `delete`, `merge`, or `write` method, so an invalid call is a build error rather than a runtime failure.
 
 ### Exceptions for all errors
 

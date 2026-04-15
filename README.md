@@ -5,7 +5,7 @@
 [![CI](https://github.com/dfa1/rocksdbffm/workflows/CI/badge.svg?branch:master)](https://github.com/dfa1/rocksdbffm/actions?query=branch:master)
 
 **rocksdbffm** is an experimental Java wrapper for [RocksDB](https://rocksdb.org/) using the **Foreign
-Function & Memory (FFM) API** (Project 
+Function & Memory (FFM) API**. 
 
 The project aims to provide a more maintainable alternative to the traditional JNI-based `rocksdbjni`.
 The target is JDK 25+ because of `java.lang.foreign`.
@@ -16,29 +16,7 @@ without a separate sysroot or system toolchain.
 
 ## Why This Project Exists
 
-### 1. Inspired by community work
-
-Especially this
-post [Expanding RocksDB’s Java FFI](https://rocksdb.org/blog/2024/02/20/foreign-function-interface.html).
-
-And this:
-[Rocksjava-presentation](https://evolvedbinary.slides.com/adamretter/rocksjava-present-and-future#/1)
-
-### 2. Reducing JNI Maintenance Lag
-
-There is often a significant delay between new features appearing in the RocksDB C++ core and their availability in
-the Java JNI wrappers. This is largely due to the complexity of maintaining C++ glue code. By using FFM, we can map
-C headers directly in Java, simplifying the process of supporting new C++ features.
-
-The code is mechanically generated, and it can be inspected easily (as it is normal Java code).
-
-### 3. Safety
-
-FFM improves safety over JNI on the Java side: accessing a closed or out-of-bounds `MemorySegment`
-throws an exception rather than silently corrupting memory. However, a bad pointer passed into a
-native call can still crash the JVM — FFM does not sandbox native execution.
-
-### 4. Performance through Zero-Copy
+### 1. Performance through Zero-Copy
 
 Exposing `MemorySegment` methods:
 
@@ -46,9 +24,28 @@ Exposing `MemorySegment` methods:
 - **MemorySegment & ByteBuffer:** Support for `java.lang.foreign.MemorySegment` and direct `ByteBuffer` for data
   transfer between Java and native code.
 
+### 2. Safety
+
+FFM improves safety over JNI on the Java side: accessing a closed or out-of-bounds `MemorySegment`
+throws an exception rather than silently corrupting memory. However, a bad pointer passed into a
+native call can still crash the JVM — FFM does not sandbox native execution.
+
+### 3. Simplified maintenance
+
+There is often a significant delay between new features appearing in the RocksDB C++ core and their availability in
+the Java JNI wrappers. This is largely due to the complexity of maintaining C++ glue code. By using FFM, we can map
+C headers directly in Java, simplifying the process of supporting new C++ features.
+
+The code is mechanically generated, and it can be inspected easily (as it is normal Java code).
+
+### 4. Inspired by community work
+
+Especially this post [Expanding RocksDB’s Java FFI](https://rocksdb.org/blog/2024/02/20/foreign-function-interface.html) and this presentation
+[Rocksjava-presentation](https://evolvedbinary.slides.com/adamretter/rocksjava-present-and-future#/1).
+
 ## Performance Results
 
-Benchmarks performed on JDK 25 (Apple M-series), RocksDB v10.10.1. Each tier uses the same single pre-seeded key so the
+Benchmarks performed on JDK 25 (Apple M5), RocksDB v11.0.4. Each tier uses the same single pre-seeded key so the
 numbers reflect pure call overhead, not cache miss variance.
 
 | Operation              | API tier           | FFM (ops/s) | JNI (ops/s) |   Gain    |
@@ -73,6 +70,67 @@ because WAL/memtable I/O dominates. Batch write gains multiply because per-call 
 ```
 
 Builds everything, runs both FFM and JNI suites, and prints a side-by-side comparison table.
+
+
+## Design Choices
+
+Several deliberate decisions set this library apart from `rocksdbjni`.
+
+### Modern Java
+
+The API uses `java.lang.foreign` (FFM), records, sealed types, and pattern matching where they reduce
+boilerplate or improve safety. There is no legacy compatibility shim.
+
+### Expose only valid operations
+
+Every type of RocksDB instance exposes only relevant operations in Java.
+Example `rocksdb_open_for_read_only` is exposed as `ReadOnlyDB`, that 
+does not expose any `put` or `delete` method (that would throw in `rocksdbjni`).
+
+
+### Exceptions for all errors
+
+Every operation that can fail throws `RocksDBException` (an unchecked exception). `rocksdbjni` historically returned
+`null`, `-1`, or relied on status objects that callers could silently ignore. Here a failure is always loud.
+
+### Domain primitives instead of raw scalars
+
+Raw numeric types carry no unit information and cannot be validated at construction time.
+
+| Concept              | rocksdbjni               | rocksdbffm            |
+|:---------------------|:-------------------------|:----------------------|
+| Cache / buffer sizes | `long` (bytes, silently) | `MemorySize.ofMB(64)` |
+| Snapshot position    | `long`                   | `SequenceNumber`      |
+
+Both types are immutable, `Comparable`, and reject invalid values at construction — an illegal value cannot be created
+and therefore cannot be passed anywhere.
+
+### `Path` for filesystem operations
+
+All methods that accept a filesystem location (open, checkpoint, backup, …) take `java.nio.file.Path` instead of
+`String`. This prevents confusion between absolute and relative paths, integrates naturally with the NIO file API, and
+rules out accidentally passing non-path strings.
+
+## Getting Started
+
+### Requirements
+
+- JDK 25+.
+- [Zig](https://ziglang.org/) (any 0.15.x build).
+
+### Build and Test
+
+```bash
+# Build RocksDB from the submodule (first time or after a clean)
+mvn generate-resources -Pnative-build
+
+# Run unit tests
+mvn test
+```
+
+## License
+
+This project is licensed under the same terms as RocksDB (LevelDB/Apache 2.0).
 
 ## Roadmap
 
@@ -119,79 +177,3 @@ This project is currently experimental. The table below tracks parity with `rock
 These features are planned but not yet implemented:
 
 - **Merge / MergeOperator:** `merge` on `RocksDB`, `WriteBatch`, `SstFileWriter`; `setUInt64AddMergeOperator` on `Options`; custom `MergeOperator` via FFM upcall stubs.
-
-## Design Choices
-
-Several deliberate decisions set this library apart from `rocksdbjni`.
-
-### Modern Java
-
-Requires JDK 25+. The API uses `java.lang.foreign` (FFM), records, sealed types, and pattern matching where they reduce
-boilerplate or improve safety. There is no legacy compatibility shim.
-
-### Exceptions for all errors
-
-Every operation that can fail throws `RocksDBException` (an unchecked exception). `rocksdbjni` historically returned
-`null`, `-1`, or relied on status objects that callers could silently ignore. Here a failure is always loud.
-
-### Domain primitives instead of raw scalars
-
-Raw numeric types carry no unit information and cannot be validated at construction time.
-
-| Concept              | rocksdbjni               | rocksdbffm            |
-|:---------------------|:-------------------------|:----------------------|
-| Cache / buffer sizes | `long` (bytes, silently) | `MemorySize.ofMB(64)` |
-| Snapshot position    | `long`                   | `SequenceNumber`      |
-
-Both types are immutable, `Comparable`, and reject invalid values at construction — an illegal value cannot be created
-and therefore cannot be passed anywhere.
-
-### `Path` for filesystem operations
-
-All methods that accept a filesystem location (open, checkpoint, backup, …) take `java.nio.file.Path` instead of
-`String`. This prevents confusion between absolute and relative paths, integrates naturally with the NIO file API, and
-rules out accidentally passing non-path strings.
-
-## Development Approach
-
-This is a heavily AI-driven project. We intend to continue using AI as a cornerstone of our development process, from
-mapping C headers to optimizing the FFM implementation.
-
-## Getting Started
-
-### Requirements
-
-- JDK 25+.
-- [Zig](https://ziglang.org/) (any 0.15.x build).
-
-### Build and Test
-
-```bash
-# Build RocksDB from the submodule (first time or after a clean)
-mvn generate-resources -Pnative-build
-
-# Run unit tests
-mvn test
-```
-
-## License
-
-This project is licensed under the same terms as RocksDB (LevelDB/Apache 2.0).
-
-## Contributing
-
-The project is open to contributions, particularly in the following areas:
-
-- Implementing missing RocksDB C API features in Java.
-- Benchmarking and performance profiling of the Java-to-Native boundary.
-- Improving the safety and lifecycle management of native objects.
-
-## TODO
-
-- Create a community around this project with the intent to merge it back into rocksdb.
-- If that fails and community is aligned:
-    - Run it as separated project (like rust-rocksdb).
-    - Deploy to maven central.
-- Add arena-accepting overloads to the `byte[]` API tier (Zig-style caller-owned allocator):
-  `db.put(arena, key, value)` / `db.get(arena, key)` / `db.delete(arena, key)`.
-  Lets callers amortize arena create/destroy over a batch of calls instead of paying it per call.

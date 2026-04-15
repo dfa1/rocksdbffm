@@ -5,72 +5,48 @@
 [![CI](https://github.com/dfa1/rocksdbffm/workflows/CI/badge.svg?branch:master)](https://github.com/dfa1/rocksdbffm/actions?query=branch:master)
 
 **rocksdbffm** is an experimental Java wrapper for [RocksDB](https://rocksdb.org/) using the **Foreign
-Function & Memory (FFM) API**. 
+Function & Memory (FFM) API**.
 
 The project aims to provide a more maintainable alternative to the traditional JNI-based `rocksdbjni`.
 The target is JDK 25+ because of `java.lang.foreign`.
 
-The native library is built from the RocksDB source via **`zig cc` / `zig c++`** as a drop-in C/C++ compiler (
-`PORTABLE=1 make shared_lib`). Zig bundles clang and libc++ for every target, enabling hermetic cross-compilation
+> **Claude-driven:** the implementation — mapping C headers, writing tests, tracking parity — is primarily done
+> by Claude. Human effort is focused on direction, review, and architectural decisions.
+
+The native library is built from the RocksDB source via **`zig cc` / `zig c++`** as a drop-in C/C++ compiler
+(`PORTABLE=1 make shared_lib`). Zig bundles clang and libc++ for every target, enabling hermetic cross-compilation
 without a separate sysroot or system toolchain.
+
+## Getting Started
+
+### Requirements
+
+- JDK 25+.
+- [Zig](https://ziglang.org/) (any 0.15.x build).
+
+### Build and Test
+
+```bash
+# Build RocksDB from the submodule (first time or after a clean)
+mvn generate-resources -Pnative-build
+
+# Run unit tests
+mvn test
+```
 
 ## Why This Project Exists
 
-### 1. Performance through Zero-Copy
+### 1. Reducing JNI Maintenance Lag
 
-Exposing `MemorySegment` methods:
-
-- **Pinnable Slices:** Utilizes `rocksdb_get_pinned`
-- **MemorySegment & ByteBuffer:** Support for `java.lang.foreign.MemorySegment` and direct `ByteBuffer` for data
-  transfer between Java and native code.
+There is often a significant delay between new features appearing in the RocksDB C++ core and their availability in
+the Java JNI wrappers. This is largely due to the complexity of maintaining C++ glue code. By using FFM, we can map
+C headers directly in Java, simplifying the process of supporting new C++ features.
 
 ### 2. Safety
 
 FFM improves safety over JNI on the Java side: accessing a closed or out-of-bounds `MemorySegment`
 throws an exception rather than silently corrupting memory. However, a bad pointer passed into a
 native call can still crash the JVM — FFM does not sandbox native execution.
-
-### 3. Simplified maintenance
-
-There is often a significant delay between new features appearing in the RocksDB C++ core and their availability in
-the Java JNI wrappers. This is largely due to the complexity of maintaining C++ glue code. By using FFM, we can map
-C headers directly in Java, simplifying the process of supporting new C++ features.
-
-The code is mechanically generated, and it can be inspected easily (as it is normal Java code).
-
-### 4. Inspired by community work
-
-Especially this post [Expanding RocksDB’s Java FFI](https://rocksdb.org/blog/2024/02/20/foreign-function-interface.html) and this presentation
-[Rocksjava-presentation](https://evolvedbinary.slides.com/adamretter/rocksjava-present-and-future#/1).
-
-## Performance Results
-
-Benchmarks performed on JDK 25 (Apple M5), RocksDB v11.0.4. Each tier uses the same single pre-seeded key so the
-numbers reflect pure call overhead, not cache miss variance.
-
-| Operation              | API tier           | FFM (ops/s) | JNI (ops/s) |   Gain    |
-|:-----------------------|:-------------------|:-----------:|:-----------:|:---------:|
-| Reads                  | `byte[]`           |  7,196,554  |  3,619,125  | **+99%**  |
-| Reads                  | `DirectByteBuffer` |  8,077,135  |  3,656,113  | **+121%** |
-| Reads                  | `MemorySegment`    |  8,149,510  |      —      |     —     |
-| Writes                 | `byte[]`           |   671,213   |   608,496   | **+10%**  |
-| Writes                 | `DirectByteBuffer` |   694,166   |   590,923   | **+17%**  |
-| Writes                 | `MemorySegment`    |   686,889   |      —      |     —     |
-| Batch writes (100 ops) | `byte[]`           |   23,936    |   16,813    | **+42%**  |
-
-*Both libraries use `PinnableSlice` for reads. Read gains (~2×) come from the absence of JNI frame setup and
-thread-state transitions — FFM downcall stubs are JIT-compiled directly. `MemorySegment` is the fastest read tier
-because segments backed by a confined arena carry no GC scope-check overhead on the hot path. Write gains are smaller
-because WAL/memtable I/O dominates. Batch write gains multiply because per-call overhead is paid 100× per iteration.*
-
-### Running benchmarks
-
-```bash
-./scripts/benchmark.sh
-```
-
-Builds everything, runs both FFM and JNI suites, and prints a side-by-side comparison table.
-
 
 ## Design Choices
 
@@ -84,9 +60,8 @@ boilerplate or improve safety. There is no legacy compatibility shim.
 ### Expose only valid operations
 
 Every type of RocksDB instance exposes only relevant operations in Java.
-Example `rocksdb_open_for_read_only` is exposed as `ReadOnlyDB`, that 
+For example, `rocksdb_open_for_read_only` is exposed as `ReadOnlyDB`, which
 does not expose any `put` or `delete` method (that would throw in `rocksdbjni`).
-
 
 ### Exceptions for all errors
 
@@ -111,26 +86,39 @@ All methods that accept a filesystem location (open, checkpoint, backup, …) ta
 `String`. This prevents confusion between absolute and relative paths, integrates naturally with the NIO file API, and
 rules out accidentally passing non-path strings.
 
-## Getting Started
+### Performance through Zero-Copy
 
-### Requirements
+- **Pinnable Slices:** Uses `rocksdb_get_pinned` to avoid intermediate copies from the block cache.
+- **MemorySegment & ByteBuffer:** Support for `java.lang.foreign.MemorySegment` and direct `ByteBuffer` for data
+  transfer between Java and native code.
 
-- JDK 25+.
-- [Zig](https://ziglang.org/) (any 0.15.x build).
+## Performance Results
 
-### Build and Test
+Benchmarks performed on JDK 25 (Apple M5), RocksDB v11.0.4. Each tier uses the same pre-seeded key so the
+numbers reflect pure call overhead, not cache miss variance.
+
+| Operation              | API tier           | FFM (ops/s) | JNI (ops/s) |   Gain    |
+|:-----------------------|:-------------------|:-----------:|:-----------:|:---------:|
+| Reads                  | `byte[]`           |  7,196,554  |  3,619,125  | **+99%**  |
+| Reads                  | `DirectByteBuffer` |  8,077,135  |  3,656,113  | **+121%** |
+| Reads                  | `MemorySegment`    |  8,149,510  |      —      |     —     |
+| Writes                 | `byte[]`           |   671,213   |   608,496   | **+10%**  |
+| Writes                 | `DirectByteBuffer` |   694,166   |   590,923   | **+17%**  |
+| Writes                 | `MemorySegment`    |   686,889   |      —      |     —     |
+| Batch writes (100 ops) | `byte[]`           |   23,936    |   16,813    | **+42%**  |
+
+*Both libraries use `PinnableSlice` for reads. Read gains (~2×) come from the absence of JNI frame setup and
+thread-state transitions — FFM downcall stubs are JIT-compiled directly. `MemorySegment` is the fastest read tier
+because segments backed by a confined arena carry no GC scope-check overhead on the hot path. Write gains are smaller
+because WAL/memtable I/O dominates. Batch write gains multiply because per-call overhead is paid 100× per iteration.*
+
+### Running benchmarks
 
 ```bash
-# Build RocksDB from the submodule (first time or after a clean)
-mvn generate-resources -Pnative-build
-
-# Run unit tests
-mvn test
+./scripts/benchmark.sh
 ```
 
-## License
-
-This project is licensed under the same terms as RocksDB (LevelDB/Apache 2.0).
+Builds everything, runs both FFM and JNI suites, and prints a side-by-side comparison table.
 
 ## Roadmap
 
@@ -158,6 +146,7 @@ This project is currently experimental. The table below tracks parity with `rock
 | Backup Engine              |   ✅    | `BackupEngine`, `BackupEngineOptions`, `RestoreOptions`, `BackupInfo`, `BackupId`; incremental backup/restore; purge; verify                     |
 | TTL DB                     |   ✅    | `openWithTtl(path, Duration)`; lazy expiry via compaction; full API available                                                                    |
 | Optimistic Transactions    |   ✅    | `OptimisticTransactionDB`; conflict detection at commit; `OptimisticTransactionOptions`                                                          |
+| Merge / MergeOperator      |   🚧    | `merge` on `RocksDB`, `WriteBatch`, `SstFileWriter`; `setUInt64AddMergeOperator` on `Options`; custom `MergeOperator` via FFM upcall stubs       |
 | CompactionFilter           |   ❌    | Custom compaction logic                                                                                                                          |
 | WAL Iterator               |   ✅    | `WalIterator`, `WalBatchResult`; `getUpdatesSince(SequenceNumber)`, `getLatestSequenceNumber`; CDC/replication/auditing                          |
 | Rate Limiter               |   ✅    | `RateLimiter`; writes-only, reads-only, all-IO modes; auto-tuned variant; `Options.setRateLimiter`                                               |
@@ -165,15 +154,18 @@ This project is currently experimental. The table below tracks parity with `rock
 | Secondary DB               |   ✅    | `SecondaryDB`; `tryCatchUpWithPrimary`, get, iterator, snapshot, properties                                                                      |
 | Blob DB                    |   ✅    | `BlobDB`; blob options on `Options`; blob properties (`BLOB_STATS`, `NUM_BLOB_FILES`, …); `PrepopulateBlobCache`                                 |
 | Logger                     |   ✅    | Logger + callback                                                                                                                                |
-| Custom Comparators         |   ❌    | custom comparators                                                                                                                               |
+| Custom Comparators         |   ❌    | Custom comparators                                                                                                                               |
 | Advanced column family     |   ❌    |                                                                                                                                                  |
 | Advanced memtable config   |   ❌    |                                                                                                                                                  |
 | Perf Context               |   ✅    | `PerfContext`, `PerfLevel`, `PerfMetric`; `setPerfLevel`, `reset`, `metric`, `report`                                                            |
 | Persistent Cache           |   🚫    | Not exposed in `rocksdb/c.h` — C++ only (`NewPersistentCache`); requires a custom C shim to bridge                                               |
 | Background Jobs            |   🚧    | Tier 1: `cancelAllBackgroundWork`, `disableManualCompaction`, `enableManualCompaction`, `waitForCompact(WaitForCompactOptions)`; Tier 3–5 (Options tuning, Env thread pools, FIFO/Universal options) pending |
 
-## Under Construction
+## License
 
-These features are planned but not yet implemented:
+This project is licensed under the same terms as RocksDB (LevelDB/Apache 2.0).
 
-- **Merge / MergeOperator:** `merge` on `RocksDB`, `WriteBatch`, `SstFileWriter`; `setUInt64AddMergeOperator` on `Options`; custom `MergeOperator` via FFM upcall stubs.
+## See Also
+
+- [Expanding RocksDB's Java FFI](https://rocksdb.org/blog/2024/02/20/foreign-function-interface.html)
+- [Rocksjava: present and future](https://evolvedbinary.slides.com/adamretter/rocksjava-present-and-future#/1)

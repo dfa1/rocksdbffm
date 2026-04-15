@@ -13,8 +13,9 @@ Function & Memory (FFM) API**.
 The project aims to provide a more maintainable alternative to the traditional JNI-based `rocksdbjni`.
 The target is JDK 25+ because of `java.lang.foreign`.
 
-> **Claude-driven:** the implementation — mapping C headers, writing tests, tracking parity — is primarily done
-> by Claude. Human effort is focused on direction, review, and architectural decisions.
+> **AI-assisted development:** This project uses [Claude Code](https://claude.ai/code) heavily for implementation
+> work — C header mapping, test generation, and documentation. **Architecture, API design, and all decisions are
+> human-driven.** We think this is an honest and productive way to build a library, and we're open about it.
 
 The native library is built from the RocksDB source via **`zig cc` / `zig c++`** as a drop-in C/C++ compiler
 (`PORTABLE=1 make shared_lib`). Zig bundles clang and libc++ for every target, enabling hermetic cross-compilation

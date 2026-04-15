@@ -10,7 +10,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class BlobDBIntegrationTest {
 
 	/// 64 KB value — large enough to be stored in a blob file regardless of the min-blob-size setting.
-	private static final byte[] VALUE_64KB = "x".repeat(64 * 1024).getBytes();
+	private static final byte[] VALUE_64KB = new byte[(int) MemorySize.ofKB(64).toBytes()];
 
 	@Test
 	void putGet_withBlobFiles(@TempDir Path dir) {

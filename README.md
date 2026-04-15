@@ -1,6 +1,9 @@
 # RocksDB FFM
 
 ![RocksDB](https://img.shields.io/badge/RocksDB-11.0.4-green.svg)
+![MacOS](https://img.shields.io/badge/macOS-fully_supported-green.svg)
+![Linux](https://img.shields.io/badge/linux-partial_support-orange.svg)
+![Window](https://img.shields.io/badge/window-not_supported-red.svg)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![CI](https://github.com/dfa1/rocksdbffm/workflows/CI/badge.svg?branch:master)](https://github.com/dfa1/rocksdbffm/actions?query=branch:master)
 

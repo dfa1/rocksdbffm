@@ -21,6 +21,16 @@
 			<scope>test</scope>
 		</dependency>
 		<dependency>
+			<groupId>io.github.dfa1</groupId>
+			<artifactId>rocksdbffm-native-osx-aarch64</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>io.github.dfa1</groupId>
+			<artifactId>rocksdbffm-native-linux-x86_64</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
 			<groupId>org.junit.jupiter</groupId>
 			<artifactId>junit-jupiter</artifactId>
 			<scope>test</scope>
@@ -68,38 +78,4 @@
 		</plugins>
 	</build>
 
-	<profiles>
-		<profile>
-			<id>native-osx-aarch64</id>
-			<activation>
-				<os>
-					<family>mac</family>
-					<arch>aarch64</arch>
-				</os>
-			</activation>
-			<dependencies>
-				<dependency>
-					<groupId>io.github.dfa1</groupId>
-					<artifactId>rocksdbffm-native-osx-aarch64</artifactId>
-					<scope>test</scope>
-				</dependency>
-			</dependencies>
-		</profile>
-		<profile>
-			<id>native-linux-x86_64</id>
-			<activation>
-				<os>
-					<family>unix</family>
-					<arch>x86_64</arch>
-				</os>
-			</activation>
-			<dependencies>
-				<dependency>
-					<groupId>io.github.dfa1</groupId>
-					<artifactId>rocksdbffm-native-linux-x86_64</artifactId>
-					<scope>test</scope>
-				</dependency>
-			</dependencies>
-		</profile>
-	</profiles>
 </project>

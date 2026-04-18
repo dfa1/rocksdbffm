@@ -54,23 +54,19 @@ An override is available for testing or custom builds:
 
 ## Distribution
 
-Consumers add the native module(s) they need as runtime dependencies:
+All native modules are declared as unconditional dependencies (no Maven profiles).
+The build always produces all platform artifacts; `NativeLibrary` loads the one
+matching the current platform and ignores the rest.
 
 ```xml
-<!-- macOS Apple Silicon -->
 <dependency>
     <groupId>io.github.dfa1</groupId>
     <artifactId>rocksdbffm-native-osx-aarch64</artifactId>
     <scope>runtime</scope>
 </dependency>
-
-<!-- Linux x86-64 -->
 <dependency>
     <groupId>io.github.dfa1</groupId>
     <artifactId>rocksdbffm-native-linux-x86_64</artifactId>
     <scope>runtime</scope>
 </dependency>
 ```
-
-Including multiple native modules on the classpath at once is safe — `NativeLibrary`
-only loads the one matching the current platform.

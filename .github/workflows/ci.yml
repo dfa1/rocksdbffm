@@ -12,8 +12,7 @@ jobs:
   build:
     strategy:
       matrix:
-        # TODO: build on windows and linux too (to make sure the native library actually works)
-        os: [macos-latest]
+        os: [macos-latest, ubuntu-latest]
 
     runs-on: ${{ matrix.os }}
 

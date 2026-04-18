@@ -1,8 +1,5 @@
 # AGENTS.md: Project Context & AI-Driven Guidelines
 
-This file serves as the primary context for AI agents working on **rocksdbffm**. It contains the project's technical
-architecture, safety constraints, and performance-critical patterns.
-
 ## 🤖 AI-Driven Project Mandate
 
 This project is heavily AI-driven. As an agent, your goal is to:
@@ -10,8 +7,6 @@ This project is heavily AI-driven. As an agent, your goal is to:
 - **Be Autonomous:** Research C headers (rocksdb/include/rocksdb/c.h) and identify the best mapping to Java FFM.
 - **Stay Technical:** Prioritize performance, zero-copy, and manual memory safety.
 - **Maintain Consistency:** Follow established naming and ownership patterns.
-
----
 
 ## 🛠 Tech Stack
 
@@ -26,8 +21,6 @@ This project is heavily AI-driven. As an agent, your goal is to:
   thereafter. Use `./mvnw` (not `mvn`) to ensure the correct Maven version is used.
 - **Testing:** JUnit 5, AssertJ.
 - **Benchmarking:** JMH (Java Microbenchmark Harness).
-
----
 
 ## 🏗 Architectural Standards
 
@@ -67,8 +60,6 @@ For every feature, provide three tiers of access:
 2. **`ByteBuffer` Version:** For compatibility with existing NIO-based clients.
 3. **`byte[]` Version:** Quick access for convenience (explicitly documented as slower).
 
----
-
 ## ⚡ FFM Performance & Patterns
 
 ### 1. Centralized Error Handling
@@ -76,14 +67,10 @@ For every feature, provide three tiers of access:
 **NEVER use ThreadLocals for error pointers.** Use the centralized `Native` utility with the caller's `Arena`:
 
 ```java
-try(Arena arena = Arena.ofConfined()){
-MemorySegment err = Native.errHolder(arena);
-    MH_DO_SOMETHING.
-
-invokeExact(handle, ...,err);
-    Native.
-
-checkError(err);
+try (Arena arena = Arena.ofConfined()) {
+    MemorySegment err = Native.errHolder(arena);
+    MH_DO_SOMETHING.invokeExact(handle, ..., err);
+    Native.checkError(err);
 }
 ```
 
@@ -91,8 +78,6 @@ checkError(err);
 
 - **PinnableSlice:** Use `rocksdb_get_pinned` for reads to avoid intermediate copies from the block cache.
 - **Direct Buffers:** Use `MemorySegment.ofBuffer(directByteBuffer)` to wrap existing native memory without copies.
-
----
 
 ## 🧪 Validation & Workflow
 
@@ -127,19 +112,13 @@ Performance gains are a primary goal. Use `JMH` to validate changes.
   ```
   This builds everything, runs both FFM and JNI suites, and prints a side-by-side comparison table.
 
----
-
 ## 🗺 Source Map
 
-For the full feature status and roadmap see `README.md`. This section maps each implemented feature to its Java source
-files so agents can quickly find the right file to extend.
-
-### Implemented features → source files
+For the full feature status and roadmap see `README.md`.
 
 | Feature                 | Java source files                                                                                                         |
 |:------------------------|:--------------------------------------------------------------------------------------------------------------------------|
-| DB Open/Close           | `RocksDB.java`                                                                                                            |
-| Put/Get/Delete          | `RocksDB.java`                                                                                                            |
+| DB Open/Close/Put/Get/Delete | `RocksDB.java`                                                                                                       |
 | Options                 | `Options.java`, `ReadOptions.java`, `WriteOptions.java`                                                                   |
 | WriteBatch              | `WriteBatch.java`                                                                                                         |
 | Transactions            | `Transaction.java`, `TransactionDB.java`, `TransactionDBOptions.java`, `TransactionOptions.java`                          |
@@ -162,17 +141,12 @@ files so agents can quickly find the right file to extend.
 | Column Families         | `ColumnFamilyHandle.java`, `ColumnFamilyDescriptor.java`; `RocksDB.openWithColumnFamilies`, `listColumnFamilies`; CF overloads on `ReadWriteDB` and `WriteBatch`; CF overloads on `ReadOnlyDB`, `TtlDB`, `TransactionDB`, `OptimisticTransactionDB`; `Transaction` CF put/delete/get/getForUpdate/newIterator; multi-CF open for all DB types |
 | Perf Context            | `PerfContext.java`, `PerfLevel.java`, `PerfMetric.java`; thread-local; `setPerfLevel`, `reset`, `metric`, `report`       |
 
----
-
-Documentation
----
+## Documentation
 
 - Javadoc is written in the Markdown format to keep same format everywhere
-- some documentation lives in docs/
-  -the intent is to document decisions there
+- some documentation lives in docs/; the intent is to document decisions there
 
-Code
----
+## Code
 
 - code is indented with tabs (enforced by checkstyle)
 - always keep the MethodHandles private static final

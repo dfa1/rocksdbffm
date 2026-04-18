@@ -22,8 +22,8 @@ This project is heavily AI-driven. As an agent, your goal is to:
 - **Native Compiler:** `zig cc` / `zig c++` — used as a drop-in C/C++ compiler via
   `CC="zig cc" CXX="zig c++" PORTABLE=1 make shared_lib`. Zig bundles clang + libc++ for every target, enabling
   cross-compilation without a separate sysroot.
-- **Build System:** Maven. Run `mvn generate-resources -Pnative-build` once to build the native lib; `mvn test`
-  thereafter.
+- **Build System:** Maven Wrapper (`./mvnw`). Run `./mvnw generate-resources -Pnative-build` once to build the native lib; `./mvnw test`
+  thereafter. Use `./mvnw` (not `mvn`) to ensure the correct Maven version is used.
 - **Testing:** JUnit 5, AssertJ.
 - **Benchmarking:** JMH (Java Microbenchmark Harness).
 
@@ -114,7 +114,7 @@ For every new feature:
    - `// Then` asserts the outcome. The assertion always operates on the variable captured in `// When`, never inline.
    - For void actions (`flush`, `put`, …) there is no return value to capture; just place the call under `// When` and put assertions (if any) under `// Then`.
    - For tests with no meaningful setup, use `// Given` with a blank line or a comment explaining why there is none.
-3. **Run tests:** `mvn test`
+3. **Run tests:** `./mvnw test`
 
 ### 2. Benchmark First
 
@@ -122,7 +122,7 @@ Performance gains are a primary goal. Use `JMH` to validate changes.
 
 - **Run benchmarks:**
   ```bash
-  mvn test-compile -q
+  ./mvnw test-compile -q
   ./scripts/benchmark.sh
   ```
   This builds everything, runs both FFM and JNI suites, and prints a side-by-side comparison table.

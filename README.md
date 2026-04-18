@@ -32,10 +32,10 @@ without a separate sysroot or system toolchain.
 
 ```bash
 # Build RocksDB from the submodule (first time or after a clean)
-mvn generate-resources -Pnative-build
+./mvnw generate-resources -Pnative-build
 
 # Run unit tests
-mvn test
+./mvnw test
 ```
 
 ## Why This Project Exists

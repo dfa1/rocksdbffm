@@ -166,7 +166,8 @@ This project is currently experimental. The table below tracks parity with `rock
 | CompactionFilter           |   ❌    | Custom compaction logic                                                                                                                          |
 | WAL Iterator               |   ✅    | `WalIterator`, `WalBatchResult`; `getUpdatesSince(SequenceNumber)`, `getLatestSequenceNumber`; CDC/replication/auditing                          |
 | Rate Limiter               |   ✅    | `RateLimiter`; writes-only, reads-only, all-IO modes; auto-tuned variant; `Options.setRateLimiter`                                               |
-| SST File Manager           |   ✅    | `SstFileManager`; disk-space limits, trash-deletion rate, compaction buffer; `Env`; `Options.setSstFileManager`, `Options.setEnv`                |
+| Env                        |   ✅    | `Env.defaultEnv()`, `Env.memEnv()`; background thread pools (`setBackgroundThreads`, `setHighPriorityBackgroundThreads`); `Options.setEnv`       |
+| SST File Manager           |   ✅    | `SstFileManager`; disk-space limits, trash-deletion rate, compaction buffer; `Options.setSstFileManager`                                         |
 | Secondary DB               |   ✅    | `SecondaryDB`; `tryCatchUpWithPrimary`, get, iterator, snapshot, properties                                                                      |
 | Blob DB                    |   ✅    | `BlobDB`; blob options on `Options`; blob properties (`BLOB_STATS`, `NUM_BLOB_FILES`, …); `PrepopulateBlobCache`                                 |
 | Logger                     |   ✅    | Logger + callback                                                                                                                                |
@@ -175,7 +176,7 @@ This project is currently experimental. The table below tracks parity with `rock
 | Advanced memtable config   |   ❌    |                                                                                                                                                  |
 | Perf Context               |   ✅    | `PerfContext`, `PerfLevel`, `PerfMetric`; `setPerfLevel`, `reset`, `metric`, `report`                                                            |
 | Persistent Cache           |   🚫    | Not exposed in `rocksdb/c.h` — C++ only (`NewPersistentCache`); requires a custom C shim to bridge                                               |
-| Background Jobs            |   🚧    | Tier 1: `cancelAllBackgroundWork`, `disableManualCompaction`, `enableManualCompaction`, `waitForCompact(WaitForCompactOptions)`; Tier 3–5 (Options tuning, Env thread pools, FIFO/Universal options) pending |
+| Background Jobs            |   🚧    | Tier 1: `cancelAllBackgroundWork`, `disableManualCompaction`, `enableManualCompaction`, `waitForCompact(WaitForCompactOptions)`; Tier 3–5 (Options tuning, FIFO/Universal options) pending                  |
 
 ## License
 

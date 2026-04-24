@@ -176,6 +176,7 @@ This project is currently experimental. The table below tracks parity with `rock
 | Advanced memtable config   |   ❌    |                                                                                                                                                  |
 | Perf Context               |   ✅    | `PerfContext`, `PerfLevel`, `PerfMetric`; `setPerfLevel`, `reset`, `metric`, `report`                                                            |
 | Persistent Cache           |   🚫    | Not exposed in `rocksdb/c.h` — C++ only (`NewPersistentCache`); requires a custom C shim to bridge                                               |
+| Wide Columns               |   🚫    | Not exposed in `rocksdb/c.h` — C++ only (`PutEntity`, `GetEntity`, `WideColumns`); requires a custom C shim to bridge                            |
 | Background Jobs            |   🚧    | Tier 1: `cancelAllBackgroundWork`, `disableManualCompaction`, `enableManualCompaction`, `waitForCompact(WaitForCompactOptions)`; Tier 3–5 (Options tuning, FIFO/Universal options) pending                  |
 
 ## License

@@ -10,6 +10,7 @@
 	</parent>
 
 	<artifactId>rocksdbffm-native-linux-x86_64</artifactId>
+	<name>RocksDB FFM Native Linux x86_64</name>
 	<packaging>jar</packaging>
 
 	<build>

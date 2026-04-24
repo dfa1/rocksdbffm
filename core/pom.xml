@@ -10,6 +10,7 @@
 	</parent>
 
 	<artifactId>rocksdbffm-core</artifactId>
+	<name>RocksDB FFM Core</name>
 	<packaging>jar</packaging>
 
 	<dependencies>

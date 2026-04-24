@@ -10,6 +10,7 @@
 	</parent>
 
 	<artifactId>rocksdbffm-integration-tests</artifactId>
+	<name>RocksDB FFM Integration Tests</name>
 	<packaging>jar</packaging>
 
 	<properties>

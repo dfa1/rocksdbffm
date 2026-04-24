@@ -10,6 +10,7 @@
 	</parent>
 
 	<artifactId>rocksdbffm-benchmarks</artifactId>
+	<name>RocksDB FFM Benchmarks</name>
 	<packaging>jar</packaging>
 
 	<properties>

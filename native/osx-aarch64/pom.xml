@@ -10,6 +10,7 @@
 	</parent>
 
 	<artifactId>rocksdbffm-native-osx-aarch64</artifactId>
+	<name>RocksDB FFM Native macOS aarch64</name>
 	<packaging>jar</packaging>
 
 	<!-- No Java sources: this module only packages the native shared library. -->

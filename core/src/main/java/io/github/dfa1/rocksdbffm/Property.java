@@ -178,10 +178,10 @@ public enum Property {
 	/// The value type of RocksDB property.
 	///
 	///   - [#STRING] — human-readable text blob; only available via
-	///     [RocksDB#getProperty(Property)].
+	///     [ReadWriteDB#getProperty(Property)].
 	///   - [#NUMERIC] — uint64 counter or size; available via both
-	///     [RocksDB#getProperty(Property)] and
-	///     [RocksDB#getLongProperty(Property)].
+	///     [ReadWriteDB#getProperty(Property)] and
+	///     [ReadWriteDB#getLongProperty(Property)].
 	///
 	public enum Type {
 		STRING,

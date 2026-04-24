@@ -387,7 +387,7 @@ public final class TransactionDB extends NativeObject {
 		}
 	}
 
-	/// @see RocksDB#getLongProperty(Property)
+	/// @see ReadWriteDB#getLongProperty(Property)
 	public OptionalLong getLongProperty(Property property) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment propSeg = arena.allocateFrom(property.propertyName());

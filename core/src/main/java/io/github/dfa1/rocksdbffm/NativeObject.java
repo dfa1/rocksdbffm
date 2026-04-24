@@ -19,6 +19,7 @@ public abstract class NativeObject implements AutoCloseable {
 
 	/// Returns the current native pointer.
 	///
+	/// @return the live native pointer
 	/// @throws IllegalStateException if this object has been closed or its ownership transferred
 	public final MemorySegment ptr() {
 		MemorySegment p = owningPointer.get();
@@ -52,5 +53,8 @@ public abstract class NativeObject implements AutoCloseable {
 
 	/// Called exactly once with the non-NULL pointer when this object is closed.
 	/// Implementations must release the native resource.
+	///
+	/// @param ptr the non-NULL native pointer to release
+	/// @throws Throwable if the native destroy call fails (exception is silently swallowed by [#close()])
 	protected abstract void tryClose(MemorySegment ptr) throws Throwable;
 }

@@ -26,6 +26,8 @@ public final class BackupId implements Comparable<BackupId> {
 
 	/// Creates a [BackupId] from a Java `long`.
 	///
+	/// @param value the backup ID value, must be in the unsigned 32-bit range
+	/// @return a new [BackupId] wrapping `value`
 	/// @throws IllegalArgumentException if `value` is negative or exceeds `0xFFFFFFFF`
 	public static BackupId of(long value) {
 		return new BackupId(value);
@@ -46,6 +48,8 @@ public final class BackupId implements Comparable<BackupId> {
 	}
 
 	/// Returns the raw value as a `long`.
+	///
+	/// @return the backup ID as an unsigned 32-bit value held in a `long`
 	public long toLong() {
 		return value;
 	}

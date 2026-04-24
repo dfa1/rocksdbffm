@@ -145,7 +145,8 @@
 					<version>3.11.2</version>
 					<configuration>
 						<release>25</release>
-						<failOnError>false</failOnError>
+						<failOnError>true</failOnError>
+						<failOnWarnings>true</failOnWarnings>
 						<quiet>true</quiet>
 					</configuration>
 				</plugin>

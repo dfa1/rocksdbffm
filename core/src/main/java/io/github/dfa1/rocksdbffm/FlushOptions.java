@@ -7,7 +7,7 @@ import java.lang.invoke.MethodHandle;
 
 /// FFM wrapper for `rocksdb_flushoptions_t`.
 ///
-/// Controls the behavior of [RocksDB#flush(FlushOptions)] and
+/// Controls the behavior of [ReadWriteDB#flush(FlushOptions)] and
 /// [TransactionDB#flush(FlushOptions)].
 ///
 /// ```

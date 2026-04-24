@@ -239,6 +239,9 @@ public final class Options extends NativeObject {
 
 	/// If true, the database will be created if it does not already exist.
 	/// Default: false (same as RocksDB C++ default).
+	///
+	/// @param value `true` to create the DB if absent
+	/// @return `this` for chaining
 	public Options setCreateIfMissing(boolean value) {
 		try {
 			MH_SET_CREATE_IF_MISSING.invokeExact(ptr(), value ? (byte) 1 : (byte) 0);
@@ -257,6 +260,8 @@ public final class Options extends NativeObject {
 	}
 
 	/// Enables statistics gathering for this DB.
+	///
+	/// @return `this` for chaining
 	public Options enableStatistics() {
 		try {
 			MH_ENABLE_STATISTICS.invokeExact(ptr());
@@ -322,6 +327,7 @@ public final class Options extends NativeObject {
 
 	/// Sets the compression algorithm for all levels.
 	///
+	/// @param type the compression algorithm to use
 	/// @return `this` for chaining
 	public Options setCompression(CompressionType type) {
 		try {
@@ -333,6 +339,8 @@ public final class Options extends NativeObject {
 	}
 
 	/// Returns the compression algorithm configured for this Options.
+	///
+	/// @return the active compression type
 	public CompressionType getCompression() {
 		try {
 			return CompressionType.fromValue((int) MH_GET_COMPRESSION.invokeExact(ptr()));
@@ -343,6 +351,9 @@ public final class Options extends NativeObject {
 
 	/// Configures block-based table format for this DB.
 	/// RocksDB copies the config internally; `tableConfig` may be closed after this call.
+	///
+	/// @param tableConfig the block-based table options to apply
+	/// @return `this` for chaining
 	public Options setTableFormatConfig(BlockBasedTableOptions tableConfig) {
 		try {
 			MH_SET_BLOCK_BASED_TABLE_FACTORY.invokeExact(ptr(), tableConfig.ptr());
@@ -359,6 +370,9 @@ public final class Options extends NativeObject {
 	/// Enables storing large values in separate blob files instead of inline in SSTs.
 	/// When enabled, values ≥ [#setMinBlobSize] are written to blob files.
 	/// Default: `false`.
+	///
+	/// @param value `true` to enable blob file storage
+	/// @return `this` for chaining
 	public Options setEnableBlobFiles(boolean value) {
 		try {
 			MH_SET_ENABLE_BLOB_FILES.invokeExact(ptr(), value ? (byte) 1 : (byte) 0);
@@ -378,6 +392,9 @@ public final class Options extends NativeObject {
 
 	/// Values strictly smaller than this size are stored inline; larger values go to blob files.
 	/// Only effective when [#setEnableBlobFiles] is `true`. Default: 0 (all values externalized).
+	///
+	/// @param size minimum value size to externalize into a blob file
+	/// @return `this` for chaining
 	public Options setMinBlobSize(MemorySize size) {
 		try {
 			MH_SET_MIN_BLOB_SIZE.invokeExact(ptr(), size.toBytes());
@@ -397,6 +414,9 @@ public final class Options extends NativeObject {
 
 	/// Target size for individual blob files. RocksDB rolls to a new file when this is exceeded.
 	/// Default: 256 MiB.
+	///
+	/// @param size target size per blob file
+	/// @return `this` for chaining
 	public Options setBlobFileSize(MemorySize size) {
 		try {
 			MH_SET_BLOB_FILE_SIZE.invokeExact(ptr(), size.toBytes());
@@ -416,6 +436,9 @@ public final class Options extends NativeObject {
 
 	/// Compression algorithm applied to blob file values. Independent of SST compression.
 	/// Default: [CompressionType#NO_COMPRESSION].
+	///
+	/// @param type the compression algorithm for blob values
+	/// @return `this` for chaining
 	public Options setBlobCompressionType(CompressionType type) {
 		try {
 			MH_SET_BLOB_COMPRESSION_TYPE.invokeExact(ptr(), type.value);
@@ -435,6 +458,9 @@ public final class Options extends NativeObject {
 
 	/// Enables garbage collection of obsolete blob files during compaction.
 	/// Default: `false`.
+	///
+	/// @param value `true` to enable blob GC during compaction
+	/// @return `this` for chaining
 	public Options setEnableBlobGc(boolean value) {
 		try {
 			MH_SET_ENABLE_BLOB_GC.invokeExact(ptr(), value ? (byte) 1 : (byte) 0);
@@ -455,6 +481,9 @@ public final class Options extends NativeObject {
 	/// Blob files whose age is older than this fraction of the oldest snapshot are
 	/// unconditionally GC'd, regardless of garbage ratio.
 	/// Range: [0.0, 1.0]. Default: 0.5.
+	///
+	/// @param value age cutoff fraction in [0.0, 1.0]
+	/// @return `this` for chaining
 	public Options setBlobGcAgeCutoff(double value) {
 		try {
 			MH_SET_BLOB_GC_AGE_CUTOFF.invokeExact(ptr(), value);
@@ -474,6 +503,9 @@ public final class Options extends NativeObject {
 
 	/// Blob files whose garbage ratio exceeds this threshold are force-compacted.
 	/// Range: [0.0, 1.0]. Default: 1.0 (disabled).
+	///
+	/// @param value force-GC garbage ratio threshold in [0.0, 1.0]
+	/// @return `this` for chaining
 	public Options setBlobGcForceThreshold(double value) {
 		try {
 			MH_SET_BLOB_GC_FORCE_THRESHOLD.invokeExact(ptr(), value);
@@ -493,6 +525,9 @@ public final class Options extends NativeObject {
 
 	/// Read-ahead size when reading blob files during compaction.
 	/// `0` disables read-ahead. Default: 0.
+	///
+	/// @param size read-ahead buffer size; `MemorySize.ofBytes(0)` disables it
+	/// @return `this` for chaining
 	public Options setBlobCompactionReadaheadSize(MemorySize size) {
 		try {
 			MH_SET_BLOB_COMPACTION_READAHEAD_SIZE.invokeExact(ptr(), size.toBytes());
@@ -512,6 +547,9 @@ public final class Options extends NativeObject {
 
 	/// LSM level at which blob file separation begins. Keys in levels below this
 	/// threshold are stored inline. Default: 0 (all levels externalize blobs).
+	///
+	/// @param level first LSM level where blobs are externalized (0 = all levels)
+	/// @return `this` for chaining
 	public Options setBlobFileStartingLevel(int level) {
 		try {
 			MH_SET_BLOB_FILE_STARTING_LEVEL.invokeExact(ptr(), level);
@@ -531,6 +569,9 @@ public final class Options extends NativeObject {
 
 	/// Attaches a dedicated cache for blob values.
 	/// Ownership of the cache is shared; the cache must outlive this Options object.
+	///
+	/// @param cache the blob cache to attach
+	/// @return `this` for chaining
 	public Options setBlobCache(Cache cache) {
 		try {
 			MH_SET_BLOB_CACHE.invokeExact(ptr(), cache.ptr());
@@ -542,6 +583,9 @@ public final class Options extends NativeObject {
 
 	/// Controls whether blob values are pre-populated into the blob cache on write.
 	/// Default: [PrepopulateBlobCache#DISABLE].
+	///
+	/// @param mode the pre-population strategy
+	/// @return `this` for chaining
 	public Options setPrepopulateBlobCache(PrepopulateBlobCache mode) {
 		try {
 			MH_SET_PREPOPULATE_BLOB_CACHE.invokeExact(ptr(), mode.value);
@@ -565,6 +609,9 @@ public final class Options extends NativeObject {
 
 	/// Sets the logger for this DB. RocksDB holds a shared reference; it is safe
 	/// to close [Logger] after this call.
+	///
+	/// @param logger the logger instance to attach
+	/// @return `this` for chaining
 	public Options setInfoLog(Logger logger) {
 		try {
 			MH_SET_INFO_LOG.invokeExact(ptr(), logger.ptr());
@@ -575,6 +622,9 @@ public final class Options extends NativeObject {
 	}
 
 	/// Sets the minimum log level. Messages below this level are suppressed.
+	///
+	/// @param level the minimum log level to emit
+	/// @return `this` for chaining
 	public Options setInfoLogLevel(LogLevel level) {
 		try {
 			MH_SET_INFO_LOG_LEVEL.invokeExact(ptr(), level.value);
@@ -596,6 +646,9 @@ public final class Options extends NativeObject {
 	///
 	/// The [Env] must remain open for the lifetime of the database.
 	/// No ownership transfer: both objects may be closed independently.
+	///
+	/// @param env the environment to use
+	/// @return `this` for chaining
 	public Options setEnv(Env env) {
 		try {
 			MH_SET_ENV.invokeExact(ptr(), env.ptr());
@@ -608,6 +661,9 @@ public final class Options extends NativeObject {
 	/// Attaches an [SstFileManager] to track SST files and enforce disk-space limits.
 	///
 	/// No ownership transfer: both objects may be closed independently.
+	///
+	/// @param sfm the SST file manager to attach
+	/// @return `this` for chaining
 	public Options setSstFileManager(SstFileManager sfm) {
 		try {
 			MH_SET_SST_FILE_MANAGER.invokeExact(ptr(), sfm.ptr());
@@ -621,6 +677,9 @@ public final class Options extends NativeObject {
 	///
 	/// The rate limiter uses shared ownership: this call does not transfer
 	/// ownership — both objects may be closed independently.
+	///
+	/// @param rateLimiter the rate limiter to attach
+	/// @return `this` for chaining
 	public Options setRateLimiter(RateLimiter rateLimiter) {
 		try {
 			MH_SET_RATELIMITER.invokeExact(ptr(), rateLimiter.ptr());

@@ -412,6 +412,10 @@ public final class RocksDB {
 	/// Opens a read-write database at `path`.
 	/// Use [Options#setCreateIfMissing(boolean)] to control behaviour when
 	/// the path does not exist.
+	///
+	/// @param options the database options
+	/// @param path directory where the database files are stored
+	/// @return a new [ReadWriteDB] instance
 	public static ReadWriteDB open(Options options, Path path) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = errHolder(arena);
@@ -425,6 +429,9 @@ public final class RocksDB {
 	}
 
 	/// Equivalent to `open(options, path)` with `createIfMissing = true`.
+	///
+	/// @param path directory where the database files are stored
+	/// @return a new [ReadWriteDB] instance
 	public static ReadWriteDB open(Path path) {
 		try (Options opts = Options.newOptions().setCreateIfMissing(true)) {
 			return open(opts, path);
@@ -435,6 +442,11 @@ public final class RocksDB {
 	///
 	/// Keys are lazily expired during the next compaction that covers their
 	/// range. A `ttl` of [Duration#ZERO] disables expiry entirely.
+	///
+	/// @param options the database options
+	/// @param path directory where the database files are stored
+	/// @param ttl time-to-live for keys; [Duration#ZERO] disables expiry
+	/// @return a new [TtlDB] instance
 	public static TtlDB openWithTtl(Options options, Path path, Duration ttl) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = errHolder(arena);
@@ -449,6 +461,10 @@ public final class RocksDB {
 	}
 
 	/// Equivalent to `openWithTtl(options, path, ttl)` with `createIfMissing = true`.
+	///
+	/// @param path directory where the database files are stored
+	/// @param ttl time-to-live for keys; [Duration#ZERO] disables expiry
+	/// @return a new [TtlDB] instance
 	public static TtlDB openWithTtl(Path path, Duration ttl) {
 		try (Options opts = Options.newOptions().setCreateIfMissing(true)) {
 			return openWithTtl(opts, path, ttl);
@@ -461,6 +477,10 @@ public final class RocksDB {
 	/// reducing write amplification for value-heavy workloads.
 	/// The caller is responsible for setting [Options#setEnableBlobFiles(boolean)] to `true`
 	/// and any other blob options before calling this method.
+	///
+	/// @param options the database options (must have blob files enabled)
+	/// @param path directory where the database files are stored
+	/// @return a new [BlobDB] instance
 	public static BlobDB openWithBlobFiles(Options options, Path path) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = errHolder(arena);
@@ -475,6 +495,9 @@ public final class RocksDB {
 
 	/// Equivalent to `openWithBlobFiles(options, path)` with `createIfMissing = true`
 	/// and `enableBlobFiles = true`.
+	///
+	/// @param path directory where the database files are stored
+	/// @return a new [BlobDB] instance
 	public static BlobDB openWithBlobFiles(Path path) {
 		try (Options opts = Options.newOptions().setCreateIfMissing(true).setEnableBlobFiles(true)) {
 			return openWithBlobFiles(opts, path);
@@ -487,7 +510,10 @@ public final class RocksDB {
 
 	/// Opens the database at `path` in read-only mode.
 	///
+	/// @param options the database options
+	/// @param path directory where the database files are stored
 	/// @param errorIfWalFileExists if `true`, fails when unrecovered WAL files are present
+	/// @return a new [ReadOnlyDB] instance
 	public static ReadOnlyDB openReadOnly(Options options, Path path, boolean errorIfWalFileExists) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = errHolder(arena);
@@ -502,11 +528,18 @@ public final class RocksDB {
 	}
 
 	/// Equivalent to `openReadOnly(options, path, false)`.
+	///
+	/// @param options the database options
+	/// @param path directory where the database files are stored
+	/// @return a new [ReadOnlyDB] instance
 	public static ReadOnlyDB openReadOnly(Options options, Path path) {
 		return openReadOnly(options, path, false);
 	}
 
 	/// Opens the database at `path` in read-only mode with default options.
+	///
+	/// @param path directory where the database files are stored
+	/// @return a new [ReadOnlyDB] instance
 	public static ReadOnlyDB openReadOnly(Path path) {
 		try (Options opts = Options.newOptions()) {
 			return openReadOnly(opts, path, false);
@@ -519,7 +552,10 @@ public final class RocksDB {
 
 	/// Opens a secondary (read-only replica) instance of the database at `primaryPath`.
 	///
+	/// @param options the database options
+	/// @param primaryPath directory of the primary database
 	/// @param secondaryPath a dedicated directory for this secondary's own MANIFEST/WAL tails
+	/// @return a new [SecondaryDB] instance
 	public static SecondaryDB openSecondary(Options options, Path primaryPath, Path secondaryPath) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = errHolder(arena);
@@ -541,6 +577,11 @@ public final class RocksDB {
 	// -----------------------------------------------------------------------
 
 	/// Opens a [TransactionDB] (pessimistic / locking transactions) at `path`.
+	///
+	/// @param options the database options
+	/// @param txnDbOptions the transaction DB options
+	/// @param path directory where the database files are stored
+	/// @return a new [TransactionDB] instance
 	public static TransactionDB openTransaction(Options options, TransactionDBOptions txnDbOptions, Path path) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = errHolder(arena);
@@ -558,6 +599,10 @@ public final class RocksDB {
 	}
 
 	/// Opens an [OptimisticTransactionDB] (conflict-detection-at-commit) at `path`.
+	///
+	/// @param options the database options
+	/// @param path directory where the database files are stored
+	/// @return a new [OptimisticTransactionDB] instance
 	public static OptimisticTransactionDB openOptimistic(Options options, Path path) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = errHolder(arena);
@@ -1004,6 +1049,12 @@ public final class RocksDB {
 	/// database, including the default column family (`"default"`). The `handles` list is cleared
 	/// and populated with one [ColumnFamilyHandle] per descriptor, in the same order. The caller
 	/// is responsible for closing each handle.
+	///
+	/// @param options the database options
+	/// @param path directory where the database files are stored
+	/// @param descriptors one descriptor per column family (must include `"default"`)
+	/// @param handles output list populated with one handle per descriptor
+	/// @return a new [ReadWriteDB] instance
 	public static ReadWriteDB openWithColumnFamilies(Options options, Path path,
 	                                                 List<ColumnFamilyDescriptor> descriptors,
 	                                                 List<ColumnFamilyHandle> handles) {
@@ -1051,6 +1102,12 @@ public final class RocksDB {
 	/// Opens a read-only database at `path` with multiple column families.
 	///
 	/// The `handles` list is cleared and populated with one [ColumnFamilyHandle] per descriptor.
+	///
+	/// @param options the database options
+	/// @param path directory where the database files are stored
+	/// @param descriptors one descriptor per column family (must include `"default"`)
+	/// @param handles output list populated with one handle per descriptor
+	/// @return a new [ReadOnlyDB] instance
 	public static ReadOnlyDB openReadOnlyWithColumnFamilies(Options options, Path path,
 	                                                        List<ColumnFamilyDescriptor> descriptors,
 	                                                        List<ColumnFamilyHandle> handles) {
@@ -1059,6 +1116,7 @@ public final class RocksDB {
 
 	/// Opens a read-only database at `path` with multiple column families.
 	///
+	/// @param options the database options
 	/// @param errorIfWalFileExists if `true`, fails when unrecovered WAL files are present
 	public static ReadOnlyDB openReadOnlyWithColumnFamilies(Options options, Path path,
 	                                                        List<ColumnFamilyDescriptor> descriptors,

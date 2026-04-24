@@ -13,6 +13,11 @@ package io.github.dfa1.rocksdbffm;
 /// System.out.printf("backup %s — %d bytes, %d files%n",
 ///     latest.backupId(), latest.size().toBytes(), latest.numberOfFiles());
 /// ```
+///
+/// @param backupId unique identifier assigned by the engine
+/// @param timestamp Unix timestamp (seconds since epoch) when the backup was created
+/// @param size total size of all files belonging to this backup
+/// @param numberOfFiles number of SST/WAL/MANIFEST files in this backup
 public record BackupInfo(
 		/// Unique identifier for this backup, assigned by the engine.
 		BackupId backupId,

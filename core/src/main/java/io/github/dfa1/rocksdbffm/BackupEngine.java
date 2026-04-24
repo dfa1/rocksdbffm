@@ -165,6 +165,10 @@ public final class BackupEngine extends NativeObject {
 	/// storing backups under `backupPath`.
 	///
 	/// The `backupPath` directory is created if it does not exist.
+	///
+	/// @param options the DB options supplying the env and info_log
+	/// @param backupPath directory where backups are stored (created if absent)
+	/// @return a new [BackupEngine] instance
 	public static BackupEngine open(Options options, Path backupPath) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = RocksDB.errHolder(arena);
@@ -181,6 +185,10 @@ public final class BackupEngine extends NativeObject {
 	///
 	/// Use this overload when you need full control over backup options (rate limits,
 	/// sharing strategy, custom env, etc.).
+	///
+	/// @param options the backup engine options
+	/// @param env the environment for backup I/O
+	/// @return a new [BackupEngine] instance
 	public static BackupEngine open(BackupEngineOptions options, Env env) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = RocksDB.errHolder(arena);
@@ -198,6 +206,7 @@ public final class BackupEngine extends NativeObject {
 
 	/// Creates a new incremental backup of `db`.
 	///
+	/// @param db the database to back up
 	/// @param flushBeforeBackup if `true`, the memtable is flushed to SST before
 	///                          the backup so that the backup does not include WAL entries
 	public void createNewBackup(ReadWriteDB db, boolean flushBeforeBackup) {
@@ -205,25 +214,41 @@ public final class BackupEngine extends NativeObject {
 	}
 
 	/// Creates a new incremental backup without pre-flushing the memtable.
+	///
+	/// @param db the database to back up
 	public void createNewBackup(ReadWriteDB db) {
 		createBackup(db.ptr(), false);
 	}
 
+	/// Creates a new incremental backup of a [BlobDB].
+	///
+	/// @param db the blob database to back up
+	/// @param flushBeforeBackup if `true`, flushes the memtable before backup
 	/// @see #createNewBackup(ReadWriteDB, boolean)
 	public void createNewBackup(BlobDB db, boolean flushBeforeBackup) {
 		createBackup(db.ptr(), flushBeforeBackup);
 	}
 
+	/// Creates a new incremental backup of a [BlobDB] without pre-flushing the memtable.
+	///
+	/// @param db the blob database to back up
 	/// @see #createNewBackup(ReadWriteDB)
 	public void createNewBackup(BlobDB db) {
 		createBackup(db.ptr(), false);
 	}
 
+	/// Creates a new incremental backup of a [TtlDB].
+	///
+	/// @param db the TTL database to back up
+	/// @param flushBeforeBackup if `true`, flushes the memtable before backup
 	/// @see #createNewBackup(ReadWriteDB, boolean)
 	public void createNewBackup(TtlDB db, boolean flushBeforeBackup) {
 		createBackup(db.ptr(), flushBeforeBackup);
 	}
 
+	/// Creates a new incremental backup of a [TtlDB] without pre-flushing the memtable.
+	///
+	/// @param db the TTL database to back up
 	/// @see #createNewBackup(ReadWriteDB)
 	public void createNewBackup(TtlDB db) {
 		createBackup(db.ptr(), false);
@@ -244,6 +269,8 @@ public final class BackupEngine extends NativeObject {
 	// -----------------------------------------------------------------------
 
 	/// Deletes all but the `numBackupsToKeep` most recent backups.
+	///
+	/// @param numBackupsToKeep number of recent backups to retain
 	public void purgeOldBackups(int numBackupsToKeep) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = RocksDB.errHolder(arena);
@@ -256,6 +283,7 @@ public final class BackupEngine extends NativeObject {
 
 	/// Verifies the checksum and file count of the backup identified by `backupId`.
 	///
+	/// @param backupId the identifier of the backup to verify
 	/// @throws RocksDBException if the backup is corrupt or not found
 	public void verifyBackup(BackupId backupId) {
 		try (Arena arena = Arena.ofConfined()) {
@@ -275,11 +303,18 @@ public final class BackupEngine extends NativeObject {
 	///
 	/// The destination directory must not be an open database. Close the database
 	/// before restoring.
+	///
+	/// @param dbDir destination directory for the restored database
+	/// @param restoreOptions options controlling the restore behaviour
 	public void restoreDbFromLatestBackup(Path dbDir, RestoreOptions restoreOptions) {
 		restoreDbFromLatestBackup(dbDir, dbDir, restoreOptions);
 	}
 
 	/// Restores the most recent backup to `dbDir` with WAL files written to `walDir`.
+	///
+	/// @param dbDir destination directory for the restored database
+	/// @param walDir destination directory for WAL files
+	/// @param restoreOptions options controlling the restore behaviour
 	public void restoreDbFromLatestBackup(Path dbDir, Path walDir, RestoreOptions restoreOptions) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = RocksDB.errHolder(arena);
@@ -293,11 +328,20 @@ public final class BackupEngine extends NativeObject {
 	}
 
 	/// Restores the backup identified by `backupId` to `dbDir`, using the same path for WAL files.
+	///
+	/// @param backupId the identifier of the backup to restore
+	/// @param dbDir destination directory for the restored database
+	/// @param restoreOptions options controlling the restore behaviour
 	public void restoreDbFromBackup(BackupId backupId, Path dbDir, RestoreOptions restoreOptions) {
 		restoreDbFromBackup(backupId, dbDir, dbDir, restoreOptions);
 	}
 
 	/// Restores the backup identified by `backupId` to `dbDir` with WAL files written to `walDir`.
+	///
+	/// @param backupId the identifier of the backup to restore
+	/// @param dbDir destination directory for the restored database
+	/// @param walDir destination directory for WAL files
+	/// @param restoreOptions options controlling the restore behaviour
 	public void restoreDbFromBackup(BackupId backupId, Path dbDir, Path walDir, RestoreOptions restoreOptions) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = RocksDB.errHolder(arena);
@@ -319,6 +363,8 @@ public final class BackupEngine extends NativeObject {
 	///
 	/// The native info pointer is acquired, iterated, and destroyed entirely
 	/// within this call — no native resource escapes.
+	///
+	/// @return unmodifiable list of [BackupInfo] records, one per existing backup
 	public List<BackupInfo> getBackupInfo() {
 		MemorySegment infoPtr;
 		try {

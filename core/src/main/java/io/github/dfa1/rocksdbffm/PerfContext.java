@@ -28,7 +28,7 @@ import java.lang.invoke.MethodHandle;
 ///
 /// ## Thread-locality
 ///
-/// The perf context is thread-local: [#create()] wraps the context of the
+/// The perf context is thread-local: [#newPerfContext()] wraps the context of the
 /// calling thread. Metrics accumulated on one thread are invisible to others.
 /// Always create, use, and close [PerfContext] on the same thread.
 ///

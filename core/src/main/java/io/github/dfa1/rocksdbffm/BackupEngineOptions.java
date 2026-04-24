@@ -173,6 +173,9 @@ public final class BackupEngineOptions extends NativeObject {
 	}
 
 	/// Creates backup engine options targeting `backupDir`.
+	///
+	/// @param backupDir directory where backups will be stored
+	/// @return a new [BackupEngineOptions] instance
 	public static BackupEngineOptions create(Path backupDir) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment dirSeg = arena.allocateFrom(backupDir.toString());
@@ -183,6 +186,9 @@ public final class BackupEngineOptions extends NativeObject {
 	}
 
 	/// Changes the backup directory. The directory is not created automatically.
+	///
+	/// @param backupDir new backup directory path
+	/// @return `this` for chaining
 	public BackupEngineOptions setBackupDir(Path backupDir) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment dirSeg = arena.allocateFrom(backupDir.toString());
@@ -197,6 +203,9 @@ public final class BackupEngineOptions extends NativeObject {
 	///
 	/// The [Env] must remain open for the lifetime of any [BackupEngine]
 	/// opened with these options. No ownership transfer.
+	///
+	/// @param env the environment to use for backup I/O
+	/// @return `this` for chaining
 	public BackupEngineOptions setEnv(Env env) {
 		try {
 			MH_SET_ENV.invokeExact(ptr(), env.ptr());
@@ -208,6 +217,9 @@ public final class BackupEngineOptions extends NativeObject {
 
 	/// If `true`, SST files are shared between backups (hard-linked or de-duplicated).
 	/// Default: `true`.
+	///
+	/// @param val `true` to enable SST sharing
+	/// @return `this` for chaining
 	public BackupEngineOptions setShareTableFiles(boolean val) {
 		try {
 			MH_SET_SHARE_TABLE_FILES.invokeExact(ptr(), val ? (byte) 1 : (byte) 0);
@@ -217,6 +229,9 @@ public final class BackupEngineOptions extends NativeObject {
 		}
 	}
 
+	/// Returns whether SST files are shared between backups.
+	///
+	/// @return `true` if SST sharing is enabled
 	public boolean isShareTableFiles() {
 		try {
 			return (byte) MH_GET_SHARE_TABLE_FILES.invokeExact(ptr()) != 0;
@@ -226,6 +241,9 @@ public final class BackupEngineOptions extends NativeObject {
 	}
 
 	/// If `true`, each file is synced after writing. Safer but slower. Default: `true`.
+	///
+	/// @param val `true` to enable sync after each file write
+	/// @return `this` for chaining
 	public BackupEngineOptions setSync(boolean val) {
 		try {
 			MH_SET_SYNC.invokeExact(ptr(), val ? (byte) 1 : (byte) 0);
@@ -235,6 +253,9 @@ public final class BackupEngineOptions extends NativeObject {
 		}
 	}
 
+	/// Returns whether files are synced after writing.
+	///
+	/// @return `true` if sync-after-write is enabled
 	public boolean isSync() {
 		try {
 			return (byte) MH_GET_SYNC.invokeExact(ptr()) != 0;
@@ -245,6 +266,9 @@ public final class BackupEngineOptions extends NativeObject {
 
 	/// If `true`, existing backup data in the backup directory is deleted when the
 	/// engine is opened. Default: `false`.
+	///
+	/// @param val `true` to destroy existing backup data on open
+	/// @return `this` for chaining
 	public BackupEngineOptions setDestroyOldData(boolean val) {
 		try {
 			MH_SET_DESTROY_OLD_DATA.invokeExact(ptr(), val ? (byte) 1 : (byte) 0);
@@ -254,6 +278,9 @@ public final class BackupEngineOptions extends NativeObject {
 		}
 	}
 
+	/// Returns whether existing backup data is destroyed on engine open.
+	///
+	/// @return `true` if destroy-old-data is enabled
 	public boolean isDestroyOldData() {
 		try {
 			return (byte) MH_GET_DESTROY_OLD_DATA.invokeExact(ptr()) != 0;
@@ -263,6 +290,9 @@ public final class BackupEngineOptions extends NativeObject {
 	}
 
 	/// If `true`, WAL/log files are included in backups. Default: `true`.
+	///
+	/// @param val `true` to include WAL/log files in each backup
+	/// @return `this` for chaining
 	public BackupEngineOptions setBackupLogFiles(boolean val) {
 		try {
 			MH_SET_BACKUP_LOG_FILES.invokeExact(ptr(), val ? (byte) 1 : (byte) 0);
@@ -272,6 +302,9 @@ public final class BackupEngineOptions extends NativeObject {
 		}
 	}
 
+	/// Returns whether WAL/log files are included in backups.
+	///
+	/// @return `true` if log file backup is enabled
 	public boolean isBackupLogFiles() {
 		try {
 			return (byte) MH_GET_BACKUP_LOG_FILES.invokeExact(ptr()) != 0;
@@ -282,6 +315,9 @@ public final class BackupEngineOptions extends NativeObject {
 
 	/// Maximum rate at which the backup engine copies files to the backup directory.
 	/// `0` means unlimited. Default: `0`.
+	///
+	/// @param limit maximum backup copy rate; `MemorySize.ofBytes(0)` means unlimited
+	/// @return `this` for chaining
 	public BackupEngineOptions setBackupRateLimit(MemorySize limit) {
 		try {
 			MH_SET_BACKUP_RATE_LIMIT.invokeExact(ptr(), limit.toBytes());
@@ -291,6 +327,9 @@ public final class BackupEngineOptions extends NativeObject {
 		}
 	}
 
+	/// Returns the maximum backup copy rate.
+	///
+	/// @return the rate limit; `MemorySize.ofBytes(0)` means unlimited
 	public MemorySize getBackupRateLimit() {
 		try {
 			return MemorySize.ofBytes((long) MH_GET_BACKUP_RATE_LIMIT.invokeExact(ptr()));
@@ -301,6 +340,9 @@ public final class BackupEngineOptions extends NativeObject {
 
 	/// Maximum rate at which the backup engine copies files during a restore.
 	/// `0` means unlimited. Default: `0`.
+	///
+	/// @param limit maximum restore copy rate; `MemorySize.ofBytes(0)` means unlimited
+	/// @return `this` for chaining
 	public BackupEngineOptions setRestoreRateLimit(MemorySize limit) {
 		try {
 			MH_SET_RESTORE_RATE_LIMIT.invokeExact(ptr(), limit.toBytes());
@@ -310,6 +352,9 @@ public final class BackupEngineOptions extends NativeObject {
 		}
 	}
 
+	/// Returns the maximum restore copy rate.
+	///
+	/// @return the rate limit; `MemorySize.ofBytes(0)` means unlimited
 	public MemorySize getRestoreRateLimit() {
 		try {
 			return MemorySize.ofBytes((long) MH_GET_RESTORE_RATE_LIMIT.invokeExact(ptr()));
@@ -319,6 +364,9 @@ public final class BackupEngineOptions extends NativeObject {
 	}
 
 	/// Number of background threads used for backup/restore. Default: `1`.
+	///
+	/// @param val number of background threads
+	/// @return `this` for chaining
 	public BackupEngineOptions setMaxBackgroundOperations(int val) {
 		try {
 			MH_SET_MAX_BACKGROUND_OPERATIONS.invokeExact(ptr(), val);
@@ -328,6 +376,9 @@ public final class BackupEngineOptions extends NativeObject {
 		}
 	}
 
+	/// Returns the number of background threads used for backup/restore.
+	///
+	/// @return number of background threads
 	public int getMaxBackgroundOperations() {
 		try {
 			return (int) MH_GET_MAX_BACKGROUND_OPERATIONS.invokeExact(ptr());
@@ -337,6 +388,9 @@ public final class BackupEngineOptions extends NativeObject {
 	}
 
 	/// How many bytes to copy before invoking the progress callback. Default: `4 MB`.
+	///
+	/// @param size bytes between progress callback invocations
+	/// @return `this` for chaining
 	public BackupEngineOptions setCallbackTriggerIntervalSize(MemorySize size) {
 		try {
 			MH_SET_CALLBACK_TRIGGER_INTERVAL_SIZE.invokeExact(ptr(), size.toBytes());
@@ -346,6 +400,9 @@ public final class BackupEngineOptions extends NativeObject {
 		}
 	}
 
+	/// Returns the byte interval between progress callback invocations.
+	///
+	/// @return the callback trigger interval size
 	public MemorySize getCallbackTriggerIntervalSize() {
 		try {
 			return MemorySize.ofBytes((long) MH_GET_CALLBACK_TRIGGER_INTERVAL_SIZE.invokeExact(ptr()));
@@ -356,6 +413,9 @@ public final class BackupEngineOptions extends NativeObject {
 
 	/// Number of the most recent backups to open on engine startup.
 	/// `-1` means open all. Default: `-1`.
+	///
+	/// @param val number of recent backups to open; `-1` means all
+	/// @return `this` for chaining
 	public BackupEngineOptions setMaxValidBackupsToOpen(int val) {
 		try {
 			MH_SET_MAX_VALID_BACKUPS_TO_OPEN.invokeExact(ptr(), val);
@@ -365,6 +425,9 @@ public final class BackupEngineOptions extends NativeObject {
 		}
 	}
 
+	/// Returns the maximum number of recent backups opened on engine startup.
+	///
+	/// @return the limit; `-1` means all backups are opened
 	public int getMaxValidBackupsToOpen() {
 		try {
 			return (int) MH_GET_MAX_VALID_BACKUPS_TO_OPEN.invokeExact(ptr());
@@ -375,6 +438,9 @@ public final class BackupEngineOptions extends NativeObject {
 
 	/// Naming scheme for shared SST files. See RocksDB docs for valid values.
 	/// Default: `1` (kOptionalChecksumWithDbSessionId).
+	///
+	/// @param val the naming scheme integer value
+	/// @return `this` for chaining
 	public BackupEngineOptions setShareFilesWithChecksumNaming(int val) {
 		try {
 			MH_SET_SHARE_FILES_WITH_CHECKSUM_NAMING.invokeExact(ptr(), val);
@@ -384,6 +450,9 @@ public final class BackupEngineOptions extends NativeObject {
 		}
 	}
 
+	/// Returns the naming scheme used for shared SST files.
+	///
+	/// @return the naming scheme integer value
 	public int getShareFilesWithChecksumNaming() {
 		try {
 			return (int) MH_GET_SHARE_FILES_WITH_CHECKSUM_NAMING.invokeExact(ptr());

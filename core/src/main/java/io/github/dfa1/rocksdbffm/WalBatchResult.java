@@ -16,6 +16,9 @@ package io.github.dfa1.rocksdbffm;
 ///     it.checkStatus();
 /// }
 /// ```
+///
+/// @param sequenceNumber sequence number of the first transaction in the batch
+/// @param writeBatch the batch; caller must close it when done
 public record WalBatchResult(SequenceNumber sequenceNumber, WriteBatch writeBatch)
 		implements AutoCloseable {
 

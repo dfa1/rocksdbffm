@@ -66,6 +66,8 @@ public final class WalIterator extends NativeObject {
 	}
 
 	/// Returns `true` if the iterator is positioned at a valid batch.
+	///
+	/// @return `true` if the iterator is valid
 	public boolean isValid() {
 		try {
 			return ((byte) MH_VALID.invokeExact(ptr())) != 0;
@@ -100,6 +102,8 @@ public final class WalIterator extends NativeObject {
 	/// Returns the current [WriteBatch] and the [SequenceNumber] of its first transaction.
 	/// The caller owns the returned [WalBatchResult] and must close it.
 	/// Only call when [#isValid()] is `true`.
+	///
+	/// @return the current batch and its sequence number
 	public WalBatchResult getBatch() {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment seqHolder = arena.allocate(ValueLayout.JAVA_LONG);

@@ -46,6 +46,9 @@ public final class FilterPolicy extends NativeObject {
 
 	/// Creates a Bloom filter with the given number of bits per key.
 	/// Typical value: `10` (≈1% false-positive rate).
+	///
+	/// @param bitsPerKey number of bits per key (higher = lower false-positive rate)
+	/// @return a new [FilterPolicy]; caller must close it (or transfer ownership via [BlockBasedTableOptions#setFilterPolicy])
 	public static FilterPolicy newBloom(double bitsPerKey) {
 		try {
 			return new FilterPolicy((MemorySegment) MH_CREATE_BLOOM.invokeExact(bitsPerKey));
@@ -57,6 +60,9 @@ public final class FilterPolicy extends NativeObject {
 	/// Creates a Ribbon filter (successor to Bloom, better space efficiency at
 	/// similar query cost). Uses `bloomEquivalentBitsPerKey` to set the
 	/// target false-positive rate equivalent to a Bloom filter at that setting.
+	///
+	/// @param bloomEquivalentBitsPerKey bits-per-key equivalent to a Bloom filter at that false-positive rate
+	/// @return a new [FilterPolicy]; caller must close it (or transfer ownership via [BlockBasedTableOptions#setFilterPolicy])
 	public static FilterPolicy newRibbon(double bloomEquivalentBitsPerKey) {
 		try {
 			return new FilterPolicy((MemorySegment) MH_CREATE_RIBBON.invokeExact(bloomEquivalentBitsPerKey));

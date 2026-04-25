@@ -27,6 +27,10 @@ public final class LRUCache extends Cache {
 		super(ptr);
 	}
 
+	/// Creates an LRU block cache with the given capacity.
+	///
+	/// @param capacity total cache capacity
+	/// @return a new [LRUCache]; caller must close it
 	public static LRUCache newLRUCache(MemorySize capacity) {
 		try {
 			return new LRUCache((MemorySegment) MH_CREATE.invokeExact(capacity.toBytes()));

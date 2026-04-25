@@ -39,6 +39,9 @@ public final class RestoreOptions extends NativeObject {
 		super(ptr);
 	}
 
+	/// Creates [RestoreOptions] with RocksDB defaults.
+	///
+	/// @return a new instance; caller must close it
 	public static RestoreOptions create() {
 		try {
 			return new RestoreOptions((MemorySegment) MH_CREATE.invokeExact());
@@ -49,6 +52,9 @@ public final class RestoreOptions extends NativeObject {
 
 	/// If `true`, existing WAL files in the destination directory are kept.
 	/// Default: `false` (WAL files are removed before restore).
+	///
+	/// @param keepLogFiles `true` to preserve WAL files in the restore target
+	/// @return `this` for chaining
 	public RestoreOptions setKeepLogFiles(boolean keepLogFiles) {
 		try {
 			MH_SET_KEEP_LOG_FILES.invokeExact(ptr(), keepLogFiles ? 1 : 0);

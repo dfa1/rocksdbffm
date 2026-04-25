@@ -1117,7 +1117,11 @@ public final class RocksDB {
 	/// Opens a read-only database at `path` with multiple column families.
 	///
 	/// @param options the database options
+	/// @param path directory where the database files are stored
+	/// @param descriptors one descriptor per column family (must include `"default"`)
+	/// @param handles output list populated with one handle per descriptor
 	/// @param errorIfWalFileExists if `true`, fails when unrecovered WAL files are present
+	/// @return a new [ReadOnlyDB] instance
 	public static ReadOnlyDB openReadOnlyWithColumnFamilies(Options options, Path path,
 	                                                        List<ColumnFamilyDescriptor> descriptors,
 	                                                        List<ColumnFamilyHandle> handles,
@@ -1164,6 +1168,13 @@ public final class RocksDB {
 	/// Each column family is paired with its own TTL from `ttls` (index-aligned with `descriptors`).
 	/// A TTL of [Duration#ZERO] disables expiry for that column family.
 	/// The `handles` list is cleared and populated with one [ColumnFamilyHandle] per descriptor.
+	///
+	/// @param options     database-level options
+	/// @param path        path to the database directory
+	/// @param descriptors column family descriptors (name + optional per-CF options)
+	/// @param ttls        per-column-family TTLs, index-aligned with `descriptors`
+	/// @param handles     output list; cleared and filled with one handle per descriptor
+	/// @return an open [TtlDB] instance; caller must close it
 	public static TtlDB openWithColumnFamiliesAndTtl(Options options, Path path,
 	                                                  List<ColumnFamilyDescriptor> descriptors,
 	                                                  List<Duration> ttls,
@@ -1210,6 +1221,13 @@ public final class RocksDB {
 	/// Opens a [TransactionDB] at `path` with multiple column families.
 	///
 	/// The `handles` list is cleared and populated with one [ColumnFamilyHandle] per descriptor.
+	///
+	/// @param options       database-level options
+	/// @param txnDbOptions  transaction database options
+	/// @param path          path to the database directory
+	/// @param descriptors   column family descriptors (name + optional per-CF options)
+	/// @param handles       output list; cleared and filled with one handle per descriptor
+	/// @return an open [TransactionDB] instance; caller must close it
 	public static TransactionDB openTransactionWithColumnFamilies(Options options,
 	                                                               TransactionDBOptions txnDbOptions,
 	                                                               Path path,
@@ -1255,6 +1273,12 @@ public final class RocksDB {
 	/// Opens an [OptimisticTransactionDB] at `path` with multiple column families.
 	///
 	/// The `handles` list is cleared and populated with one [ColumnFamilyHandle] per descriptor.
+	///
+	/// @param options     database-level options
+	/// @param path        path to the database directory
+	/// @param descriptors column family descriptors (name + optional per-CF options)
+	/// @param handles     output list; cleared and filled with one handle per descriptor
+	/// @return an open [OptimisticTransactionDB] instance; caller must close it
 	public static OptimisticTransactionDB openOptimisticWithColumnFamilies(Options options, Path path,
 	                                                                        List<ColumnFamilyDescriptor> descriptors,
 	                                                                        List<ColumnFamilyHandle> handles) {
@@ -1296,6 +1320,10 @@ public final class RocksDB {
 	}
 
 	/// Lists the names of all column families in the database at `path`.
+	///
+	/// @param options database-level options used to open the database metadata
+	/// @param path    path to the database directory
+	/// @return list of column family names as raw byte arrays
 	public static List<byte[]> listColumnFamilies(Options options, Path path) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = errHolder(arena);
@@ -1585,6 +1613,9 @@ public final class RocksDB {
 
 	/// Creates a pre-zeroed error holder in the given arena.
 	/// Use this for RocksDB C calls that take `char** errptr`.
+	///
+	/// @param arena arena to allocate the holder from
+	/// @return a zeroed `char**` segment suitable for RocksDB error-out parameters
 	public static MemorySegment errHolder(Arena arena) {
 		MemorySegment holder = arena.allocate(ValueLayout.ADDRESS);
 		holder.set(ValueLayout.ADDRESS, 0, MemorySegment.NULL);
@@ -1593,6 +1624,10 @@ public final class RocksDB {
 
 	/// Copies `bytes` into a new native memory segment allocated from `arena`.
 	/// No null-terminator is appended; use the byte length when passing to C functions.
+	///
+	/// @param arena arena to allocate the segment from
+	/// @param bytes source bytes to copy
+	/// @return native segment containing a copy of `bytes`
 	public static MemorySegment toNative(Arena arena, byte[] bytes) {
 		MemorySegment seg = arena.allocate(bytes.length);
 		// TODO: check if this is better seg.copyFrom(MemorySegment.ofArray(bytes));
@@ -1601,6 +1636,8 @@ public final class RocksDB {
 	}
 
 	/// Frees a malloc'd pointer returned by the RocksDB C API.
+	///
+	/// @param ptr pointer to free; must have been allocated by RocksDB
 	public static void free(MemorySegment ptr) {
 		try {
 			MH_FREE.invokeExact(ptr);
@@ -1611,6 +1648,8 @@ public final class RocksDB {
 
 	/// Checks if the error holder contains a non-NULL pointer.
 	/// If so, throws a [RocksDBException] and frees the C string.
+	///
+	/// @param errHolder the `char**` segment previously passed to a RocksDB C call
 	public static void checkError(MemorySegment errHolder) {
 		MemorySegment errPtr = errHolder.get(ValueLayout.ADDRESS, 0);
 		if (!MemorySegment.NULL.equals(errPtr)) {

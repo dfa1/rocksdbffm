@@ -40,11 +40,16 @@ public abstract class Cache extends NativeObject {
 				FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
 	}
 
+	/// Constructs a cache wrapping the given native pointer.
+	///
+	/// @param ptr native `rocksdb_cache_t*`
 	protected Cache(MemorySegment ptr) {
 		super(ptr);
 	}
 
 	/// Dynamically resizes the cache. Excess entries are evicted as needed.
+	///
+	/// @param capacity new cache capacity
 	public void setCapacity(MemorySize capacity) {
 		try {
 			MH_SET_CAPACITY.invokeExact(ptr(), capacity.toBytes());
@@ -53,6 +58,9 @@ public abstract class Cache extends NativeObject {
 		}
 	}
 
+	/// Returns the configured capacity of the cache.
+	///
+	/// @return cache capacity
 	public MemorySize getCapacity() {
 		try {
 			return MemorySize.ofBytes((long) MH_GET_CAPACITY.invokeExact(ptr()));
@@ -61,6 +69,9 @@ public abstract class Cache extends NativeObject {
 		}
 	}
 
+	/// Returns the current memory usage of the cache.
+	///
+	/// @return current usage
 	public MemorySize getUsage() {
 		try {
 			return MemorySize.ofBytes((long) MH_GET_USAGE.invokeExact(ptr()));
@@ -69,6 +80,9 @@ public abstract class Cache extends NativeObject {
 		}
 	}
 
+	/// Returns the amount of memory currently pinned (not eligible for eviction).
+	///
+	/// @return pinned memory usage
 	public MemorySize getPinnedUsage() {
 		try {
 			return MemorySize.ofBytes((long) MH_GET_PINNED_USAGE.invokeExact(ptr()));

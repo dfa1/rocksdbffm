@@ -4,11 +4,19 @@ import java.util.Objects;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Supplier;
 
+/// Bounded pool backed by a [java.util.concurrent.LinkedBlockingQueue].
+/// Throws [IllegalStateException] on over-acquire or double-release.
+///
+/// @param <T> the pooled resource type
 public final class BlockingPool<T> implements Pool<T> {
 
 	private final int capacity;
 	private final LinkedBlockingQueue<T> queue;
 
+	/// Creates a pool of `capacity` resources produced by `factory`.
+	///
+	/// @param capacity maximum number of pooled resources
+	/// @param factory  supplier called once per slot to pre-populate the pool
 	public BlockingPool(int capacity, Supplier<T> factory) {
 		this.capacity = capacity;
 		this.queue = new LinkedBlockingQueue<>(capacity);

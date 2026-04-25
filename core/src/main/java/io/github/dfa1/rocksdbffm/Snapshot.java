@@ -58,6 +58,8 @@ public final class Snapshot extends NativeObject {
 
 	/// Returns the sequence number at which this snapshot was taken.
 	/// Useful for ordering and debugging.
+	///
+	/// @return the snapshot's sequence number
 	public SequenceNumber sequenceNumber() {
 		try {
 			return SequenceNumber.of((long) MH_SEQUENCE_NUMBER.invokeExact(ptr()));

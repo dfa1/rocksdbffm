@@ -60,6 +60,9 @@ public final class StatisticsHistogramData extends NativeObject {
 		super(ptr);
 	}
 
+	/// Creates a new histogram data container, initially zeroed.
+	///
+	/// @return a new [StatisticsHistogramData]; caller must close it
 	public static StatisticsHistogramData newStatisticsHistogramData() {
 		try {
 			return new StatisticsHistogramData((MemorySegment) MH_CREATE.invokeExact());
@@ -68,6 +71,9 @@ public final class StatisticsHistogramData extends NativeObject {
 		}
 	}
 
+	/// Returns the median value of the histogram.
+	///
+	/// @return median value
 	public double getMedian() {
 		try {
 			return (double) MH_GET_MEDIAN.invokeExact(ptr());
@@ -76,6 +82,9 @@ public final class StatisticsHistogramData extends NativeObject {
 		}
 	}
 
+	/// Returns the 95th-percentile value of the histogram.
+	///
+	/// @return 95th-percentile value
 	public double getP95() {
 		try {
 			return (double) MH_GET_P95.invokeExact(ptr());
@@ -84,6 +93,9 @@ public final class StatisticsHistogramData extends NativeObject {
 		}
 	}
 
+	/// Returns the 99th-percentile value of the histogram.
+	///
+	/// @return 99th-percentile value
 	public double getP99() {
 		try {
 			return (double) MH_GET_P99.invokeExact(ptr());
@@ -92,6 +104,9 @@ public final class StatisticsHistogramData extends NativeObject {
 		}
 	}
 
+	/// Returns the average value of the histogram.
+	///
+	/// @return average value
 	public double getAverage() {
 		try {
 			return (double) MH_GET_AVERAGE.invokeExact(ptr());
@@ -100,6 +115,9 @@ public final class StatisticsHistogramData extends NativeObject {
 		}
 	}
 
+	/// Returns the standard deviation of the histogram.
+	///
+	/// @return standard deviation
 	public double getStdDev() {
 		try {
 			return (double) MH_GET_STD_DEV.invokeExact(ptr());
@@ -108,6 +126,9 @@ public final class StatisticsHistogramData extends NativeObject {
 		}
 	}
 
+	/// Returns the maximum value recorded in the histogram.
+	///
+	/// @return maximum value
 	public double getMax() {
 		try {
 			return (double) MH_GET_MAX.invokeExact(ptr());
@@ -116,6 +137,9 @@ public final class StatisticsHistogramData extends NativeObject {
 		}
 	}
 
+	/// Returns the total number of samples in the histogram.
+	///
+	/// @return sample count
 	public long getCount() {
 		try {
 			return (long) MH_GET_COUNT.invokeExact(ptr());
@@ -124,6 +148,9 @@ public final class StatisticsHistogramData extends NativeObject {
 		}
 	}
 
+	/// Returns the sum of all samples in the histogram.
+	///
+	/// @return sum of all samples
 	public long getSum() {
 		try {
 			return (long) MH_GET_SUM.invokeExact(ptr());
@@ -132,6 +159,9 @@ public final class StatisticsHistogramData extends NativeObject {
 		}
 	}
 
+	/// Returns the minimum value recorded in the histogram.
+	///
+	/// @return minimum value
 	public double getMin() {
 		try {
 			return (double) MH_GET_MIN.invokeExact(ptr());

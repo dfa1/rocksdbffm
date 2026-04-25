@@ -36,6 +36,9 @@ public final class TransactionDBOptions extends NativeObject {
 		super(ptr);
 	}
 
+	/// Creates a new [TransactionDBOptions] with default settings.
+	///
+	/// @return a new [TransactionDBOptions]; caller must close it
 	public static TransactionDBOptions newTransactionDBOptions() {
 		try {
 			return new TransactionDBOptions((MemorySegment) MH_CREATE.invokeExact());
@@ -45,6 +48,9 @@ public final class TransactionDBOptions extends NativeObject {
 	}
 
 	/// Maximum number of locks held simultaneously. Default: -1 (unlimited).
+	///
+	/// @param maxNumLocks max locks; `-1` for unlimited
+	/// @return this instance for chaining
 	public TransactionDBOptions setMaxNumLocks(long maxNumLocks) {
 		try {
 			MH_SET_MAX_NUM_LOCKS.invokeExact(ptr(), maxNumLocks);
@@ -55,6 +61,9 @@ public final class TransactionDBOptions extends NativeObject {
 	}
 
 	/// Number of sub-lock-tables. Increasing reduces lock contention. Default: 16.
+	///
+	/// @param numStripes number of lock-table stripes
+	/// @return this instance for chaining
 	public TransactionDBOptions setNumStripes(long numStripes) {
 		try {
 			MH_SET_NUM_STRIPES.invokeExact(ptr(), numStripes);

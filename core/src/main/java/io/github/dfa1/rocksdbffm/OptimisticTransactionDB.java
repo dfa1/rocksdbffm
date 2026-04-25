@@ -75,6 +75,9 @@ public final class OptimisticTransactionDB extends NativeObject {
 
 	/// Begins a new optimistic transaction using the supplied write options and
 	/// default [OptimisticTransactionOptions].
+	///
+	/// @param writeOptions write options for the transaction
+	/// @return a new [Transaction]; caller must close it
 	public Transaction beginTransaction(WriteOptions writeOptions) {
 		try (OptimisticTransactionOptions txnOpts = OptimisticTransactionOptions.newOptimisticTransactionOptions()) {
 			return beginTransaction(writeOptions, txnOpts);
@@ -83,6 +86,10 @@ public final class OptimisticTransactionDB extends NativeObject {
 
 	/// Begins a new optimistic transaction using the supplied write options and
 	/// transaction options.
+	///
+	/// @param writeOptions write options for the transaction
+	/// @param txnOptions   optimistic transaction options
+	/// @return a new [Transaction]; caller must close it
 	public Transaction beginTransaction(WriteOptions writeOptions, OptimisticTransactionOptions txnOptions) {
 		try {
 			MemorySegment txnPtr = (MemorySegment) MH_BEGIN.invokeExact(
@@ -98,11 +105,17 @@ public final class OptimisticTransactionDB extends NativeObject {
 	// -----------------------------------------------------------------------
 
 	/// Direct put, bypassing any active transaction. Slow path: allocates native memory.
+	///
+	/// @param key   key bytes
+	/// @param value value bytes
 	public void put(byte[] key, byte[] value) {
 		RocksDB.putBytes(baseDb, writeOpts.ptr(), key, value);
 	}
 
 	/// Zero-copy put: wraps the direct buffers' native memory without heap→native copy.
+	///
+	/// @param key   direct [ByteBuffer] containing the key
+	/// @param value direct [ByteBuffer] containing the value
 	public void put(ByteBuffer key, ByteBuffer value) {
 		RocksDB.putSegment(baseDb, writeOpts.ptr(),
 				MemorySegment.ofBuffer(key), key.remaining(),
@@ -110,6 +123,9 @@ public final class OptimisticTransactionDB extends NativeObject {
 	}
 
 	/// Zero-copy put: caller supplies pre-allocated native segments.
+	///
+	/// @param key   native segment containing the key
+	/// @param value native segment containing the value
 	public void put(MemorySegment key, MemorySegment value) {
 		RocksDB.putSegment(baseDb, writeOpts.ptr(), key, key.byteSize(), value, value.byteSize());
 	}
@@ -120,17 +136,28 @@ public final class OptimisticTransactionDB extends NativeObject {
 
 	/// Direct get, reading committed data only. Returns `null` if not found.
 	/// Uses PinnableSlice to avoid an intermediate copy from the block cache.
+	///
+	/// @param key key bytes to look up
+	/// @return value bytes, or `null` if the key does not exist
 	public byte[] get(byte[] key) {
 		return RocksDB.getBytes(baseDb, readOpts.ptr(), key);
 	}
 
 	/// Direct get with explicit [ReadOptions], e.g. for snapshot-pinned reads. Returns `null` if not found.
+	///
+	/// @param readOptions read options, e.g. containing a snapshot
+	/// @param key         key bytes to look up
+	/// @return value bytes, or `null` if the key does not exist
 	public byte[] get(ReadOptions readOptions, byte[] key) {
 		return RocksDB.getBytes(baseDb, readOptions.ptr(), key);
 	}
 
 	/// Single-copy get via PinnableSlice + direct output [ByteBuffer].
 	/// Returns the actual value length, or -1 if not found.
+	///
+	/// @param key   direct [ByteBuffer] containing the key
+	/// @param value direct [ByteBuffer] to write the value into
+	/// @return actual value length in bytes, or -1 if the key does not exist
 	public int get(ByteBuffer key, ByteBuffer value) {
 		return RocksDB.getIntoBuffer(baseDb, readOpts.ptr(),
 				MemorySegment.ofBuffer(key), key.remaining(), value);
@@ -138,6 +165,10 @@ public final class OptimisticTransactionDB extends NativeObject {
 
 	/// Zero-copy get via PinnableSlice into a caller-supplied native segment.
 	/// Returns the actual value length.
+	///
+	/// @param key   native segment containing the key
+	/// @param value native segment to write the value into
+	/// @return actual value length in bytes
 	public long get(MemorySegment key, MemorySegment value) {
 		return RocksDB.getIntoSegment(baseDb, readOpts.ptr(), key, key.byteSize(), value);
 	}
@@ -147,16 +178,22 @@ public final class OptimisticTransactionDB extends NativeObject {
 	// -----------------------------------------------------------------------
 
 	/// Direct delete, bypassing any active transaction. Slow path.
+	///
+	/// @param key key bytes to delete
 	public void delete(byte[] key) {
 		RocksDB.deleteBytes(baseDb, writeOpts.ptr(), key);
 	}
 
 	/// Zero-copy for direct [ByteBuffer]s.
+	///
+	/// @param key direct [ByteBuffer] containing the key to delete
 	public void delete(ByteBuffer key) {
 		RocksDB.deleteSegment(baseDb, writeOpts.ptr(), MemorySegment.ofBuffer(key), key.remaining());
 	}
 
 	/// Zero-copy native-first path.
+	///
+	/// @param key native segment containing the key to delete
 	public void delete(MemorySegment key) {
 		RocksDB.deleteSegment(baseDb, writeOpts.ptr(), key, key.byteSize());
 	}
@@ -166,11 +203,16 @@ public final class OptimisticTransactionDB extends NativeObject {
 	// -----------------------------------------------------------------------
 
 	/// Creates a new column family described by `descriptor` and returns its handle.
+	///
+	/// @param descriptor name and options for the new column family
+	/// @return a [ColumnFamilyHandle] for the new column family; caller must close it
 	public ColumnFamilyHandle createColumnFamily(ColumnFamilyDescriptor descriptor) {
 		return RocksDB.createCf(baseDb, descriptor);
 	}
 
 	/// Drops the column family identified by `handle`.
+	///
+	/// @param handle handle of the column family to drop
 	public void dropColumnFamily(ColumnFamilyHandle handle) {
 		RocksDB.dropCf(baseDb, handle);
 	}
@@ -180,11 +222,19 @@ public final class OptimisticTransactionDB extends NativeObject {
 	// -----------------------------------------------------------------------
 
 	/// Stores `value` under `key` in `cf`, bypassing any active transaction. Slow path.
+	///
+	/// @param cf    target column family
+	/// @param key   key bytes
+	/// @param value value bytes
 	public void put(ColumnFamilyHandle cf, byte[] key, byte[] value) {
 		RocksDB.putCfBytes(baseDb, writeOpts.ptr(), cf, key, value);
 	}
 
 	/// Zero-copy put into `cf` for direct [ByteBuffer]s.
+	///
+	/// @param cf    target column family
+	/// @param key   direct [ByteBuffer] containing the key
+	/// @param value direct [ByteBuffer] containing the value
 	public void put(ColumnFamilyHandle cf, ByteBuffer key, ByteBuffer value) {
 		RocksDB.putCfSegment(baseDb, writeOpts.ptr(), cf,
 				MemorySegment.ofBuffer(key), key.remaining(),
@@ -192,6 +242,10 @@ public final class OptimisticTransactionDB extends NativeObject {
 	}
 
 	/// Zero-copy put into `cf` for [MemorySegment]s.
+	///
+	/// @param cf    target column family
+	/// @param key   native segment containing the key
+	/// @param value native segment containing the value
 	public void put(ColumnFamilyHandle cf, MemorySegment key, MemorySegment value) {
 		RocksDB.putCfSegment(baseDb, writeOpts.ptr(), cf, key, key.byteSize(), value, value.byteSize());
 	}
@@ -201,17 +255,31 @@ public final class OptimisticTransactionDB extends NativeObject {
 	// -----------------------------------------------------------------------
 
 	/// Returns the value for `key` in `cf`, or `null` if not found.
+	///
+	/// @param cf  column family to read from
+	/// @param key key bytes to look up
+	/// @return value bytes, or `null` if the key does not exist
 	public byte[] get(ColumnFamilyHandle cf, byte[] key) {
 		return RocksDB.getCfBytes(baseDb, readOpts.ptr(), cf, key);
 	}
 
 	/// Get from `cf` with explicit [ReadOptions]. Returns `null` if not found.
+	///
+	/// @param cf          column family to read from
+	/// @param readOptions read options, e.g. containing a snapshot
+	/// @param key         key bytes to look up
+	/// @return value bytes, or `null` if the key does not exist
 	public byte[] get(ColumnFamilyHandle cf, ReadOptions readOptions, byte[] key) {
 		return RocksDB.getCfBytes(baseDb, readOptions.ptr(), cf, key);
 	}
 
 	/// Single-copy get from `cf` via PinnableSlice + direct output [ByteBuffer].
 	/// Returns the actual value length, or -1 if not found.
+	///
+	/// @param cf    column family to read from
+	/// @param key   direct [ByteBuffer] containing the key
+	/// @param value direct [ByteBuffer] to write the value into
+	/// @return actual value length in bytes, or -1 if the key does not exist
 	public int get(ColumnFamilyHandle cf, ByteBuffer key, ByteBuffer value) {
 		return RocksDB.getCfIntoBuffer(baseDb, readOpts.ptr(), cf,
 				MemorySegment.ofBuffer(key), key.remaining(), value);
@@ -219,6 +287,11 @@ public final class OptimisticTransactionDB extends NativeObject {
 
 	/// Zero-copy get from `cf` into a caller-supplied native segment.
 	/// Returns the actual value length.
+	///
+	/// @param cf    column family to read from
+	/// @param key   native segment containing the key
+	/// @param value native segment to write the value into
+	/// @return actual value length in bytes
 	public long get(ColumnFamilyHandle cf, MemorySegment key, MemorySegment value) {
 		return RocksDB.getCfIntoSegment(baseDb, readOpts.ptr(), cf, key, key.byteSize(), value);
 	}
@@ -228,16 +301,25 @@ public final class OptimisticTransactionDB extends NativeObject {
 	// -----------------------------------------------------------------------
 
 	/// Removes `key` from `cf`, bypassing any active transaction. Slow path.
+	///
+	/// @param cf  column family to delete from
+	/// @param key key bytes to delete
 	public void delete(ColumnFamilyHandle cf, byte[] key) {
 		RocksDB.deleteCfBytes(baseDb, writeOpts.ptr(), cf, key);
 	}
 
 	/// Zero-copy delete from `cf` for direct [ByteBuffer]s.
+	///
+	/// @param cf  column family to delete from
+	/// @param key direct [ByteBuffer] containing the key to delete
 	public void delete(ColumnFamilyHandle cf, ByteBuffer key) {
 		RocksDB.deleteCfSegment(baseDb, writeOpts.ptr(), cf, MemorySegment.ofBuffer(key), key.remaining());
 	}
 
 	/// Zero-copy delete from `cf` for [MemorySegment]s.
+	///
+	/// @param cf  column family to delete from
+	/// @param key native segment containing the key to delete
 	public void delete(ColumnFamilyHandle cf, MemorySegment key) {
 		RocksDB.deleteCfSegment(baseDb, writeOpts.ptr(), cf, key, key.byteSize());
 	}
@@ -247,16 +329,28 @@ public final class OptimisticTransactionDB extends NativeObject {
 	// -----------------------------------------------------------------------
 
 	/// Deletes all keys in `[startKey, endKey)` within `cf`. Slow path.
+	///
+	/// @param cf       column family to delete from
+	/// @param startKey start of the range (inclusive)
+	/// @param endKey   end of the range (exclusive)
 	public void deleteRange(ColumnFamilyHandle cf, byte[] startKey, byte[] endKey) {
 		RocksDB.deleteRangeCfBytesExplicit(baseDb, writeOpts.ptr(), cf, startKey, endKey);
 	}
 
 	/// Zero-copy deleteRange for direct [ByteBuffer]s.
+	///
+	/// @param cf       column family to delete from
+	/// @param startKey direct [ByteBuffer] for the start of the range (inclusive)
+	/// @param endKey   direct [ByteBuffer] for the end of the range (exclusive)
 	public void deleteRange(ColumnFamilyHandle cf, ByteBuffer startKey, ByteBuffer endKey) {
 		RocksDB.deleteRangeCfBufferExplicit(baseDb, writeOpts.ptr(), cf, startKey, endKey);
 	}
 
 	/// Zero-copy deleteRange for [MemorySegment]s.
+	///
+	/// @param cf       column family to delete from
+	/// @param startKey native segment for the start of the range (inclusive)
+	/// @param endKey   native segment for the end of the range (exclusive)
 	public void deleteRange(ColumnFamilyHandle cf, MemorySegment startKey, MemorySegment endKey) {
 		RocksDB.deleteRangeCfSegmentExplicit(baseDb, writeOpts.ptr(), cf, startKey, endKey);
 	}
@@ -266,21 +360,33 @@ public final class OptimisticTransactionDB extends NativeObject {
 	// -----------------------------------------------------------------------
 
 	/// Returns a new iterator using the database's default read options.
+	///
+	/// @return a new [RocksIterator]; caller must close it
 	public RocksIterator newIterator() {
 		return RocksIterator.create(baseDb, readOpts.ptr());
 	}
 
 	/// Returns a new iterator using the supplied [ReadOptions].
+	///
+	/// @param readOptions read options, e.g. containing a snapshot
+	/// @return a new [RocksIterator]; caller must close it
 	public RocksIterator newIterator(ReadOptions readOptions) {
 		return RocksIterator.create(baseDb, readOptions.ptr());
 	}
 
 	/// Returns a new iterator scoped to `cf` using the default read options.
+	///
+	/// @param cf column family to iterate over
+	/// @return a new [RocksIterator]; caller must close it
 	public RocksIterator newIterator(ColumnFamilyHandle cf) {
 		return RocksDB.createIteratorCf(baseDb, readOpts.ptr(), cf);
 	}
 
 	/// Returns a new iterator scoped to `cf` with explicit [ReadOptions].
+	///
+	/// @param cf          column family to iterate over
+	/// @param readOptions read options, e.g. containing a snapshot
+	/// @return a new [RocksIterator]; caller must close it
 	public RocksIterator newIterator(ColumnFamilyHandle cf, ReadOptions readOptions) {
 		return RocksDB.createIteratorCf(baseDb, readOptions.ptr(), cf);
 	}
@@ -291,6 +397,8 @@ public final class OptimisticTransactionDB extends NativeObject {
 
 	/// Creates a snapshot of the current DB state.
 	/// The returned snapshot must be closed after use.
+	///
+	/// @return a new [Snapshot]; caller must close it
 	public Snapshot getSnapshot() {
 		return RocksDB.createSnapshot(baseDb);
 	}
@@ -300,6 +408,8 @@ public final class OptimisticTransactionDB extends NativeObject {
 	// -----------------------------------------------------------------------
 
 	/// Flushes all memtable data to SST files on disk.
+	///
+	/// @param flushOptions controls whether the flush blocks until complete
 	public void flush(FlushOptions flushOptions) {
 		RocksDB.flush(baseDb, flushOptions);
 	}
@@ -316,6 +426,9 @@ public final class OptimisticTransactionDB extends NativeObject {
 	// -----------------------------------------------------------------------
 
 	/// Flushes the memtable for `cf` to SST files.
+	///
+	/// @param cf           column family to flush
+	/// @param flushOptions controls whether the flush blocks until complete
 	public void flush(ColumnFamilyHandle cf, FlushOptions flushOptions) {
 		RocksDB.flushCf(baseDb, flushOptions, cf);
 	}
@@ -325,21 +438,35 @@ public final class OptimisticTransactionDB extends NativeObject {
 	// -----------------------------------------------------------------------
 
 	/// Returns the value of a DB property as a string, or [Optional#empty()] if not supported.
+	///
+	/// @param property the property to query
+	/// @return the property value, or [Optional#empty()] if not supported
 	public Optional<String> getProperty(Property property) {
 		return RocksDB.getProperty(baseDb, property);
 	}
 
 	/// Returns the value of a numeric DB property, or [OptionalLong#empty()] if not supported.
+	///
+	/// @param property the property to query
+	/// @return the numeric property value, or [OptionalLong#empty()] if not supported
 	public OptionalLong getLongProperty(Property property) {
 		return RocksDB.getLongProperty(baseDb, property);
 	}
 
 	/// Returns the value of a property scoped to `cf`, or [Optional#empty()] if not supported.
+	///
+	/// @param cf       column family to query
+	/// @param property the property to query
+	/// @return the property value, or [Optional#empty()] if not supported
 	public Optional<String> getProperty(ColumnFamilyHandle cf, Property property) {
 		return RocksDB.getPropertyCf(baseDb, cf, property);
 	}
 
 	/// Returns the value of a numeric property scoped to `cf`, or [OptionalLong#empty()] if not supported.
+	///
+	/// @param cf       column family to query
+	/// @param property the property to query
+	/// @return the numeric property value, or [OptionalLong#empty()] if not supported
 	public OptionalLong getLongProperty(ColumnFamilyHandle cf, Property property) {
 		return RocksDB.getLongPropertyCf(baseDb, cf, property);
 	}

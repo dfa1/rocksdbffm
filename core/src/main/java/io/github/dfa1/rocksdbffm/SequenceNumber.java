@@ -26,21 +26,32 @@ public final class SequenceNumber implements Comparable<SequenceNumber> {
 	}
 
 	/// Wraps a raw sequence number returned by the native API.
+	///
+	/// @param value the raw `uint64_t` sequence number
+	/// @return a new [SequenceNumber] wrapping the given value
 	public static SequenceNumber of(long value) {
 		return new SequenceNumber(value);
 	}
 
 	/// Returns the raw `uint64_t` value.
+	///
+	/// @return the raw sequence number as a signed `long` (interpret unsigned)
 	public long toLong() {
 		return value;
 	}
 
 	/// Returns true if this sequence number is strictly after `other`.
+	///
+	/// @param other the sequence number to compare against
+	/// @return `true` if this sequence number is greater than `other`
 	public boolean isAfter(SequenceNumber other) {
 		return this.value > other.value;
 	}
 
 	/// Returns true if this sequence number is strictly before `other`.
+	///
+	/// @param other the sequence number to compare against
+	/// @return `true` if this sequence number is less than `other`
 	public boolean isBefore(SequenceNumber other) {
 		return this.value < other.value;
 	}

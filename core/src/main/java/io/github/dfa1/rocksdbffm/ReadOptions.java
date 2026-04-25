@@ -31,6 +31,9 @@ public final class ReadOptions extends NativeObject {
 		super(ptr);
 	}
 
+	/// Creates [ReadOptions] with RocksDB defaults.
+	///
+	/// @return a new instance; caller must close it
 	public static ReadOptions newReadOptions() {
 		try {
 			return new ReadOptions((MemorySegment) MH_CREATE.invokeExact());
@@ -43,6 +46,7 @@ public final class ReadOptions extends NativeObject {
 	/// The snapshot must remain open for the lifetime of these read options.
 	/// Pass `null` to clear a previously set snapshot.
 	///
+	/// @param snapshot the snapshot to use, or `null` to clear
 	/// @return `this` for chaining
 	public ReadOptions setSnapshot(Snapshot snapshot) {
 		try {

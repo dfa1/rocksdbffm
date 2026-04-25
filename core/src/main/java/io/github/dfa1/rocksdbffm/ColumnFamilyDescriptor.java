@@ -19,31 +19,49 @@ public final class ColumnFamilyDescriptor {
 	}
 
 	/// Creates a descriptor with the given raw-byte name and no explicit options.
+	///
+	/// @param name column family name as raw bytes
+	/// @return a new descriptor
 	public static ColumnFamilyDescriptor of(byte[] name) {
 		return new ColumnFamilyDescriptor(name, null);
 	}
 
 	/// Creates a descriptor with the given raw-byte name and per-family options.
+	///
+	/// @param name    column family name as raw bytes
+	/// @param options per-column-family options; caller retains ownership
+	/// @return a new descriptor
 	public static ColumnFamilyDescriptor of(byte[] name, Options options) {
 		return new ColumnFamilyDescriptor(name, options);
 	}
 
 	/// Creates a descriptor with the given UTF-8 name and no explicit options.
+	///
+	/// @param name column family name as a UTF-8 string
+	/// @return a new descriptor
 	public static ColumnFamilyDescriptor of(String name) {
 		return new ColumnFamilyDescriptor(name.getBytes(StandardCharsets.UTF_8), null);
 	}
 
 	/// Creates a descriptor with the given UTF-8 name and per-family options.
+	///
+	/// @param name    column family name as a UTF-8 string
+	/// @param options per-column-family options; caller retains ownership
+	/// @return a new descriptor
 	public static ColumnFamilyDescriptor of(String name, Options options) {
 		return new ColumnFamilyDescriptor(name.getBytes(StandardCharsets.UTF_8), options);
 	}
 
 	/// Returns the column family name as raw bytes.
+	///
+	/// @return column family name
 	public byte[] name() {
 		return name;
 	}
 
 	/// Returns the name as a UTF-8 string.
+	///
+	/// @return column family name decoded as UTF-8
 	public String nameAsString() {
 		return new String(name, StandardCharsets.UTF_8);
 	}

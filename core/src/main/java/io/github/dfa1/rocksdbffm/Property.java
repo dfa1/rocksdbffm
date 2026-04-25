@@ -141,36 +141,57 @@ public enum Property {
 	// Level-indexed: num-files-at-level<N>  (L0 – L6)  — NUMERIC
 	// -----------------------------------------------------------------------
 
+	/// Number of SST files at level 0.
 	NUM_FILES_AT_LEVEL_L0("rocksdb.num-files-at-level0", Type.NUMERIC),
+	/// Number of SST files at level 1.
 	NUM_FILES_AT_LEVEL_L1("rocksdb.num-files-at-level1", Type.NUMERIC),
+	/// Number of SST files at level 2.
 	NUM_FILES_AT_LEVEL_L2("rocksdb.num-files-at-level2", Type.NUMERIC),
+	/// Number of SST files at level 3.
 	NUM_FILES_AT_LEVEL_L3("rocksdb.num-files-at-level3", Type.NUMERIC),
+	/// Number of SST files at level 4.
 	NUM_FILES_AT_LEVEL_L4("rocksdb.num-files-at-level4", Type.NUMERIC),
+	/// Number of SST files at level 5.
 	NUM_FILES_AT_LEVEL_L5("rocksdb.num-files-at-level5", Type.NUMERIC),
+	/// Number of SST files at level 6.
 	NUM_FILES_AT_LEVEL_L6("rocksdb.num-files-at-level6", Type.NUMERIC),
 
 	// -----------------------------------------------------------------------
 	// Level-indexed: compression-ratio-at-level<N>  (L0 – L6)  — STRING (float)
 	// -----------------------------------------------------------------------
 
+	/// Compression ratio at level 0 (as a string-formatted float).
 	COMPRESSION_RATIO_AT_LEVEL_L0("rocksdb.compression-ratio-at-level0", Type.STRING),
+	/// Compression ratio at level 1 (as a string-formatted float).
 	COMPRESSION_RATIO_AT_LEVEL_L1("rocksdb.compression-ratio-at-level1", Type.STRING),
+	/// Compression ratio at level 2 (as a string-formatted float).
 	COMPRESSION_RATIO_AT_LEVEL_L2("rocksdb.compression-ratio-at-level2", Type.STRING),
+	/// Compression ratio at level 3 (as a string-formatted float).
 	COMPRESSION_RATIO_AT_LEVEL_L3("rocksdb.compression-ratio-at-level3", Type.STRING),
+	/// Compression ratio at level 4 (as a string-formatted float).
 	COMPRESSION_RATIO_AT_LEVEL_L4("rocksdb.compression-ratio-at-level4", Type.STRING),
+	/// Compression ratio at level 5 (as a string-formatted float).
 	COMPRESSION_RATIO_AT_LEVEL_L5("rocksdb.compression-ratio-at-level5", Type.STRING),
+	/// Compression ratio at level 6 (as a string-formatted float).
 	COMPRESSION_RATIO_AT_LEVEL_L6("rocksdb.compression-ratio-at-level6", Type.STRING),
 
 	// -----------------------------------------------------------------------
 	// Level-indexed: aggregated-table-properties-at-level<N>  (L0 – L6)  — STRING
 	// -----------------------------------------------------------------------
 
+	/// Aggregated table properties for all SST files at level 0.
 	AGGREGATED_TABLE_PROPERTIES_AT_LEVEL_L0("rocksdb.aggregated-table-properties-at-level0", Type.STRING),
+	/// Aggregated table properties for all SST files at level 1.
 	AGGREGATED_TABLE_PROPERTIES_AT_LEVEL_L1("rocksdb.aggregated-table-properties-at-level1", Type.STRING),
+	/// Aggregated table properties for all SST files at level 2.
 	AGGREGATED_TABLE_PROPERTIES_AT_LEVEL_L2("rocksdb.aggregated-table-properties-at-level2", Type.STRING),
+	/// Aggregated table properties for all SST files at level 3.
 	AGGREGATED_TABLE_PROPERTIES_AT_LEVEL_L3("rocksdb.aggregated-table-properties-at-level3", Type.STRING),
+	/// Aggregated table properties for all SST files at level 4.
 	AGGREGATED_TABLE_PROPERTIES_AT_LEVEL_L4("rocksdb.aggregated-table-properties-at-level4", Type.STRING),
+	/// Aggregated table properties for all SST files at level 5.
 	AGGREGATED_TABLE_PROPERTIES_AT_LEVEL_L5("rocksdb.aggregated-table-properties-at-level5", Type.STRING),
+	/// Aggregated table properties for all SST files at level 6.
 	AGGREGATED_TABLE_PROPERTIES_AT_LEVEL_L6("rocksdb.aggregated-table-properties-at-level6", Type.STRING);
 
 	// -----------------------------------------------------------------------
@@ -184,7 +205,9 @@ public enum Property {
 	///     [ReadWriteDB#getLongProperty(Property)].
 	///
 	public enum Type {
+		/// Human-readable text blob; only available via `getProperty`.
 		STRING,
+		/// Uint64 counter or size; available via both `getProperty` and `getLongProperty`.
 		NUMERIC
 	}
 
@@ -197,12 +220,16 @@ public enum Property {
 	}
 
 	/// Returns the RocksDB property string passed to the C API.
+	///
+	/// @return the property name string
 	public String propertyName() {
 		return propertyName;
 	}
 
 	/// Returns whether this property is string-only or also numeric.
 	/// TODO: still not used, the idea was to create a sealed return type for Java (e.g. PropertyValue either String or Long)
+	///
+	/// @return the value type of this property
 	public Type type() {
 		return type;
 	}

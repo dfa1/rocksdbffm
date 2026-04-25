@@ -98,6 +98,9 @@ public final class SstFileWriter extends NativeObject {
 	}
 
 	/// Creates an SST file writer using the given DB options (comparator, compression, etc.).
+	///
+	/// @param options DB options that control comparator and compression for the SST file
+	/// @return a new [SstFileWriter]; caller must close it
 	public static SstFileWriter newSstFileWriter(Options options) {
 		try {
 			MemorySegment envOpts = (MemorySegment) MH_ENVOPTIONS_CREATE.invokeExact();
@@ -113,6 +116,8 @@ public final class SstFileWriter extends NativeObject {
 
 	/// Opens a new SST file at the given path for writing.
 	/// Call [#finish()] to finalize the file before ingesting.
+	///
+	/// @param path destination path for the SST file
 	public void open(Path path) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = RocksDB.errHolder(arena);
@@ -125,6 +130,9 @@ public final class SstFileWriter extends NativeObject {
 	}
 
 	/// Appends a put entry. Keys must be added in strictly ascending order.
+	///
+	/// @param key   key bytes
+	/// @param value value bytes
 	public void put(byte[] key, byte[] value) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = RocksDB.errHolder(arena);
@@ -141,6 +149,9 @@ public final class SstFileWriter extends NativeObject {
 	}
 
 	/// Zero-copy [MemorySegment] overload of [#put(byte\[\], byte\[\])].
+	///
+	/// @param key   native segment containing the key
+	/// @param value native segment containing the value
 	public void put(MemorySegment key, MemorySegment value) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = RocksDB.errHolder(arena);
@@ -155,6 +166,8 @@ public final class SstFileWriter extends NativeObject {
 	}
 
 	/// Appends a delete tombstone entry. Keys must be added in strictly ascending order.
+	///
+	/// @param key key bytes to delete
 	public void delete(byte[] key) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = RocksDB.errHolder(arena);
@@ -167,6 +180,8 @@ public final class SstFileWriter extends NativeObject {
 	}
 
 	/// Zero-copy [MemorySegment] overload of [#delete(byte\[\])].
+	///
+	/// @param key native segment containing the key to delete
 	public void delete(MemorySegment key) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = RocksDB.errHolder(arena);
@@ -179,6 +194,9 @@ public final class SstFileWriter extends NativeObject {
 
 	/// Appends a delete-range tombstone covering `[beginKey, endKey)`.
 	/// Keys must be added in strictly ascending order.
+	///
+	/// @param beginKey inclusive start of the deleted range
+	/// @param endKey   exclusive end of the deleted range
 	public void deleteRange(byte[] beginKey, byte[] endKey) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = RocksDB.errHolder(arena);
@@ -207,6 +225,8 @@ public final class SstFileWriter extends NativeObject {
 	}
 
 	/// Returns the size of the current (or most recently finished) SST file in bytes.
+	///
+	/// @return SST file size in bytes
 	public long fileSize() {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment sizeSeg = arena.allocate(ValueLayout.JAVA_LONG);

@@ -1,12 +1,18 @@
 package io.github.dfa1.rocksdbffm.pool;
 
-// this will cache the most recent acquisition in a thread local
-// use with care: the assumption is that acquire/release cycle happens on same thread
+/// [Pool] wrapper that caches the most recently released resource in a [ThreadLocal].
+///
+/// Acquire/release cycles must happen on the same thread. Use with care.
+///
+/// @param <T> the pooled resource type
 public final class CachedBlockingPool<T> implements Pool<T> {
 
 	private final Pool<T> delegate;
 	private final ThreadLocal<T> local;
 
+	/// Wraps `delegate` with a per-thread cache.
+	///
+	/// @param delegate underlying pool to delegate to on cache miss
 	public CachedBlockingPool(Pool<T> delegate) {
 		this.delegate = delegate;
 		this.local = new ThreadLocal<>();

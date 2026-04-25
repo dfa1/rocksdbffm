@@ -80,6 +80,7 @@ public final class RateLimiter extends NativeObject {
 	/// limiting writes only.
 	///
 	/// @param rateBytesPerSec maximum I/O rate in bytes per second
+	/// @return a new [RateLimiter]; caller must close it
 	public static RateLimiter create(MemorySize rateBytesPerSec) {
 		return create(rateBytesPerSec, 100_000L, 10);
 	}
@@ -90,6 +91,7 @@ public final class RateLimiter extends NativeObject {
 	/// @param refillPeriodUs   refill interval in microseconds (default 100,000)
 	/// @param fairness         RateLimiter will allow at most 1 / fairness high-priority
 	///                         requests to wait when there are low-priority requests in flight (default 10)
+	/// @return a new [RateLimiter]; caller must close it
 	public static RateLimiter create(MemorySize rateBytesPerSec, long refillPeriodUs, int fairness) {
 		try {
 			MemorySegment ptr = (MemorySegment) MH_CREATE.invokeExact(
@@ -106,6 +108,7 @@ public final class RateLimiter extends NativeObject {
 	/// @param rateBytesPerSec  target I/O rate in bytes per second
 	/// @param refillPeriodUs   refill interval in microseconds (default 100,000)
 	/// @param fairness         see [#create(MemorySize, long, int)] (default 10)
+	/// @return a new auto-tuned [RateLimiter]; caller must close it
 	public static RateLimiter createAutoTuned(MemorySize rateBytesPerSec, long refillPeriodUs, int fairness) {
 		try {
 			MemorySegment ptr = (MemorySegment) MH_CREATE_AUTO_TUNED.invokeExact(
@@ -120,6 +123,7 @@ public final class RateLimiter extends NativeObject {
 	/// fairness (10), limiting writes only.
 	///
 	/// @param rateBytesPerSec target I/O rate in bytes per second
+	/// @return a new auto-tuned [RateLimiter]; caller must close it
 	public static RateLimiter createAutoTuned(MemorySize rateBytesPerSec) {
 		return createAutoTuned(rateBytesPerSec, 100_000L, 10);
 	}
@@ -131,6 +135,7 @@ public final class RateLimiter extends NativeObject {
 	/// @param fairness         see [#create(MemorySize, long, int)]
 	/// @param mode             which I/O types to rate-limit
 	/// @param autoTuned        whether to enable automatic rate adjustment
+	/// @return a new [RateLimiter]; caller must close it
 	public static RateLimiter createWithMode(MemorySize rateBytesPerSec, long refillPeriodUs,
 			int fairness, Mode mode, boolean autoTuned) {
 		try {

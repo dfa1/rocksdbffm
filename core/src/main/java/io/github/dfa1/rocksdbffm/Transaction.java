@@ -149,6 +149,9 @@ public final class Transaction extends NativeObject {
 	// -----------------------------------------------------------------------
 
 	/// Stages a put inside this transaction. Slow path: allocates native memory for key/value.
+	///
+	/// @param key   key bytes
+	/// @param value value bytes
 	public void put(byte[] key, byte[] value) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = RocksDB.errHolder(arena);
@@ -162,6 +165,8 @@ public final class Transaction extends NativeObject {
 	}
 
 	/// Stages a delete inside this transaction. Slow path: allocates native memory for key.
+	///
+	/// @param key key bytes to delete
 	public void delete(byte[] key) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = RocksDB.errHolder(arena);
@@ -181,6 +186,10 @@ public final class Transaction extends NativeObject {
 	/// to avoid an intermediate copy. Returns `null` if not found.
 	///
 	/// Slow path: allocates native memory for the key.
+	///
+	/// @param readOptions read options for this read
+	/// @param key         key bytes to look up
+	/// @return value bytes, or `null` if the key does not exist
 	public byte[] get(ReadOptions readOptions, byte[] key) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = RocksDB.errHolder(arena);
@@ -209,7 +218,10 @@ public final class Transaction extends NativeObject {
 	/// Reads the value for `key` and acquires a pessimistic lock on it for
 	/// the duration of this transaction. Returns `null` if not found.
 	///
-	/// @param exclusive if true, acquires an exclusive (write) lock; otherwise a shared (read) lock
+	/// @param readOptions read options for this read
+	/// @param key         key bytes to look up
+	/// @param exclusive   if `true`, acquires an exclusive (write) lock; otherwise a shared (read) lock
+	/// @return value bytes, or `null` if the key does not exist
 	public byte[] getForUpdate(ReadOptions readOptions, byte[] key, boolean exclusive) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = RocksDB.errHolder(arena);
@@ -240,6 +252,10 @@ public final class Transaction extends NativeObject {
 	// -----------------------------------------------------------------------
 
 	/// Stages a put into `cf` inside this transaction. Slow path: allocates native memory.
+	///
+	/// @param cf    target column family
+	/// @param key   key bytes
+	/// @param value value bytes
 	public void put(ColumnFamilyHandle cf, byte[] key, byte[] value) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = RocksDB.errHolder(arena);
@@ -253,6 +269,9 @@ public final class Transaction extends NativeObject {
 	}
 
 	/// Stages a delete of `key` from `cf` inside this transaction. Slow path.
+	///
+	/// @param cf  target column family
+	/// @param key key bytes to delete
 	public void delete(ColumnFamilyHandle cf, byte[] key) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = RocksDB.errHolder(arena);
@@ -269,6 +288,11 @@ public final class Transaction extends NativeObject {
 	// -----------------------------------------------------------------------
 
 	/// Reads `key` from `cf` within this transaction via PinnableSlice. Returns `null` if not found.
+	///
+	/// @param cf          column family to read from
+	/// @param readOptions read options for this read
+	/// @param key         key bytes to look up
+	/// @return value bytes, or `null` if the key does not exist
 	public byte[] get(ColumnFamilyHandle cf, ReadOptions readOptions, byte[] key) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = RocksDB.errHolder(arena);
@@ -293,7 +317,11 @@ public final class Transaction extends NativeObject {
 	/// Reads `key` from `cf` and acquires a lock for the duration of this transaction.
 	/// Returns `null` if not found.
 	///
-	/// @param exclusive if true, acquires an exclusive (write) lock; otherwise a shared (read) lock
+	/// @param cf          column family to read from
+	/// @param readOptions read options for this read
+	/// @param key         key bytes to look up
+	/// @param exclusive   if `true`, acquires an exclusive (write) lock; otherwise a shared (read) lock
+	/// @return value bytes, or `null` if the key does not exist
 	public byte[] getForUpdate(ColumnFamilyHandle cf, ReadOptions readOptions, byte[] key, boolean exclusive) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = RocksDB.errHolder(arena);
@@ -316,6 +344,10 @@ public final class Transaction extends NativeObject {
 	}
 
 	/// Returns a new iterator scoped to `cf` within this transaction.
+	///
+	/// @param cf          column family to iterate over
+	/// @param readOptions read options for this iterator
+	/// @return a new [RocksIterator]; caller must close it
 	public RocksIterator newIterator(ColumnFamilyHandle cf, ReadOptions readOptions) {
 		try {
 			MemorySegment iterPtr = (MemorySegment) MH_CREATE_ITERATOR_CF.invokeExact(
@@ -333,6 +365,8 @@ public final class Transaction extends NativeObject {
 	/// Returns the snapshot associated with this transaction, or `null` if none
 	/// was set via [TransactionOptions].
 	/// The returned snapshot must be closed after use (freed via `rocksdb_free`).
+	///
+	/// @return the transaction's snapshot, or `null` if none was set
 	public Snapshot getSnapshot() {
 		try {
 			MemorySegment snapPtr = (MemorySegment) MH_GET_SNAPSHOT.invokeExact(ptr());

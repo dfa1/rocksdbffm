@@ -19,6 +19,7 @@ public final class MemorySize implements Comparable<MemorySize> {
 	private static final long MB = 1024L * KB;
 	private static final long GB = 1024L * MB;
 
+	/// Convenience constant representing zero bytes; pass to APIs that accept an optional size hint.
 	public static final MemorySize ZERO = new MemorySize(0);
 
 	private final long bytes;
@@ -34,18 +35,34 @@ public final class MemorySize implements Comparable<MemorySize> {
 	// Named factories — unit is always explicit
 	// -----------------------------------------------------------------------
 
+	/// Creates a [MemorySize] from an exact byte count.
+	///
+	/// @param bytes non-negative byte count
+	/// @return a new [MemorySize] representing the given number of bytes
 	public static MemorySize ofBytes(long bytes) {
 		return new MemorySize(bytes);
 	}
 
+	/// Creates a [MemorySize] from a kilobyte count (1 KB = 1024 bytes).
+	///
+	/// @param kilobytes non-negative kilobyte count
+	/// @return a new [MemorySize] representing the given number of kilobytes
 	public static MemorySize ofKB(long kilobytes) {
 		return new MemorySize(Math.multiplyExact(kilobytes, KB));
 	}
 
+	/// Creates a [MemorySize] from a megabyte count (1 MB = 1024 KB).
+	///
+	/// @param megabytes non-negative megabyte count
+	/// @return a new [MemorySize] representing the given number of megabytes
 	public static MemorySize ofMB(long megabytes) {
 		return new MemorySize(Math.multiplyExact(megabytes, MB));
 	}
 
+	/// Creates a [MemorySize] from a gigabyte count (1 GB = 1024 MB).
+	///
+	/// @param gigabytes non-negative gigabyte count
+	/// @return a new [MemorySize] representing the given number of gigabytes
 	public static MemorySize ofGB(long gigabytes) {
 		return new MemorySize(Math.multiplyExact(gigabytes, GB));
 	}
@@ -55,10 +72,16 @@ public final class MemorySize implements Comparable<MemorySize> {
 	// -----------------------------------------------------------------------
 
 	/// Returns the value in bytes, for passing to native calls.
+	///
+	/// @return the size in bytes
 	public long toBytes() {
 		return bytes;
 	}
 
+	/// Returns the sum of this size and `other`.
+	///
+	/// @param other the size to add
+	/// @return a new [MemorySize] representing the combined byte count
 	public MemorySize add(MemorySize other) {
 		return new MemorySize(Math.addExact(this.bytes, other.bytes));
 	}

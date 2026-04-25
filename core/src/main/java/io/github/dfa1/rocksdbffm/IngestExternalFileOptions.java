@@ -64,6 +64,9 @@ public final class IngestExternalFileOptions extends NativeObject {
 		super(ptr);
 	}
 
+	/// Creates [IngestExternalFileOptions] with RocksDB defaults.
+	///
+	/// @return a new instance; caller must close it
 	public static IngestExternalFileOptions newIngestExternalFileOptions() {
 		try {
 			return new IngestExternalFileOptions((MemorySegment) MH_CREATE.invokeExact());
@@ -74,6 +77,7 @@ public final class IngestExternalFileOptions extends NativeObject {
 
 	/// If `true`, the SST files are moved rather than copied into the DB directory.
 	///
+	/// @param moveFiles `true` to move files instead of copying
 	/// @return `this` for chaining
 	public IngestExternalFileOptions setMoveFiles(boolean moveFiles) {
 		try {
@@ -86,6 +90,7 @@ public final class IngestExternalFileOptions extends NativeObject {
 
 	/// If `true` (default), snapshot consistency is enforced during ingest.
 	///
+	/// @param snapshotConsistency `true` to enforce snapshot consistency
 	/// @return `this` for chaining
 	public IngestExternalFileOptions setSnapshotConsistency(boolean snapshotConsistency) {
 		try {
@@ -98,6 +103,7 @@ public final class IngestExternalFileOptions extends NativeObject {
 
 	/// If `true` (default), allows assigning a global sequence number to ingested files.
 	///
+	/// @param allowGlobalSeqno `true` to allow global sequence number assignment
 	/// @return `this` for chaining
 	public IngestExternalFileOptions setAllowGlobalSeqno(boolean allowGlobalSeqno) {
 		try {
@@ -110,6 +116,7 @@ public final class IngestExternalFileOptions extends NativeObject {
 
 	/// If `true` (default), allows a blocking flush before ingest if needed.
 	///
+	/// @param allowBlockingFlush `true` to allow blocking flush before ingest
 	/// @return `this` for chaining
 	public IngestExternalFileOptions setAllowBlockingFlush(boolean allowBlockingFlush) {
 		try {
@@ -123,6 +130,7 @@ public final class IngestExternalFileOptions extends NativeObject {
 	/// If `true`, ingest files behind existing data (at the bottommost level).
 	/// Requires `allow_ingest_behind` to be set on the DB options.
 	///
+	/// @param ingestBehind `true` to ingest behind existing data
 	/// @return `this` for chaining
 	public IngestExternalFileOptions setIngestBehind(boolean ingestBehind) {
 		try {
@@ -135,6 +143,7 @@ public final class IngestExternalFileOptions extends NativeObject {
 
 	/// If `true`, fails if the file cannot be placed at the bottommost level.
 	///
+	/// @param failIfNotBottommostLevel `true` to fail when placement at bottommost level is not possible
 	/// @return `this` for chaining
 	public IngestExternalFileOptions setFailIfNotBottommostLevel(boolean failIfNotBottommostLevel) {
 		try {

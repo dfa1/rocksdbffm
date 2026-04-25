@@ -87,6 +87,8 @@ public final class PerfContext extends NativeObject {
 	///
 	/// Must be called before creating or using a [PerfContext] to have effect.
 	/// Always reset to [PerfLevel#DISABLE] when measurement is complete.
+	///
+	/// @param level the desired instrumentation level
 	public static void setPerfLevel(PerfLevel level) {
 		try {
 			MH_SET_PERF_LEVEL.invokeExact(level.value);
@@ -102,6 +104,8 @@ public final class PerfContext extends NativeObject {
 	/// Wraps the calling thread's perf context and resets all counters to zero.
 	///
 	/// Use this as the standard entry point when you want a clean measurement window.
+	///
+	/// @return a [PerfContext] for the calling thread with all counters reset
 	public static PerfContext newPerfContext() {
 		PerfContext ctx = currentPerfContext();
 		ctx.reset();
@@ -112,6 +116,8 @@ public final class PerfContext extends NativeObject {
 	///
 	/// Use this when you want to observe metrics that have already accumulated,
 	/// or when you manage [#reset()] yourself.
+	///
+	/// @return a [PerfContext] wrapping the calling thread's current counters
 	public static PerfContext currentPerfContext() {
 		try {
 			return new PerfContext((MemorySegment) MH_CREATE.invokeExact());
@@ -134,6 +140,9 @@ public final class PerfContext extends NativeObject {
 	}
 
 	/// Returns the accumulated value for the given metric since the last [#reset()].
+	///
+	/// @param metric the metric to read
+	/// @return accumulated value for the metric
 	public long metric(PerfMetric metric) {
 		try {
 			return (long) MH_METRIC.invokeExact(ptr(), metric.value);
@@ -145,6 +154,7 @@ public final class PerfContext extends NativeObject {
 	/// Returns a human-readable report of all metrics.
 	///
 	/// @param excludeZeroCounters if `true`, metrics with a zero value are omitted
+	/// @return formatted report string
 	public String report(boolean excludeZeroCounters) {
 		MemorySegment strPtr;
 		try {

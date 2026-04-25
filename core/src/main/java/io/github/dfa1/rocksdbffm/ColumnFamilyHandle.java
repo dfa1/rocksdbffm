@@ -48,6 +48,8 @@ public final class ColumnFamilyHandle extends NativeObject {
 	}
 
 	/// Returns the numeric ID of this column family.
+	///
+	/// @return column family ID
 	public int getId() {
 		try {
 			return (int) MH_GET_ID.invokeExact(ptr());
@@ -57,6 +59,8 @@ public final class ColumnFamilyHandle extends NativeObject {
 	}
 
 	/// Returns the name of this column family.
+	///
+	/// @return column family name as a UTF-8 string
 	public String getName() {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment lenSeg = arena.allocate(ValueLayout.JAVA_LONG);

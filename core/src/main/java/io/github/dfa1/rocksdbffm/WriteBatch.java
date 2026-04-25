@@ -87,6 +87,9 @@ public final class WriteBatch extends NativeObject {
 		super(ptr);
 	}
 
+	/// Creates an empty write batch.
+	///
+	/// @return a new [WriteBatch]; caller must close it
 	public static WriteBatch create() {
 		try {
 			return new WriteBatch((MemorySegment) MH_CREATE.invokeExact());
@@ -102,6 +105,11 @@ public final class WriteBatch extends NativeObject {
 	}
 
 	// TODO: experimental zig-like interface => but in the end it could be easier just to allocate the arena as part of the batch
+	/// Queues a put using the caller's [Arena] for native allocation. Slow path.
+	///
+	/// @param arena arena for native allocations
+	/// @param key   key bytes
+	/// @param value value bytes
 	public void put(Arena arena, byte[] key, byte[] value) {
 		try {
 			MemorySegment k = RocksDB.toNative(arena, key);
@@ -112,6 +120,10 @@ public final class WriteBatch extends NativeObject {
 		}
 	}
 
+	/// Queues a put. Slow path: copies key/value into native memory.
+	///
+	/// @param key   key bytes
+	/// @param value value bytes
 	public void put(byte[] key, byte[] value) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment k = RocksDB.toNative(arena, key);
@@ -122,6 +134,9 @@ public final class WriteBatch extends NativeObject {
 		}
 	}
 
+	/// Queues a delete tombstone. Slow path: copies the key into native memory.
+	///
+	/// @param key key bytes to delete
 	public void delete(byte[] key) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment k = RocksDB.toNative(arena, key);
@@ -132,6 +147,9 @@ public final class WriteBatch extends NativeObject {
 	}
 
 	/// Queues a range tombstone for [`startKey`, `endKey`). Slow path: copies keys.
+	///
+	/// @param startKey inclusive start of the deleted range
+	/// @param endKey   exclusive end of the deleted range
 	public void deleteRange(byte[] startKey, byte[] endKey) {
 		try (Arena arena = Arena.ofConfined()) {
 			MH_DELETE_RANGE.invokeExact(ptr(),
@@ -143,6 +161,9 @@ public final class WriteBatch extends NativeObject {
 	}
 
 	/// Queues a range tombstone for [`startKey`, `endKey`). Zero-copy for direct buffers.
+	///
+	/// @param startKey direct [ByteBuffer] with the inclusive start key
+	/// @param endKey   direct [ByteBuffer] with the exclusive end key
 	public void deleteRange(ByteBuffer startKey, ByteBuffer endKey) {
 		try {
 			MH_DELETE_RANGE.invokeExact(ptr(),
@@ -154,6 +175,9 @@ public final class WriteBatch extends NativeObject {
 	}
 
 	/// Queues a range tombstone for [`startKey`, `endKey`). Zero-copy.
+	///
+	/// @param startKey native segment with the inclusive start key
+	/// @param endKey   native segment with the exclusive end key
 	public void deleteRange(MemorySegment startKey, MemorySegment endKey) {
 		try {
 			MH_DELETE_RANGE.invokeExact(ptr(),
@@ -169,6 +193,10 @@ public final class WriteBatch extends NativeObject {
 	// -----------------------------------------------------------------------
 
 	/// Queues a put into `cf`. Slow path: copies key/value into native memory.
+	///
+	/// @param cf    target column family
+	/// @param key   key bytes
+	/// @param value value bytes
 	public void put(ColumnFamilyHandle cf, byte[] key, byte[] value) {
 		try (Arena arena = Arena.ofConfined()) {
 			MH_PUT_CF.invokeExact(ptr(), cf.ptr(),
@@ -180,6 +208,10 @@ public final class WriteBatch extends NativeObject {
 	}
 
 	/// Queues a put into `cf`. Zero-copy for direct [ByteBuffer]s.
+	///
+	/// @param cf    target column family
+	/// @param key   direct [ByteBuffer] containing the key
+	/// @param value direct [ByteBuffer] containing the value
 	public void put(ColumnFamilyHandle cf, ByteBuffer key, ByteBuffer value) {
 		try {
 			MH_PUT_CF.invokeExact(ptr(), cf.ptr(),
@@ -191,6 +223,10 @@ public final class WriteBatch extends NativeObject {
 	}
 
 	/// Queues a put into `cf`. Zero-copy for [MemorySegment]s.
+	///
+	/// @param cf    target column family
+	/// @param key   native segment containing the key
+	/// @param value native segment containing the value
 	public void put(ColumnFamilyHandle cf, MemorySegment key, MemorySegment value) {
 		try {
 			MH_PUT_CF.invokeExact(ptr(), cf.ptr(),
@@ -201,6 +237,9 @@ public final class WriteBatch extends NativeObject {
 	}
 
 	/// Queues a delete from `cf`. Slow path: copies the key into native memory.
+	///
+	/// @param cf  column family to delete from
+	/// @param key key bytes to delete
 	public void delete(ColumnFamilyHandle cf, byte[] key) {
 		try (Arena arena = Arena.ofConfined()) {
 			MH_DELETE_CF.invokeExact(ptr(), cf.ptr(),
@@ -211,6 +250,9 @@ public final class WriteBatch extends NativeObject {
 	}
 
 	/// Queues a delete from `cf`. Zero-copy for direct [ByteBuffer]s.
+	///
+	/// @param cf  column family to delete from
+	/// @param key direct [ByteBuffer] containing the key to delete
 	public void delete(ColumnFamilyHandle cf, ByteBuffer key) {
 		try {
 			MH_DELETE_CF.invokeExact(ptr(), cf.ptr(),
@@ -221,6 +263,9 @@ public final class WriteBatch extends NativeObject {
 	}
 
 	/// Queues a delete from `cf`. Zero-copy for [MemorySegment]s.
+	///
+	/// @param cf  column family to delete from
+	/// @param key native segment containing the key to delete
 	public void delete(ColumnFamilyHandle cf, MemorySegment key) {
 		try {
 			MH_DELETE_CF.invokeExact(ptr(), cf.ptr(), key, key.byteSize());
@@ -230,6 +275,10 @@ public final class WriteBatch extends NativeObject {
 	}
 
 	/// Queues a range tombstone [`startKey`, `endKey`) in `cf`. Slow path.
+	///
+	/// @param cf       column family to delete from
+	/// @param startKey inclusive start of the deleted range
+	/// @param endKey   exclusive end of the deleted range
 	public void deleteRange(ColumnFamilyHandle cf, byte[] startKey, byte[] endKey) {
 		try (Arena arena = Arena.ofConfined()) {
 			MH_DELETE_RANGE_CF.invokeExact(ptr(), cf.ptr(),
@@ -241,6 +290,10 @@ public final class WriteBatch extends NativeObject {
 	}
 
 	/// Queues a range tombstone [`startKey`, `endKey`) in `cf`. Zero-copy for direct buffers.
+	///
+	/// @param cf       column family to delete from
+	/// @param startKey direct [ByteBuffer] with the inclusive start key
+	/// @param endKey   direct [ByteBuffer] with the exclusive end key
 	public void deleteRange(ColumnFamilyHandle cf, ByteBuffer startKey, ByteBuffer endKey) {
 		try {
 			MH_DELETE_RANGE_CF.invokeExact(ptr(), cf.ptr(),
@@ -252,6 +305,10 @@ public final class WriteBatch extends NativeObject {
 	}
 
 	/// Queues a range tombstone [`startKey`, `endKey`) in `cf`. Zero-copy.
+	///
+	/// @param cf       column family to delete from
+	/// @param startKey native segment with the inclusive start key
+	/// @param endKey   native segment with the exclusive end key
 	public void deleteRange(ColumnFamilyHandle cf, MemorySegment startKey, MemorySegment endKey) {
 		try {
 			MH_DELETE_RANGE_CF.invokeExact(ptr(), cf.ptr(),
@@ -261,6 +318,7 @@ public final class WriteBatch extends NativeObject {
 		}
 	}
 
+	/// Removes all queued mutations from this batch.
 	public void clear() {
 		try {
 			MH_CLEAR.invokeExact(ptr());
@@ -269,6 +327,9 @@ public final class WriteBatch extends NativeObject {
 		}
 	}
 
+	/// Returns the number of mutations currently queued in this batch.
+	///
+	/// @return number of queued mutations
 	public int count() {
 		try {
 			return (int) MH_COUNT.invokeExact(ptr());

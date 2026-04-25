@@ -26,6 +26,9 @@ public final class WriteOptions extends NativeObject {
 		super(ptr);
 	}
 
+	/// Creates a new [WriteOptions] with default settings.
+	///
+	/// @return a new [WriteOptions]; caller must close it
 	public static WriteOptions newWriteOptions() {
 		try {
 			return new WriteOptions((MemorySegment) MH_CREATE.invokeExact());

@@ -45,6 +45,8 @@ public final class FlushOptions extends NativeObject {
 	}
 
 	/// Creates FlushOptions with `wait = true` (the default).
+	///
+	/// @return a new [FlushOptions] instance; caller must close it
 	public static FlushOptions newFlushOptions() {
 		try {
 			return new FlushOptions((MemorySegment) MH_CREATE.invokeExact());
@@ -56,6 +58,7 @@ public final class FlushOptions extends NativeObject {
 	/// If `true` (default), `flush()` blocks until the memtable flush
 	/// completes. If `false`, the flush is submitted asynchronously.
 	///
+	/// @param wait `true` to wait for flush completion, `false` for async
 	/// @return `this` for chaining
 	public FlushOptions setWait(boolean wait) {
 		try {
@@ -67,6 +70,8 @@ public final class FlushOptions extends NativeObject {
 	}
 
 	/// Returns whether flush waits for completion.
+	///
+	/// @return `true` if flush blocks until the memtable is written to disk
 	public boolean isWait() {
 		try {
 			return ((byte) MH_GET_WAIT.invokeExact(ptr())) != 0;

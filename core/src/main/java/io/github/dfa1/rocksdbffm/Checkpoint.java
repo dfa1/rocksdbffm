@@ -58,26 +58,41 @@ public final class Checkpoint extends NativeObject {
 	/// Creates a checkpoint object bound to `db`.
 	/// The checkpoint object may be reused to export multiple snapshots.
 	/// Close it when done — this does not affect the database or any exported checkpoints.
+	///
+	/// @param db the database to checkpoint
+	/// @return a new [Checkpoint] bound to `db`; caller must close it
 	public static Checkpoint newCheckpoint(ReadWriteDB db) {
 		return create(db.ptr());
 	}
 
-	/// @see #newCheckpoint(ReadWriteDB)
+	/// Creates a checkpoint object bound to `db`. See [#newCheckpoint(ReadWriteDB)] for details.
+	///
+	/// @param db the blob database to checkpoint
+	/// @return a new [Checkpoint] bound to `db`; caller must close it
 	public static Checkpoint newCheckpoint(BlobDB db) {
 		return create(db.ptr());
 	}
 
-	/// @see #newCheckpoint(ReadWriteDB)
+	/// Creates a checkpoint object bound to `db`. See [#newCheckpoint(ReadWriteDB)] for details.
+	///
+	/// @param db the TTL database to checkpoint
+	/// @return a new [Checkpoint] bound to `db`; caller must close it
 	public static Checkpoint newCheckpoint(TtlDB db) {
 		return create(db.ptr());
 	}
 
-	/// @see #newCheckpoint(ReadWriteDB)
+	/// Creates a checkpoint object bound to `db`. See [#newCheckpoint(ReadWriteDB)] for details.
+	///
+	/// @param db the read-only database to checkpoint
+	/// @return a new [Checkpoint] bound to `db`; caller must close it
 	public static Checkpoint newCheckpoint(ReadOnlyDB db) {
 		return create(db.ptr());
 	}
 
-	/// @see #newCheckpoint(ReadWriteDB)
+	/// Creates a checkpoint object bound to `db`. See [#newCheckpoint(ReadWriteDB)] for details.
+	///
+	/// @param db the secondary database to checkpoint
+	/// @return a new [Checkpoint] bound to `db`; caller must close it
 	public static Checkpoint newCheckpoint(SecondaryDB db) {
 		return create(db.ptr());
 	}
@@ -118,6 +133,8 @@ public final class Checkpoint extends NativeObject {
 
 	/// Exports a consistent snapshot to `checkpointDir`, flushing the WAL
 	/// first (equivalent to `exportTo(dir, 0)`).
+	///
+	/// @param checkpointDir target directory (must not exist)
 	public void exportTo(Path checkpointDir) {
 		exportTo(checkpointDir, 0L);
 	}

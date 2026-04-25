@@ -109,6 +109,9 @@ public final class SstFileManager extends NativeObject {
 	/// Creates an SST file manager using the provided environment.
 	///
 	/// The [Env] must remain open for the lifetime of this manager.
+	///
+	/// @param env the [Env] to use for file-system operations; must outlive this manager
+	/// @return a new [SstFileManager]; caller must close it
 	public static SstFileManager create(Env env) {
 		try {
 			MemorySegment ptr = (MemorySegment) MH_CREATE.invokeExact(env.ptr());
@@ -122,6 +125,9 @@ public final class SstFileManager extends NativeObject {
 	///
 	/// Once reached, [#isMaxAllowedSpaceReached()] returns `true` and
 	/// RocksDB will stop accepting writes. A value of `0` means no limit.
+	///
+	/// @param maxAllowedSpace maximum allowed space; `0` means no limit
+	/// @return this instance for chaining
 	public SstFileManager setMaxAllowedSpaceUsage(MemorySize maxAllowedSpace) {
 		try {
 			MH_SET_MAX_ALLOWED_SPACE_USAGE.invokeExact(ptr(), maxAllowedSpace.toBytes());
@@ -134,6 +140,9 @@ public final class SstFileManager extends NativeObject {
 	/// Sets additional buffer space reserved during compaction on top of
 	/// [#setMaxAllowedSpaceUsage]. Compactions that would exceed
 	/// `maxAllowedSpace - compactionBufferSize` are blocked.
+	///
+	/// @param compactionBufferSize buffer space to reserve during compaction
+	/// @return this instance for chaining
 	public SstFileManager setCompactionBufferSize(MemorySize compactionBufferSize) {
 		try {
 			MH_SET_COMPACTION_BUFFER_SIZE.invokeExact(ptr(), compactionBufferSize.toBytes());
@@ -144,6 +153,8 @@ public final class SstFileManager extends NativeObject {
 	}
 
 	/// Returns `true` if total SST file usage has reached the configured maximum.
+	///
+	/// @return `true` if the space limit has been reached
 	public boolean isMaxAllowedSpaceReached() {
 		try {
 			return (byte) MH_IS_MAX_ALLOWED_SPACE_REACHED.invokeExact(ptr()) != 0;
@@ -154,6 +165,8 @@ public final class SstFileManager extends NativeObject {
 
 	/// Returns `true` if total SST file usage including in-progress compaction
 	/// output has reached the configured maximum.
+	///
+	/// @return `true` if the space limit has been reached including compaction output
 	public boolean isMaxAllowedSpaceReachedIncludingCompactions() {
 		try {
 			return (byte) MH_IS_MAX_ALLOWED_SPACE_REACHED_INCLUDING_COMPACTIONS.invokeExact(ptr()) != 0;
@@ -163,6 +176,8 @@ public final class SstFileManager extends NativeObject {
 	}
 
 	/// Returns the total size (in bytes) of all tracked SST files.
+	///
+	/// @return total size of all tracked SST files
 	public MemorySize getTotalSize() {
 		try {
 			return MemorySize.ofBytes((long) MH_GET_TOTAL_SIZE.invokeExact(ptr()));
@@ -172,6 +187,8 @@ public final class SstFileManager extends NativeObject {
 	}
 
 	/// Returns the total size (in bytes) of all trash (pending-delete) SST files.
+	///
+	/// @return total size of all pending-delete SST files
 	public MemorySize getTotalTrashSize() {
 		try {
 			return MemorySize.ofBytes((long) MH_GET_TOTAL_TRASH_SIZE.invokeExact(ptr()));
@@ -183,6 +200,8 @@ public final class SstFileManager extends NativeObject {
 	/// Returns the trash-file deletion rate in bytes per second.
 	///
 	/// A value of `-1` means delete as fast as possible (no rate limit).
+	///
+	/// @return deletion rate in bytes per second, or `-1` for unlimited
 	public long getDeleteRateBytesPerSecond() {
 		try {
 			return (long) MH_GET_DELETE_RATE_BYTES_PER_SECOND.invokeExact(ptr());
@@ -195,6 +214,9 @@ public final class SstFileManager extends NativeObject {
 	///
 	/// Use `-1` to delete as fast as possible. Use `0` to disable background
 	/// deletion entirely (files are removed synchronously).
+	///
+	/// @param deleteRate deletion rate in bytes per second; `-1` for unlimited, `0` for synchronous
+	/// @return this instance for chaining
 	public SstFileManager setDeleteRateBytesPerSecond(long deleteRate) {
 		try {
 			MH_SET_DELETE_RATE_BYTES_PER_SECOND.invokeExact(ptr(), deleteRate);
@@ -207,6 +229,8 @@ public final class SstFileManager extends NativeObject {
 	/// Returns the maximum ratio of trash to total SST files before RocksDB
 	/// deletes trash files synchronously instead of in the background.
 	/// Default is `0.25`.
+	///
+	/// @return current max trash-to-total ratio
 	public double getMaxTrashDbRatio() {
 		try {
 			return (double) MH_GET_MAX_TRASH_DB_RATIO.invokeExact(ptr());
@@ -218,6 +242,9 @@ public final class SstFileManager extends NativeObject {
 	/// Sets the maximum ratio of trash to total SST files.
 	///
 	/// When the ratio exceeds this threshold, deletions become synchronous.
+	///
+	/// @param ratio max trash-to-total ratio; must be between 0.0 and 1.0
+	/// @return this instance for chaining
 	public SstFileManager setMaxTrashDbRatio(double ratio) {
 		try {
 			MH_SET_MAX_TRASH_DB_RATIO.invokeExact(ptr(), ratio);

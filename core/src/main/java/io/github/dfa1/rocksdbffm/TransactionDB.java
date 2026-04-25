@@ -168,6 +168,8 @@ public final class TransactionDB extends NativeObject {
 
 	/// Flushes all memtable data to SST files on disk.
 	/// Blocks until the flush completes when [FlushOptions#isWait()] is `true`.
+	///
+	/// @param flushOptions options controlling flush behaviour
 	public void flush(FlushOptions flushOptions) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = RocksDB.errHolder(arena);
@@ -197,6 +199,8 @@ public final class TransactionDB extends NativeObject {
 
 	/// Creates a snapshot of the current TransactionDB state.
 	/// The returned snapshot must be closed after use.
+	///
+	/// @return a new [Snapshot]; caller must close it
 	public Snapshot getSnapshot() {
 		try {
 			MemorySegment snapPtr = (MemorySegment) MH_CREATE_SNAPSHOT.invokeExact(ptr());
@@ -212,6 +216,9 @@ public final class TransactionDB extends NativeObject {
 
 	/// Begins a new transaction using the supplied write options and default
 	/// transaction options.
+	///
+	/// @param writeOptions write options for the transaction
+	/// @return a new [Transaction]; caller must commit or rollback and close it
 	public Transaction beginTransaction(WriteOptions writeOptions) {
 		try (TransactionOptions txnOpts = TransactionOptions.newTransactionOptions()) {
 			return beginTransaction(writeOptions, txnOpts);
@@ -219,6 +226,10 @@ public final class TransactionDB extends NativeObject {
 	}
 
 	/// Begins a new transaction using the supplied write options and transaction options.
+	///
+	/// @param writeOptions write options for the transaction
+	/// @param txnOptions   transaction-specific options
+	/// @return a new [Transaction]; caller must commit or rollback and close it
 	public Transaction beginTransaction(WriteOptions writeOptions, TransactionOptions txnOptions) {
 		try {
 			MemorySegment txnPtr = (MemorySegment) MH_BEGIN.invokeExact(
@@ -234,6 +245,9 @@ public final class TransactionDB extends NativeObject {
 	// -----------------------------------------------------------------------
 
 	/// Direct put, bypassing any active transaction. Slow path: allocates native memory.
+	///
+	/// @param key   the key to store
+	/// @param value the value to associate with the key
 	public void put(byte[] key, byte[] value) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = RocksDB.errHolder(arena);
@@ -247,6 +261,9 @@ public final class TransactionDB extends NativeObject {
 	}
 
 	/// Zero-copy put: wraps the direct buffers' native memory without heap→native copy.
+	///
+	/// @param key   direct [java.nio.ByteBuffer] containing the key
+	/// @param value direct [java.nio.ByteBuffer] containing the value
 	public void put(java.nio.ByteBuffer key, java.nio.ByteBuffer value) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = RocksDB.errHolder(arena);
@@ -261,6 +278,9 @@ public final class TransactionDB extends NativeObject {
 	}
 
 	/// Zero-copy put: caller supplies pre-allocated native segments.
+	///
+	/// @param key   native segment containing the key
+	/// @param value native segment containing the value
 	public void put(MemorySegment key, MemorySegment value) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = RocksDB.errHolder(arena);
@@ -272,6 +292,10 @@ public final class TransactionDB extends NativeObject {
 	}
 
 	/// Direct get with explicit ReadOptions (e.g. for snapshot-pinned reads). Returns `null` if not found.
+	///
+	/// @param readOptions read options (e.g. snapshot)
+	/// @param key         the key to look up
+	/// @return value bytes, or `null` if not found
 	public byte[] get(ReadOptions readOptions, byte[] key) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = RocksDB.errHolder(arena);
@@ -297,6 +321,9 @@ public final class TransactionDB extends NativeObject {
 	}
 
 	/// Direct get, reading committed data only. Returns `null` if not found. Slow path.
+	///
+	/// @param key the key to look up
+	/// @return value bytes, or `null` if not found
 	public byte[] get(byte[] key) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = RocksDB.errHolder(arena);
@@ -323,6 +350,10 @@ public final class TransactionDB extends NativeObject {
 
 	/// Single-copy get + direct output [java.nio.ByteBuffer].
 	/// Returns the actual value length, or -1 if not found.
+	///
+	/// @param key   direct [java.nio.ByteBuffer] containing the key
+	/// @param value direct [java.nio.ByteBuffer] to write the value into
+	/// @return actual value length, or -1 if not found
 	public int get(java.nio.ByteBuffer key, java.nio.ByteBuffer value) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = RocksDB.errHolder(arena);
@@ -348,6 +379,10 @@ public final class TransactionDB extends NativeObject {
 
 	/// Zero-copy get into a caller-supplied native segment.
 	/// Returns the actual value length, or -1 if not found.
+	///
+	/// @param key   native segment containing the key
+	/// @param value native segment to write the value into
+	/// @return actual value length in bytes, or -1 if not found
 	public long get(MemorySegment key, MemorySegment value) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = RocksDB.errHolder(arena);
@@ -372,6 +407,10 @@ public final class TransactionDB extends NativeObject {
 	// DB Properties
 	// -----------------------------------------------------------------------
 	//
+	/// Returns the value of a DB property as a string, or [Optional#empty()] if not supported.
+	///
+	/// @param property the property to query
+	/// @return the property value, or empty if not supported
 	public Optional<String> getProperty(Property property) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment propSeg = arena.allocateFrom(property.propertyName());
@@ -387,7 +426,10 @@ public final class TransactionDB extends NativeObject {
 		}
 	}
 
-	/// @see ReadWriteDB#getLongProperty(Property)
+	/// Returns the value of a numeric DB property, or [OptionalLong#empty()] if not supported.
+	///
+	/// @param property the property to query
+	/// @return the numeric property value, or empty if not supported
 	public OptionalLong getLongProperty(Property property) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment propSeg = arena.allocateFrom(property.propertyName());
@@ -403,6 +445,8 @@ public final class TransactionDB extends NativeObject {
 	}
 
 	/// Direct delete, bypassing any active transaction. Slow path.
+	///
+	/// @param key the key to remove
 	public void delete(byte[] key) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = RocksDB.errHolder(arena);
@@ -415,6 +459,8 @@ public final class TransactionDB extends NativeObject {
 	}
 
 	/// Zero-copy for direct [java.nio.ByteBuffer]s.
+	///
+	/// @param key direct [java.nio.ByteBuffer] containing the key to remove
 	public void delete(java.nio.ByteBuffer key) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = RocksDB.errHolder(arena);
@@ -427,6 +473,8 @@ public final class TransactionDB extends NativeObject {
 	}
 
 	/// Zero-copy native-first path.
+	///
+	/// @param key native segment containing the key to remove
 	public void delete(MemorySegment key) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = RocksDB.errHolder(arena);
@@ -442,11 +490,16 @@ public final class TransactionDB extends NativeObject {
 	// -----------------------------------------------------------------------
 
 	/// Creates a new column family described by `descriptor` and returns its handle.
+	///
+	/// @param descriptor name and options for the new column family
+	/// @return handle to the newly created column family; caller must close it
 	public ColumnFamilyHandle createColumnFamily(ColumnFamilyDescriptor descriptor) {
 		return RocksDB.createCf(baseDb, descriptor);
 	}
 
 	/// Drops the column family identified by `handle`.
+	///
+	/// @param handle handle of the column family to drop
 	public void dropColumnFamily(ColumnFamilyHandle handle) {
 		RocksDB.dropCf(baseDb, handle);
 	}
@@ -456,6 +509,10 @@ public final class TransactionDB extends NativeObject {
 	// -----------------------------------------------------------------------
 
 	/// Stores `value` under `key` in `cf`, bypassing any active transaction. Slow path.
+	///
+	/// @param cf    target column family
+	/// @param key   the key to store
+	/// @param value the value to associate with the key
 	public void put(ColumnFamilyHandle cf, byte[] key, byte[] value) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = RocksDB.errHolder(arena);
@@ -469,6 +526,10 @@ public final class TransactionDB extends NativeObject {
 	}
 
 	/// Zero-copy put into `cf` for direct [java.nio.ByteBuffer]s.
+	///
+	/// @param cf    target column family
+	/// @param key   direct [java.nio.ByteBuffer] containing the key
+	/// @param value direct [java.nio.ByteBuffer] containing the value
 	public void put(ColumnFamilyHandle cf, java.nio.ByteBuffer key, java.nio.ByteBuffer value) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = RocksDB.errHolder(arena);
@@ -482,6 +543,10 @@ public final class TransactionDB extends NativeObject {
 	}
 
 	/// Zero-copy put into `cf` for [MemorySegment]s.
+	///
+	/// @param cf    target column family
+	/// @param key   native segment containing the key
+	/// @param value native segment containing the value
 	public void put(ColumnFamilyHandle cf, MemorySegment key, MemorySegment value) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = RocksDB.errHolder(arena);
@@ -498,11 +563,20 @@ public final class TransactionDB extends NativeObject {
 	// -----------------------------------------------------------------------
 
 	/// Get from `cf` via PinnableSlice. Returns `null` if not found.
+	///
+	/// @param cf  target column family
+	/// @param key the key to look up
+	/// @return value bytes, or `null` if not found
 	public byte[] get(ColumnFamilyHandle cf, byte[] key) {
 		return get(cf, readOpts, key);
 	}
 
 	/// Get from `cf` with explicit [ReadOptions]. Returns `null` if not found.
+	///
+	/// @param cf          target column family
+	/// @param readOptions read options (e.g. snapshot)
+	/// @param key         the key to look up
+	/// @return value bytes, or `null` if not found
 	public byte[] get(ColumnFamilyHandle cf, ReadOptions readOptions, byte[] key) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = RocksDB.errHolder(arena);
@@ -529,6 +603,9 @@ public final class TransactionDB extends NativeObject {
 	// -----------------------------------------------------------------------
 
 	/// Removes `key` from `cf`, bypassing any active transaction. Slow path.
+	///
+	/// @param cf  target column family
+	/// @param key the key to remove
 	public void delete(ColumnFamilyHandle cf, byte[] key) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = RocksDB.errHolder(arena);
@@ -541,6 +618,9 @@ public final class TransactionDB extends NativeObject {
 	}
 
 	/// Zero-copy delete from `cf` for direct [java.nio.ByteBuffer]s.
+	///
+	/// @param cf  target column family
+	/// @param key direct [java.nio.ByteBuffer] containing the key to remove
 	public void delete(ColumnFamilyHandle cf, java.nio.ByteBuffer key) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = RocksDB.errHolder(arena);
@@ -553,6 +633,9 @@ public final class TransactionDB extends NativeObject {
 	}
 
 	/// Zero-copy delete from `cf` for [MemorySegment]s.
+	///
+	/// @param cf  target column family
+	/// @param key native segment containing the key to remove
 	public void delete(ColumnFamilyHandle cf, MemorySegment key) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = RocksDB.errHolder(arena);
@@ -568,6 +651,9 @@ public final class TransactionDB extends NativeObject {
 	// -----------------------------------------------------------------------
 
 	/// Returns a new iterator scoped to `cf` using the database's default read options.
+	///
+	/// @param cf target column family
+	/// @return a new [RocksIterator]; caller must close it
 	public RocksIterator newIterator(ColumnFamilyHandle cf) {
 		try {
 			MemorySegment iterPtr = (MemorySegment) MH_CREATE_ITERATOR_CF.invokeExact(
@@ -579,6 +665,10 @@ public final class TransactionDB extends NativeObject {
 	}
 
 	/// Returns a new iterator scoped to `cf` with explicit [ReadOptions].
+	///
+	/// @param cf          target column family
+	/// @param readOptions read options (e.g. snapshot)
+	/// @return a new [RocksIterator]; caller must close it
 	public RocksIterator newIterator(ColumnFamilyHandle cf, ReadOptions readOptions) {
 		try {
 			MemorySegment iterPtr = (MemorySegment) MH_CREATE_ITERATOR_CF.invokeExact(
@@ -594,6 +684,9 @@ public final class TransactionDB extends NativeObject {
 	// -----------------------------------------------------------------------
 
 	/// Flushes the memtable for `cf` to SST files.
+	///
+	/// @param cf           target column family
+	/// @param flushOptions options controlling flush behaviour
 	public void flush(ColumnFamilyHandle cf, FlushOptions flushOptions) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = RocksDB.errHolder(arena);
@@ -609,11 +702,19 @@ public final class TransactionDB extends NativeObject {
 	// -----------------------------------------------------------------------
 
 	/// Returns the value of a property for `cf`, or [Optional#empty()] if not supported.
+	///
+	/// @param cf       target column family
+	/// @param property the property to query
+	/// @return the property value, or empty if not supported
 	public Optional<String> getProperty(ColumnFamilyHandle cf, Property property) {
 		return RocksDB.getPropertyCf(baseDb, cf, property);
 	}
 
 	/// Returns the value of a numeric property for `cf`, or [OptionalLong#empty()] if not supported.
+	///
+	/// @param cf       target column family
+	/// @param property the property to query
+	/// @return the numeric property value, or empty if not supported
 	public OptionalLong getLongProperty(ColumnFamilyHandle cf, Property property) {
 		return RocksDB.getLongPropertyCf(baseDb, cf, property);
 	}

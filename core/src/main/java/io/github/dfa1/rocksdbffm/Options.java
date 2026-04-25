@@ -229,6 +229,9 @@ public final class Options extends NativeObject {
 		super(ptr);
 	}
 
+	/// Creates [Options] with RocksDB defaults.
+	///
+	/// @return a new instance; caller must close it
 	public static Options newOptions() {
 		try {
 			return new Options((MemorySegment) MH_CREATE.invokeExact());
@@ -251,6 +254,9 @@ public final class Options extends NativeObject {
 		return this;
 	}
 
+	/// Returns whether the DB is created if it does not already exist.
+	///
+	/// @return `true` if the DB is created on open when absent
 	public boolean getCreateIfMissing() {
 		try {
 			return ((byte) MH_GET_CREATE_IF_MISSING.invokeExact(ptr())) != 0;
@@ -271,6 +277,10 @@ public final class Options extends NativeObject {
 		return this;
 	}
 
+	/// Sets the statistics collection level. Only effective after [#enableStatistics] is called.
+	///
+	/// @param level the desired statistics collection level
+	/// @return `this` for chaining
 	public Options setStatisticsLevel(StatsLevel level) {
 		try {
 			MH_SET_STATISTICS_LEVEL.invokeExact(ptr(), level.getValue());
@@ -280,6 +290,9 @@ public final class Options extends NativeObject {
 		return this;
 	}
 
+	/// Returns the current statistics collection level.
+	///
+	/// @return the active [StatsLevel]
 	public StatsLevel getStatisticsLevel() {
 		try {
 			int level = (int) MH_GET_STATISTICS_LEVEL.invokeExact(ptr());
@@ -294,6 +307,9 @@ public final class Options extends NativeObject {
 		}
 	}
 
+	/// Returns a human-readable statistics summary, or `null` if statistics are not enabled.
+	///
+	/// @return formatted statistics string, or `null` if not available
 	public String getStatisticsString() {
 		try {
 			MemorySegment strPtr = (MemorySegment) MH_STATISTICS_GET_STRING.invokeExact(ptr());
@@ -308,6 +324,10 @@ public final class Options extends NativeObject {
 		}
 	}
 
+	/// Returns the accumulated count for a ticker statistic.
+	///
+	/// @param ticker the ticker to read
+	/// @return accumulated count since the DB was opened
 	public long getTickerCount(TickerType ticker) {
 		try {
 			return (long) MH_STATISTICS_GET_TICKER_COUNT.invokeExact(ptr(), ticker.getValue());
@@ -316,6 +336,10 @@ public final class Options extends NativeObject {
 		}
 	}
 
+	/// Populates `data` with histogram statistics for `histogram`.
+	///
+	/// @param histogram the histogram to read
+	/// @param data      output object to populate with the histogram values
 	public void getHistogramData(HistogramType histogram, StatisticsHistogramData data) {
 		try {
 			MH_STATISTICS_GET_HISTOGRAM_DATA.invokeExact(ptr(), histogram.getValue(), data.ptr());
@@ -382,6 +406,9 @@ public final class Options extends NativeObject {
 		}
 	}
 
+	/// Returns whether blob file storage is enabled.
+	///
+	/// @return `true` if large values are stored in separate blob files
 	public boolean getEnableBlobFiles() {
 		try {
 			return ((byte) MH_GET_ENABLE_BLOB_FILES.invokeExact(ptr())) != 0;
@@ -404,6 +431,9 @@ public final class Options extends NativeObject {
 		}
 	}
 
+	/// Returns the minimum value size that is stored in a blob file.
+	///
+	/// @return minimum blob size threshold
 	public MemorySize getMinBlobSize() {
 		try {
 			return MemorySize.ofBytes((long) MH_GET_MIN_BLOB_SIZE.invokeExact(ptr()));
@@ -426,6 +456,9 @@ public final class Options extends NativeObject {
 		}
 	}
 
+	/// Returns the target size for individual blob files.
+	///
+	/// @return target blob file size
 	public MemorySize getBlobFileSize() {
 		try {
 			return MemorySize.ofBytes((long) MH_GET_BLOB_FILE_SIZE.invokeExact(ptr()));
@@ -448,6 +481,9 @@ public final class Options extends NativeObject {
 		}
 	}
 
+	/// Returns the compression algorithm applied to blob file values.
+	///
+	/// @return compression type for blob values
 	public CompressionType getBlobCompressionType() {
 		try {
 			return CompressionType.fromValue((int) MH_GET_BLOB_COMPRESSION_TYPE.invokeExact(ptr()));
@@ -470,6 +506,9 @@ public final class Options extends NativeObject {
 		}
 	}
 
+	/// Returns whether blob garbage collection during compaction is enabled.
+	///
+	/// @return `true` if blob GC is enabled
 	public boolean getEnableBlobGc() {
 		try {
 			return ((byte) MH_GET_ENABLE_BLOB_GC.invokeExact(ptr())) != 0;
@@ -493,6 +532,9 @@ public final class Options extends NativeObject {
 		}
 	}
 
+	/// Returns the blob GC age cutoff fraction.
+	///
+	/// @return age cutoff in [0.0, 1.0]
 	public double getBlobGcAgeCutoff() {
 		try {
 			return (double) MH_GET_BLOB_GC_AGE_CUTOFF.invokeExact(ptr());
@@ -515,6 +557,9 @@ public final class Options extends NativeObject {
 		}
 	}
 
+	/// Returns the blob GC force-compaction garbage ratio threshold.
+	///
+	/// @return force-GC threshold in [0.0, 1.0]
 	public double getBlobGcForceThreshold() {
 		try {
 			return (double) MH_GET_BLOB_GC_FORCE_THRESHOLD.invokeExact(ptr());
@@ -537,6 +582,9 @@ public final class Options extends NativeObject {
 		}
 	}
 
+	/// Returns the read-ahead size used when reading blob files during compaction.
+	///
+	/// @return read-ahead size; [MemorySize#ZERO] means disabled
 	public MemorySize getBlobCompactionReadaheadSize() {
 		try {
 			return MemorySize.ofBytes((long) MH_GET_BLOB_COMPACTION_READAHEAD_SIZE.invokeExact(ptr()));
@@ -559,6 +607,9 @@ public final class Options extends NativeObject {
 		}
 	}
 
+	/// Returns the LSM level at which blob file separation begins.
+	///
+	/// @return first level where blobs are externalized (0 = all levels)
 	public int getBlobFileStartingLevel() {
 		try {
 			return (int) MH_GET_BLOB_FILE_STARTING_LEVEL.invokeExact(ptr());
@@ -595,6 +646,9 @@ public final class Options extends NativeObject {
 		}
 	}
 
+	/// Returns the blob cache pre-population strategy.
+	///
+	/// @return the current [PrepopulateBlobCache] mode
 	public PrepopulateBlobCache getPrepopulateBlobCache() {
 		try {
 			return PrepopulateBlobCache.fromValue((int) MH_GET_PREPOPULATE_BLOB_CACHE.invokeExact(ptr()));
@@ -634,6 +688,9 @@ public final class Options extends NativeObject {
 		}
 	}
 
+	/// Returns the minimum log level currently configured.
+	///
+	/// @return the active minimum [LogLevel]
 	public LogLevel getInfoLogLevel() {
 		try {
 			return LogLevel.fromValue((int) MH_GET_INFO_LOG_LEVEL.invokeExact(ptr()));

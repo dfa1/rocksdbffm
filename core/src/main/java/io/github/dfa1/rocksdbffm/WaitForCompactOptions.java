@@ -74,6 +74,9 @@ public final class WaitForCompactOptions extends NativeObject {
 		super(ptr);
 	}
 
+	/// Creates a new [WaitForCompactOptions] with default settings.
+	///
+	/// @return a new [WaitForCompactOptions]; caller must close it
 	public static WaitForCompactOptions create() {
 		try {
 			return new WaitForCompactOptions((MemorySegment) MH_CREATE.invokeExact());
@@ -85,6 +88,9 @@ public final class WaitForCompactOptions extends NativeObject {
 	/// If `true`, [ReadWriteDB#waitForCompact] throws [RocksDBException] when background work
 	/// is paused rather than blocking indefinitely.
 	/// Default: `false`.
+	///
+	/// @param value `true` to abort on pause instead of blocking
+	/// @return `this` for chaining
 	public WaitForCompactOptions setAbortOnPause(boolean value) {
 		try {
 			MH_SET_ABORT_ON_PAUSE.invokeExact(ptr(), value ? (byte) 1 : (byte) 0);
@@ -94,6 +100,9 @@ public final class WaitForCompactOptions extends NativeObject {
 		}
 	}
 
+	/// Returns `true` if the wait will abort when background work is paused.
+	///
+	/// @return `true` if abort-on-pause is enabled
 	public boolean isAbortOnPause() {
 		try {
 			return ((byte) MH_GET_ABORT_ON_PAUSE.invokeExact(ptr())) != 0;
@@ -104,6 +113,9 @@ public final class WaitForCompactOptions extends NativeObject {
 
 	/// If `true`, triggers a memtable flush before waiting for compaction.
 	/// Default: `false`.
+	///
+	/// @param value `true` to flush before waiting
+	/// @return `this` for chaining
 	public WaitForCompactOptions setFlush(boolean value) {
 		try {
 			MH_SET_FLUSH.invokeExact(ptr(), value ? (byte) 1 : (byte) 0);
@@ -113,6 +125,9 @@ public final class WaitForCompactOptions extends NativeObject {
 		}
 	}
 
+	/// Returns `true` if a memtable flush will be triggered before waiting.
+	///
+	/// @return `true` if flush-before-wait is enabled
 	public boolean isFlush() {
 		try {
 			return ((byte) MH_GET_FLUSH.invokeExact(ptr())) != 0;
@@ -123,6 +138,9 @@ public final class WaitForCompactOptions extends NativeObject {
 
 	/// If `true`, closes the DB after all compactions finish.
 	/// Default: `false`.
+	///
+	/// @param value `true` to close the DB once compaction is complete
+	/// @return `this` for chaining
 	public WaitForCompactOptions setCloseDb(boolean value) {
 		try {
 			MH_SET_CLOSE_DB.invokeExact(ptr(), value ? (byte) 1 : (byte) 0);
@@ -132,6 +150,9 @@ public final class WaitForCompactOptions extends NativeObject {
 		}
 	}
 
+	/// Returns `true` if the DB will be closed after compaction finishes.
+	///
+	/// @return `true` if close-after-compact is enabled
 	public boolean isCloseDb() {
 		try {
 			return ((byte) MH_GET_CLOSE_DB.invokeExact(ptr())) != 0;
@@ -142,6 +163,9 @@ public final class WaitForCompactOptions extends NativeObject {
 
 	/// Maximum time to wait. [Duration#ZERO] means no timeout.
 	/// Default: no timeout.
+	///
+	/// @param timeout maximum wait duration; [Duration#ZERO] disables the timeout
+	/// @return `this` for chaining
 	public WaitForCompactOptions setTimeout(Duration timeout) {
 		try {
 			MH_SET_TIMEOUT.invokeExact(ptr(), timeout.toNanos() / 1_000L);
@@ -151,6 +175,9 @@ public final class WaitForCompactOptions extends NativeObject {
 		}
 	}
 
+	/// Returns the maximum wait duration. [Duration#ZERO] means no timeout.
+	///
+	/// @return configured timeout duration
 	public Duration getTimeout() {
 		try {
 			long micros = (long) MH_GET_TIMEOUT.invokeExact(ptr());

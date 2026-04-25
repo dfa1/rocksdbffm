@@ -39,6 +39,10 @@ public final class Logger extends NativeObject {
 	/// Receives a log message from RocksDB. Must not throw.
 	@FunctionalInterface
 	public interface LogCallback {
+		/// Called on each log event. Must not throw.
+		///
+		/// @param level   severity of the message
+		/// @param message the log message (trailing newline stripped)
 		void log(LogLevel level, String message);
 	}
 
@@ -98,6 +102,7 @@ public final class Logger extends NativeObject {
 	///
 	/// @param level  minimum level to emit; messages below this are suppressed
 	/// @param prefix optional string prepended to every log line, or `null` for none
+	/// @return a new [Logger] backed by stderr; caller must close it
 	public static Logger newStderrLogger(LogLevel level, String prefix) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment prefixSeg = prefix != null ? arena.allocateFrom(prefix) : MemorySegment.NULL;
@@ -116,6 +121,7 @@ public final class Logger extends NativeObject {
 	///
 	/// @param minLevel minimum level to deliver; lower-level messages are suppressed by RocksDB
 	/// @param callback receives each log message
+	/// @return a new [Logger] that dispatches to `callback`; caller must close it
 	public static Logger newCallbackLogger(LogLevel minLevel, LogCallback callback) {
 		long id = NEXT_ID.getAndIncrement();
 		REGISTRY.put(id, callback);

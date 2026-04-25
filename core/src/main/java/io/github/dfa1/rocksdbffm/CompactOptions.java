@@ -79,6 +79,9 @@ public final class CompactOptions extends NativeObject {
 		super(ptr);
 	}
 
+	/// Creates a [CompactOptions] with RocksDB defaults.
+	///
+	/// @return a new [CompactOptions] instance; caller must close it
 	public static CompactOptions newCompactOptions() {
 		MemorySegment result;
 		try {
@@ -91,6 +94,9 @@ public final class CompactOptions extends NativeObject {
 
 	/// If `true`, no other manual compaction will run in parallel.
 	/// Default: `true`.
+	///
+	/// @param value `true` to prevent concurrent manual compactions
+	/// @return `this` for chaining
 	public CompactOptions setExclusiveManualCompaction(boolean value) {
 		try {
 			MH_SET_EXCLUSIVE.invokeExact(ptr(), value ? (byte) 1 : (byte) 0);
@@ -100,6 +106,9 @@ public final class CompactOptions extends NativeObject {
 		return this;
 	}
 
+	/// Returns whether exclusive manual compaction is enabled.
+	///
+	/// @return `true` if no concurrent manual compactions are allowed
 	public boolean isExclusiveManualCompaction() {
 		try {
 			return (byte) MH_GET_EXCLUSIVE.invokeExact(ptr()) != 0;
@@ -110,6 +119,9 @@ public final class CompactOptions extends NativeObject {
 
 	/// If `true`, the compaction will compact all data at the bottommost level.
 	/// Default: `false`.
+	///
+	/// @param value `true` to force bottommost-level compaction
+	/// @return `this` for chaining
 	public CompactOptions setBottommostLevelCompaction(boolean value) {
 		try {
 			MH_SET_BOTTOMMOST.invokeExact(ptr(), value ? (byte) 1 : (byte) 0);
@@ -119,6 +131,9 @@ public final class CompactOptions extends NativeObject {
 		return this;
 	}
 
+	/// Returns whether bottommost-level compaction is enabled.
+	///
+	/// @return `true` if all data will be compacted at the bottommost level
 	public boolean isBottommostLevelCompaction() {
 		try {
 			return (byte) MH_GET_BOTTOMMOST.invokeExact(ptr()) != 0;
@@ -130,6 +145,9 @@ public final class CompactOptions extends NativeObject {
 	/// If `true`, compacted output will be moved to the level set by
 	/// [#setTargetLevel(int)].
 	/// Default: `false`.
+	///
+	/// @param value `true` to move compacted output to the target level
+	/// @return `this` for chaining
 	public CompactOptions setChangeLevel(boolean value) {
 		try {
 			MH_SET_CHANGE_LEVEL.invokeExact(ptr(), value ? (byte) 1 : (byte) 0);
@@ -139,6 +157,9 @@ public final class CompactOptions extends NativeObject {
 		return this;
 	}
 
+	/// Returns whether compacted output will be moved to the target level.
+	///
+	/// @return `true` if level change is enabled
 	public boolean isChangeLevel() {
 		try {
 			return (byte) MH_GET_CHANGE_LEVEL.invokeExact(ptr()) != 0;
@@ -149,6 +170,9 @@ public final class CompactOptions extends NativeObject {
 
 	/// Target output level for the compaction when [#setChangeLevel(boolean)] is
 	/// `true`. `-1` means the bottommost level. Default: `-1`.
+	///
+	/// @param level target level index, or `-1` for the bottommost level
+	/// @return `this` for chaining
 	public CompactOptions setTargetLevel(int level) {
 		try {
 			MH_SET_TARGET_LEVEL.invokeExact(ptr(), level);
@@ -158,6 +182,9 @@ public final class CompactOptions extends NativeObject {
 		return this;
 	}
 
+	/// Returns the target level for compacted output.
+	///
+	/// @return target level index, or `-1` for the bottommost level
 	public int getTargetLevel() {
 		try {
 			return (int) MH_GET_TARGET_LEVEL.invokeExact(ptr());

@@ -34,6 +34,7 @@ public final class BlockBasedTableOptions extends NativeObject {
 	// Index type constants (mirrors rocksdb_block_based_table_index_type_*)
 	// -----------------------------------------------------------------------
 
+	/// Index type used by the block-based table format.
 	public enum IndexType {
 		/// Standard binary-search index.
 		BINARY_SEARCH(0),
@@ -118,6 +119,9 @@ public final class BlockBasedTableOptions extends NativeObject {
 		super(ptr);
 	}
 
+	/// Creates a new [BlockBasedTableOptions] with RocksDB defaults.
+	///
+	/// @return a new instance; caller must close it
 	public static BlockBasedTableOptions newBlockBasedConfig() {
 		try {
 			return new BlockBasedTableOptions((MemorySegment) MH_CREATE.invokeExact());
@@ -132,6 +136,9 @@ public final class BlockBasedTableOptions extends NativeObject {
 
 	/// Size of each data block. Default: 4 KB.
 	/// Larger blocks improve compression but increase read amplification.
+	///
+	/// @param blockSize desired block size
+	/// @return `this` for chaining
 	public BlockBasedTableOptions setBlockSize(MemorySize blockSize) {
 		try {
 			MH_SET_BLOCK_SIZE.invokeExact(ptr(), blockSize.toBytes());
@@ -141,7 +148,10 @@ public final class BlockBasedTableOptions extends NativeObject {
 		return this;
 	}
 
-	/// Sets the filter policy.
+	/// Sets the filter policy. Transfers ownership of `policy` to this config; do not close it afterwards.
+	///
+	/// @param policy filter policy to use; ownership is transferred
+	/// @return `this` for chaining
 	public BlockBasedTableOptions setFilterPolicy(FilterPolicy policy) {
 		try {
 			MH_SET_FILTER_POLICY.invokeExact(ptr(), policy.ptr());
@@ -155,6 +165,9 @@ public final class BlockBasedTableOptions extends NativeObject {
 
 	/// If true, no block cache is used for this table. Default: false.
 	/// Use when all data fits in memory or when block cache would be counter-productive.
+	///
+	/// @param noBlockCache `true` to disable block cache for this table
+	/// @return `this` for chaining
 	public BlockBasedTableOptions setNoBlockCache(boolean noBlockCache) {
 		try {
 			MH_SET_NO_BLOCK_CACHE.invokeExact(ptr(), noBlockCache ? (byte) 1 : (byte) 0);
@@ -166,6 +179,9 @@ public final class BlockBasedTableOptions extends NativeObject {
 
 	/// Sets a custom block cache. The `cache` object remains owned by the caller
 	/// and can be shared across multiple table configs.
+	///
+	/// @param cache block cache to use; caller retains ownership
+	/// @return `this` for chaining
 	public BlockBasedTableOptions setBlockCache(Cache cache) {
 		try {
 			MH_SET_BLOCK_CACHE.invokeExact(ptr(), cache.ptr());
@@ -177,6 +193,9 @@ public final class BlockBasedTableOptions extends NativeObject {
 
 	/// If true, index and filter blocks are stored in the block cache (subject to
 	/// eviction). Default: false (index/filter are pinned in memory).
+	///
+	/// @param value `true` to store index/filter blocks in the block cache
+	/// @return `this` for chaining
 	public BlockBasedTableOptions setCacheIndexAndFilterBlocks(boolean value) {
 		try {
 			MH_SET_CACHE_INDEX_AND_FILTER_BLOCKS.invokeExact(ptr(), value ? (byte) 1 : (byte) 0);
@@ -188,6 +207,9 @@ public final class BlockBasedTableOptions extends NativeObject {
 
 	/// Sets the index type. Default: [IndexType#BINARY_SEARCH].
 	/// Use [IndexType#TWO_LEVEL_INDEX_SEARCH] for very large SSTs.
+	///
+	/// @param indexType index type to use
+	/// @return `this` for chaining
 	public BlockBasedTableOptions setIndexType(IndexType indexType) {
 		try {
 			MH_SET_INDEX_TYPE.invokeExact(ptr(), indexType.value);
@@ -199,6 +221,9 @@ public final class BlockBasedTableOptions extends NativeObject {
 
 	/// Sets the SST format version. Higher versions enable newer features but
 	/// reduce backward compatibility. Default: 2.
+	///
+	/// @param formatVersion SST format version to use
+	/// @return `this` for chaining
 	public BlockBasedTableOptions setFormatVersion(int formatVersion) {
 		try {
 			MH_SET_FORMAT_VERSION.invokeExact(ptr(), formatVersion);
@@ -210,6 +235,9 @@ public final class BlockBasedTableOptions extends NativeObject {
 
 	/// If true, a whole-key Bloom filter is built in addition to any prefix filter.
 	/// Default: true. Set to false when only a prefix filter is desired.
+	///
+	/// @param value `true` to enable whole-key filtering
+	/// @return `this` for chaining
 	public BlockBasedTableOptions setWholeKeyFiltering(boolean value) {
 		try {
 			MH_SET_WHOLE_KEY_FILTERING.invokeExact(ptr(), value ? (byte) 1 : (byte) 0);
@@ -221,6 +249,9 @@ public final class BlockBasedTableOptions extends NativeObject {
 
 	/// If true, use partitioned Bloom filters (one small filter per index partition).
 	/// Requires [IndexType#TWO_LEVEL_INDEX_SEARCH].
+	///
+	/// @param value `true` to enable partitioned filters
+	/// @return `this` for chaining
 	public BlockBasedTableOptions setPartitionFilters(boolean value) {
 		try {
 			MH_SET_PARTITION_FILTERS.invokeExact(ptr(), value ? (byte) 1 : (byte) 0);

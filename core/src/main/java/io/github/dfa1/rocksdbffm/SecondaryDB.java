@@ -75,17 +75,28 @@ public final class SecondaryDB extends NativeObject {
 
 	/// Returns the value for `key`, or `null` if the key does not exist.
 	/// Uses PinnableSlice to avoid an intermediate copy from the block cache.
+	///
+	/// @param key key bytes to look up
+	/// @return value bytes, or `null` if the key does not exist
 	public byte[] get(byte[] key) {
 		return RocksDB.getBytes(ptr(), readOpts.ptr(), key);
 	}
 
 	/// Get with explicit [ReadOptions], e.g. for snapshot-pinned reads. Returns `null` if not found.
+	///
+	/// @param readOptions read options, e.g. containing a snapshot
+	/// @param key         key bytes to look up
+	/// @return value bytes, or `null` if the key does not exist
 	public byte[] get(ReadOptions readOptions, byte[] key) {
 		return RocksDB.getBytes(ptr(), readOptions.ptr(), key);
 	}
 
 	/// Single-copy get via PinnableSlice + direct output [ByteBuffer].
 	/// Returns the actual value length, or -1 if not found.
+	///
+	/// @param key   direct [ByteBuffer] containing the key
+	/// @param value direct [ByteBuffer] to write the value into
+	/// @return actual value length in bytes, or -1 if the key does not exist
 	public int get(ByteBuffer key, ByteBuffer value) {
 		return RocksDB.getIntoBuffer(ptr(), readOpts.ptr(),
 				MemorySegment.ofBuffer(key), key.remaining(), value);
@@ -93,6 +104,10 @@ public final class SecondaryDB extends NativeObject {
 
 	/// Zero-copy get via PinnableSlice into a caller-supplied native segment.
 	/// Returns the actual value length.
+	///
+	/// @param key   native segment containing the key
+	/// @param value native segment to write the value into
+	/// @return actual value length in bytes
 	public long get(MemorySegment key, MemorySegment value) {
 		return RocksDB.getIntoSegment(ptr(), readOpts.ptr(), key, key.byteSize(), value);
 	}
@@ -103,11 +118,16 @@ public final class SecondaryDB extends NativeObject {
 
 	/// Returns a new iterator over the secondary's current view.
 	/// Call [#tryCatchUpWithPrimary()] first if you need the latest data.
+	///
+	/// @return a new [RocksIterator]; caller must close it
 	public RocksIterator newIterator() {
 		return RocksIterator.create(ptr(), readOpts.ptr());
 	}
 
 	/// Returns a new iterator using the supplied [ReadOptions].
+	///
+	/// @param readOptions read options, e.g. containing a snapshot
+	/// @return a new [RocksIterator]; caller must close it
 	public RocksIterator newIterator(ReadOptions readOptions) {
 		return RocksIterator.create(ptr(), readOptions.ptr());
 	}
@@ -118,6 +138,8 @@ public final class SecondaryDB extends NativeObject {
 
 	/// Creates a point-in-time snapshot of the secondary's current view.
 	/// Must be closed after use.
+	///
+	/// @return a new [Snapshot]; caller must close it
 	public Snapshot getSnapshot() {
 		return RocksDB.createSnapshot(ptr());
 	}
@@ -127,11 +149,17 @@ public final class SecondaryDB extends NativeObject {
 	// -----------------------------------------------------------------------
 
 	/// Returns the value of a DB property as a string, or [Optional#empty()] if not supported.
+	///
+	/// @param property the property to query
+	/// @return the property value, or [Optional#empty()] if not supported
 	public Optional<String> getProperty(Property property) {
 		return RocksDB.getProperty(ptr(), property);
 	}
 
 	/// Returns the value of a numeric DB property, or [OptionalLong#empty()] if not supported.
+	///
+	/// @param property the property to query
+	/// @return the numeric property value, or [OptionalLong#empty()] if not supported
 	public OptionalLong getLongProperty(Property property) {
 		return RocksDB.getLongProperty(ptr(), property);
 	}

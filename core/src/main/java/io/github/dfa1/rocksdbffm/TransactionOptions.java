@@ -41,6 +41,9 @@ public final class TransactionOptions extends NativeObject {
 		super(ptr);
 	}
 
+	/// Creates a new [TransactionOptions] with default settings.
+	///
+	/// @return a new [TransactionOptions]; caller must close it
 	public static TransactionOptions newTransactionOptions() {
 		try {
 			return new TransactionOptions((MemorySegment) MH_CREATE.invokeExact());
@@ -51,6 +54,9 @@ public final class TransactionOptions extends NativeObject {
 
 	/// If true, a snapshot is taken at the start of each transaction.
 	/// Default: false.
+	///
+	/// @param value `true` to take a snapshot at transaction start
+	/// @return this instance for chaining
 	public TransactionOptions setSetSnapshot(boolean value) {
 		try {
 			MH_SET_SET_SNAPSHOT.invokeExact(ptr(), value ? (byte) 1 : (byte) 0);
@@ -62,6 +68,9 @@ public final class TransactionOptions extends NativeObject {
 
 	/// If true, the transaction will detect deadlocks and return an error
 	/// instead of waiting. Default: false.
+	///
+	/// @param value `true` to enable deadlock detection
+	/// @return this instance for chaining
 	public TransactionOptions setDeadlockDetect(boolean value) {
 		try {
 			MH_SET_DEADLOCK_DETECT.invokeExact(ptr(), value ? (byte) 1 : (byte) 0);
@@ -73,6 +82,9 @@ public final class TransactionOptions extends NativeObject {
 
 	/// Timeout (in milliseconds) to wait for a lock. `-1` means wait forever,
 	/// `0` means fail immediately if a lock is not available. Default: -1.
+	///
+	/// @param lockTimeout lock timeout in milliseconds; `-1` to wait forever, `0` to fail immediately
+	/// @return this instance for chaining
 	public TransactionOptions setLockTimeout(long lockTimeout) {
 		try {
 			MH_SET_LOCK_TIMEOUT.invokeExact(ptr(), lockTimeout);

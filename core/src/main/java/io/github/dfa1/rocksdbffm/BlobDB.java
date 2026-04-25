@@ -148,6 +148,9 @@ public final class BlobDB extends NativeObject {
 	// Write (batch)
 	// -----------------------------------------------------------------------
 
+	/// Applies all mutations in `batch` atomically to the database.
+	///
+	/// @param batch the write batch to apply
 	public void write(WriteBatch batch) {
 		RocksDB.writeBatch(ptr(), writeOpts.ptr(), batch);
 	}

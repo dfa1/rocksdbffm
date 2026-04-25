@@ -66,6 +66,8 @@ public final class Env extends NativeObject {
 	///
 	/// The underlying `Env::Default()` singleton is never deleted, but the
 	/// wrapper object returned here must be closed when no longer needed.
+	///
+	/// @return a new [Env] wrapping the default environment; caller must close it
 	public static Env defaultEnv() {
 		try {
 			return new Env((MemorySegment) MH_CREATE_DEFAULT.invokeExact());
@@ -75,6 +77,8 @@ public final class Env extends NativeObject {
 	}
 
 	/// Creates an in-memory environment useful for testing.
+	///
+	/// @return a new in-memory [Env]; caller must close it
 	public static Env memEnv() {
 		try {
 			return new Env((MemorySegment) MH_CREATE_MEM.invokeExact());
@@ -84,6 +88,9 @@ public final class Env extends NativeObject {
 	}
 
 	/// Sets the number of low-priority background threads for this env.
+	///
+	/// @param n number of low-priority background threads
+	/// @return `this` for chaining
 	public Env setBackgroundThreads(int n) {
 		try {
 			MH_SET_BACKGROUND_THREADS.invokeExact(ptr(), n);
@@ -93,6 +100,9 @@ public final class Env extends NativeObject {
 		}
 	}
 
+	/// Returns the number of low-priority background threads.
+	///
+	/// @return current low-priority thread count
 	public int getBackgroundThreads() {
 		try {
 			return (int) MH_GET_BACKGROUND_THREADS.invokeExact(ptr());
@@ -102,6 +112,9 @@ public final class Env extends NativeObject {
 	}
 
 	/// Sets the number of high-priority background threads (used for compaction).
+	///
+	/// @param n number of high-priority background threads
+	/// @return `this` for chaining
 	public Env setHighPriorityBackgroundThreads(int n) {
 		try {
 			MH_SET_HIGH_PRIORITY_BACKGROUND_THREADS.invokeExact(ptr(), n);
@@ -111,6 +124,9 @@ public final class Env extends NativeObject {
 		}
 	}
 
+	/// Returns the number of high-priority background threads.
+	///
+	/// @return current high-priority thread count
 	public int getHighPriorityBackgroundThreads() {
 		try {
 			return (int) MH_GET_HIGH_PRIORITY_BACKGROUND_THREADS.invokeExact(ptr());

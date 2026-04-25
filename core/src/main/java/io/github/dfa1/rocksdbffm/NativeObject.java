@@ -13,6 +13,9 @@ public abstract class NativeObject implements AutoCloseable {
 
 	private final AtomicReference<MemorySegment> owningPointer;
 
+	/// Initialises this wrapper with the given native pointer.
+	///
+	/// @param owningPointer the non-NULL native pointer this object now owns
 	protected NativeObject(MemorySegment owningPointer) {
 		this.owningPointer = new AtomicReference<>(owningPointer);
 	}

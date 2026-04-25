@@ -34,6 +34,9 @@ public final class OptimisticTransactionOptions extends NativeObject {
 		super(ptr);
 	}
 
+	/// Creates [OptimisticTransactionOptions] with RocksDB defaults.
+	///
+	/// @return a new instance; caller must close it
 	public static OptimisticTransactionOptions newOptimisticTransactionOptions() {
 		try {
 			return new OptimisticTransactionOptions((MemorySegment) MH_CREATE.invokeExact());
@@ -46,6 +49,9 @@ public final class OptimisticTransactionOptions extends NativeObject {
 	/// The transaction will then check whether any keys it reads or writes
 	/// have been modified since that snapshot when [Transaction#commit()] is called.
 	/// Default: `false`.
+	///
+	/// @param value `true` to take a snapshot at transaction start
+	/// @return `this` for chaining
 	public OptimisticTransactionOptions setSetSnapshot(boolean value) {
 		try {
 			MH_SET_SET_SNAPSHOT.invokeExact(ptr(), value ? (byte) 1 : (byte) 0);

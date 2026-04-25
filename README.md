@@ -179,6 +179,17 @@ This project is currently experimental. The table below tracks parity with `rock
 | Wide Columns               |   🚫    | Not exposed in `rocksdb/c.h` — C++ only (`PutEntity`, `GetEntity`, `WideColumns`); requires a custom C shim to bridge                            |
 | Background Jobs            |   🚧    | Tier 1: `cancelAllBackgroundWork`, `disableManualCompaction`, `enableManualCompaction`, `waitForCompact(WaitForCompactOptions)`; Tier 3–5 (Options tuning, FIFO/Universal options) pending                  |
 
+## Releasing
+
+```bash
+./mvnw --batch-mode release:clean release:prepare \
+    -DreleaseVersion=<version> \
+    -DdevelopmentVersion=<next>-SNAPSHOT
+git push && git push --tags
+```
+
+GitHub Actions picks up the tag and deploys to Maven Central.
+
 ## License
 
 This project is licensed under the same terms as RocksDB (LevelDB/Apache 2.0).

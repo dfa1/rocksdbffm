@@ -114,7 +114,18 @@ Rules:
 
 **Check:** `./mvnw javadoc:javadoc -pl core` — must produce zero output.
 
-### 4. Benchmark First
+### 4. Releasing
+
+```bash
+./mvnw --batch-mode release:clean release:prepare \
+    -DreleaseVersion=<version> \
+    -DdevelopmentVersion=<next>-SNAPSHOT
+git push && git push --tags
+```
+
+GitHub Actions picks up the tag and deploys to Maven Central.
+
+### 5. Benchmark First
 
 Performance gains are a primary goal. Use `JMH` to validate changes.
 

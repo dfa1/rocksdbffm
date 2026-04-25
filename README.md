@@ -1,5 +1,7 @@
 # RocksDB FFM
 
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.dfa1/rocksdbffm-core.svg)](https://central.sonatype.com/artifact/io.github.dfa1/rocksdbffm-core)
+![PURL](https://img.shields.io/badge/purl-pkg%3Amaven%2Fio.github.dfa1%2Frocksdbffm--core%400.4-blue)
 ![RocksDB](https://img.shields.io/badge/RocksDB-11.0.4-green.svg)
 ![MacOS](https://img.shields.io/badge/macOS-fully_supported-green.svg)
 ![Linux](https://img.shields.io/badge/linux-fully_supported-green.svg)
@@ -21,7 +23,34 @@ The native library is built from the RocksDB source via **`zig cc` / `zig c++`**
 (`PORTABLE=1 make shared_lib`). Zig bundles clang and libc++ for every target, enabling hermetic cross-compilation
 without a separate sysroot or system toolchain.
 
-## Getting Started
+## 📦 Coordinates
+
+### Maven
+```xml
+<dependency>
+  <groupId>io.github.dfa1</groupId>
+  <artifactId>rocksdbffm-core</artifactId>
+  <version>0.4</version>
+</dependency>
+```
+
+### Gradle
+
+```kotlin
+implementation("io.github.dfa1:rocksdbffm-core:0.4")
+```
+
+### 🔐 Supply‑chain & SBOM
+
+This project publishes a Software Bill of Materials (SBOM) using the CycloneDX format.
+
+- Package URL (PURL): `pkg:maven/io.github.dfa1/rocksdbffm-core@0.4`
+- Ecosystem: Maven
+- Coordinates: `io.github.dfa1:rocksdbffm-core:0.4`
+
+PURLs allow SCA tools (Syft, Grype, Trivy, osv.dev, GitHub Advisory DB) to uniquely identify this artifact.
+
+## Contributing
 
 ### Requirements
 
@@ -31,7 +60,7 @@ without a separate sysroot or system toolchain.
 ### Build and Test
 
 ```bash
-# Clone the rocksdb submodule (first time) 
+# Clone the rocksdb submodule (first time)
 git submodule update --init --recursive
 
 # Build RocksDB from the submodule (first time or after a clean)

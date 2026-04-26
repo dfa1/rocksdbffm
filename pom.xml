@@ -38,6 +38,7 @@
 		<module>native/osx-aarch64</module>
 		<module>native/linux-x86_64</module>
 		<module>core</module>
+		<module>bom</module>
 		<module>integration-tests</module>
 		<module>benchmarks</module>
 	</modules>
@@ -164,6 +165,11 @@
 					<groupId>org.sonatype.central</groupId>
 					<artifactId>central-publishing-maven-plugin</artifactId>
 					<version>0.9.0</version>
+				</plugin>
+				<plugin>
+					<groupId>org.codehaus.mojo</groupId>
+					<artifactId>flatten-maven-plugin</artifactId>
+					<version>1.7.0</version>
 				</plugin>
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>

@@ -27,7 +27,43 @@ without a separate sysroot or system toolchain.
 
 The library comes with core (pure `Java`) and one additional native artifact per OS/Architecture (contributions are welcome in this area).
 
-### Maven
+### Maven (BOM — recommended)
+
+Import the BOM once; all artifact versions are managed automatically:
+
+```xml
+<dependencyManagement>
+  <dependencies>
+    <dependency>
+      <groupId>io.github.dfa1</groupId>
+      <artifactId>rocksdbffm-bom</artifactId>
+      <version>x.y.z</version>
+      <type>pom</type>
+      <scope>import</scope>
+    </dependency>
+  </dependencies>
+</dependencyManagement>
+
+<!-- No version needed — managed by the BOM -->
+<dependencies>
+  <dependency>
+    <groupId>io.github.dfa1</groupId>
+    <artifactId>rocksdbffm-core</artifactId>
+  </dependency>
+  <!-- choose 1 or more native package -->
+  <dependency>
+    <groupId>io.github.dfa1</groupId>
+    <artifactId>rocksdbffm-native-osx-aarch64</artifactId>
+  </dependency>
+  <dependency>
+    <groupId>io.github.dfa1</groupId>
+    <artifactId>rocksdbffm-native-linux-x86_64</artifactId>
+  </dependency>
+</dependencies>
+```
+
+### Maven (without BOM)
+
 ```xml
 <dependency>
   <groupId>io.github.dfa1</groupId>
@@ -50,9 +86,11 @@ The library comes with core (pure `Java`) and one additional native artifact per
 ### Gradle
 
 ```kotlin
-implementation("io.github.dfa1:rocksdbffm-core:0.4")
-implementation("io.github.dfa1:rocksdbffm-native-osx-aarch64:0.4")
-implementation("io.github.dfa1:rocksdbffm-native-linux-x86_64:0.4")
+implementation(platform("io.github.dfa1:rocksdbffm-bom:x.y.z"))
+implementation("io.github.dfa1:rocksdbffm-core")
+// choose 1 or more native package
+implementation("io.github.dfa1:rocksdbffm-native-osx-aarch64")
+implementation("io.github.dfa1:rocksdbffm-native-linux-x86_64")
 ```
 
 ### 🔐 Supply‑chain & SBOM

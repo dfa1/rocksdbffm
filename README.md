@@ -5,9 +5,9 @@
 ![RocksDB](https://img.shields.io/badge/RocksDB-11.0.4-green.svg)
 ![MacOS](https://img.shields.io/badge/macOS-fully_supported-green.svg)
 ![Linux](https://img.shields.io/badge/linux-fully_supported-green.svg)
-![Window](https://img.shields.io/badge/window-not_supported-red.svg)
+![Windows](https://img.shields.io/badge/windows-not_supported-red.svg)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![CI](https://github.com/dfa1/rocksdbffm/workflows/CI/badge.svg?branch:master)](https://github.com/dfa1/rocksdbffm/actions?query=branch:master)
+[![CI](https://github.com/dfa1/rocksdbffm/workflows/CI/badge.svg?branch=main)](https://github.com/dfa1/rocksdbffm/actions?query=branch=main)
 
 **rocksdbffm** is an experimental Java wrapper for [RocksDB](https://rocksdb.org/) using the **Foreign
 Function & Memory (FFM) API**.
@@ -25,8 +25,7 @@ without a separate sysroot or system toolchain.
 
 ## 📦 Coordinates
 
-The library comes with core (Java) and one additional artifact per OS/Architecture
-with RocksDB compiled for the generic architecture.
+The library comes with core (pure `Java`) and one additional native artifact per OS/Architecture (contributions are welcome in this area).
 
 ### Maven
 ```xml
@@ -52,6 +51,8 @@ with RocksDB compiled for the generic architecture.
 
 ```kotlin
 implementation("io.github.dfa1:rocksdbffm-core:0.4")
+implementation("io.github.dfa1:rocksdbffm-native-osx-aarch64:0.4")
+implementation("io.github.dfa1:rocksdbffm-native-linux-x86_64:0.4")
 ```
 
 ### 🔐 Supply‑chain & SBOM

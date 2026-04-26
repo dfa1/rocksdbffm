@@ -8,7 +8,7 @@
 # Usage:
 #   ./scripts/build-rocksdb.sh <output-resources-dir> <target-classifier>
 #
-# target-classifier: osx-aarch64 | osx-x86_64 | linux-x86_64
+# target-classifier: osx-aarch64 | osx-x86_64 | linux-x86_64 | linux-aarch64
 #
 # Example (Maven exec plugin):
 #   ./scripts/build-rocksdb.sh /path/to/native/osx-aarch64/src/main/resources osx-aarch64
@@ -44,6 +44,11 @@ case "$CLASSIFIER" in
         ;;
     linux-x86_64)
         ZIG_TARGET="x86_64-linux-gnu"
+        LIB_NAME="librocksdb.so"
+        TARGET_OS="Linux"
+        ;;
+    linux-aarch64)
+        ZIG_TARGET="aarch64-linux-gnu"
         LIB_NAME="librocksdb.so"
         TARGET_OS="Linux"
         ;;

@@ -34,6 +34,11 @@
 			<scope>test</scope>
 		</dependency>
 		<dependency>
+			<groupId>io.github.dfa1</groupId>
+			<artifactId>rocksdbffm-native-linux-aarch64</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
 			<groupId>org.rocksdb</groupId>
 			<artifactId>rocksdbjni</artifactId>
 			<scope>test</scope>

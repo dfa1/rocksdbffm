@@ -12,7 +12,7 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [macos-latest, ubuntu-latest]
+        os: [macos-latest, ubuntu-latest, ubuntu-24.04-arm]
 
     runs-on: ${{ matrix.os }}
 
@@ -39,7 +39,8 @@ jobs:
           path: |
             native/osx-aarch64/src/main/resources/native
             native/linux-x86_64/src/main/resources/native
-          key: rocksdb-v11.0.4-${{ matrix.os }}-${{ runner.arch }}
+            native/linux-aarch64/src/main/resources/native
+          key: rocksdb-${{ hashFiles('rocksdb/.git/HEAD') }}-${{ matrix.os }}-${{ runner.arch }}
 
       - name: Build and test
         run: mvn --batch-mode verify

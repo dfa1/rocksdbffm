@@ -30,6 +30,11 @@
 				<artifactId>rocksdbffm-native-linux-x86_64</artifactId>
 				<version>${project.version}</version>
 			</dependency>
+			<dependency>
+				<groupId>io.github.dfa1</groupId>
+				<artifactId>rocksdbffm-native-linux-aarch64</artifactId>
+				<version>${project.version}</version>
+			</dependency>
 		</dependencies>
 	</dependencyManagement>
 

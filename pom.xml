@@ -37,6 +37,7 @@
 	<modules>
 		<module>native/osx-aarch64</module>
 		<module>native/linux-x86_64</module>
+		<module>native/linux-aarch64</module>
 		<module>core</module>
 		<module>bom</module>
 		<module>integration-tests</module>
@@ -63,6 +64,11 @@
 			<dependency>
 				<groupId>io.github.dfa1</groupId>
 				<artifactId>rocksdbffm-native-linux-x86_64</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>io.github.dfa1</groupId>
+				<artifactId>rocksdbffm-native-linux-aarch64</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 			<dependency>

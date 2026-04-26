@@ -5,6 +5,7 @@
 ![RocksDB](https://img.shields.io/badge/RocksDB-11.0.4-green.svg)
 ![MacOS](https://img.shields.io/badge/macOS-fully_supported-green.svg)
 ![Linux](https://img.shields.io/badge/linux-fully_supported-green.svg)
+![Linux aarch64](https://img.shields.io/badge/linux_aarch64-fully_supported-green.svg)
 ![Windows](https://img.shields.io/badge/windows-not_supported-red.svg)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![CI](https://github.com/dfa1/rocksdbffm/workflows/CI/badge.svg?branch=main)](https://github.com/dfa1/rocksdbffm/actions?query=branch=main)
@@ -25,7 +26,7 @@ without a separate sysroot or system toolchain.
 
 ## 📦 Coordinates
 
-The library comes with core (pure `Java`) and one additional native artifact per OS/Architecture (contributions are welcome in this area).
+The library comes with core (pure `Java`) and one additional native artifact per OS/Architecture. Windows is not yet supported: RocksDB's POSIX `Makefile` cannot cross-compile to a `.dll` via `zig cc`, and a CMake-based build path is needed. Contributions welcome.
 
 ### Maven (BOM — recommended)
 
@@ -59,6 +60,10 @@ Import the BOM once; all artifact versions are managed automatically:
     <groupId>io.github.dfa1</groupId>
     <artifactId>rocksdbffm-native-linux-x86_64</artifactId>
   </dependency>
+  <dependency>
+    <groupId>io.github.dfa1</groupId>
+    <artifactId>rocksdbffm-native-linux-aarch64</artifactId>
+  </dependency>
 </dependencies>
 ```
 
@@ -81,6 +86,11 @@ Import the BOM once; all artifact versions are managed automatically:
   <artifactId>rocksdbffm-native-linux-x86_64</artifactId>
   <version>0.4</version>
 </dependency>
+<dependency>
+  <groupId>io.github.dfa1</groupId>
+  <artifactId>rocksdbffm-native-linux-aarch64</artifactId>
+  <version>0.4</version>
+</dependency>
 ```
 
 ### Gradle
@@ -91,6 +101,7 @@ implementation("io.github.dfa1:rocksdbffm-core")
 // choose 1 or more native package
 implementation("io.github.dfa1:rocksdbffm-native-osx-aarch64")
 implementation("io.github.dfa1:rocksdbffm-native-linux-x86_64")
+implementation("io.github.dfa1:rocksdbffm-native-linux-aarch64")
 ```
 
 ### 🔐 Supply‑chain & SBOM

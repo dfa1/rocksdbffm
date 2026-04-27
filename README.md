@@ -275,9 +275,7 @@ This project is currently experimental. The table below tracks parity with `rock
 ## Releasing
 
 ```bash
-./mvnw --batch-mode release:clean release:prepare \
-    -DreleaseVersion=<version> \
-    -DdevelopmentVersion=<next>-SNAPSHOT
+./mvnw --batch-mode release:clean release:prepare
 git push && git push --tags
 ```
 

@@ -67,32 +67,6 @@ Import the BOM once; all artifact versions are managed automatically:
 </dependencies>
 ```
 
-### Maven (without BOM)
-
-```xml
-<dependency>
-  <groupId>io.github.dfa1</groupId>
-  <artifactId>rocksdbffm-core</artifactId>
-  <version>0.4</version>
-</dependency>
-<!-- choose 1 or more native package -->
-<dependency>
-  <groupId>io.github.dfa1</groupId>
-  <artifactId>rocksdbffm-native-osx-aarch64</artifactId>
-  <version>0.4</version>
-</dependency>
-<dependency>
-  <groupId>io.github.dfa1</groupId>
-  <artifactId>rocksdbffm-native-linux-x86_64</artifactId>
-  <version>0.4</version>
-</dependency>
-<dependency>
-  <groupId>io.github.dfa1</groupId>
-  <artifactId>rocksdbffm-native-linux-aarch64</artifactId>
-  <version>0.4</version>
-</dependency>
-```
-
 ### Gradle
 
 ```kotlin

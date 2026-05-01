@@ -1,7 +1,7 @@
 # RocksDB FFM
 
 [![Maven Central](https://img.shields.io/maven-central/v/io.github.dfa1/rocksdbffm-core.svg)](https://central.sonatype.com/artifact/io.github.dfa1/rocksdbffm-core)
-![PURL](https://img.shields.io/badge/purl-pkg%3Amaven%2Fio.github.dfa1%2Frocksdbffm--core%400.4-blue)
+![PURL](https://img.shields.io/badge/purl-pkg%3Amaven%2Fio.github.dfa1%2Frocksdbffm--core%400.5-blue)
 ![RocksDB](https://img.shields.io/badge/RocksDB-11.0.4-green.svg)
 ![MacOS](https://img.shields.io/badge/macOS-fully_supported-green.svg)
 ![Linux](https://img.shields.io/badge/linux-fully_supported-green.svg)
@@ -82,7 +82,7 @@ implementation("io.github.dfa1:rocksdbffm-native-linux-aarch64")
 
 This project publishes a Software Bill of Materials (SBOM) using the CycloneDX format.
 
-- Package URL (PURL): `pkg:maven/io.github.dfa1/rocksdbffm-core@0.4`
+- Package URL (PURL): `pkg:maven/io.github.dfa1/rocksdbffm-core@0.5`
 - Ecosystem: Maven
 - Coordinates: `io.github.dfa1:rocksdbffm-core:0.4`
 

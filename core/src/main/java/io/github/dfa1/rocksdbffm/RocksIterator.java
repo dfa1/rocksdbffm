@@ -6,6 +6,7 @@ import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 import java.nio.ByteBuffer;
+import java.util.Optional;
 
 /// FFM wrapper for `rocksdb_iterator_t`.
 ///
@@ -252,6 +253,28 @@ public final class RocksIterator extends NativeObject {
 			RocksDB.checkError(err);
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("getError failed", t);
+		}
+	}
+
+	/// Returns the iterator's current error without throwing.
+	/// Returns [Optional#empty()] if the iterator is healthy, or an [Optional] containing
+	/// the error message if an I/O or background error was encountered.
+	/// Use [#checkError()] instead when you want an exception on error.
+	///
+	/// @return empty if no error, otherwise the error message
+	public Optional<String> error() {
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = RocksDB.errHolder(arena);
+			MH_GET_ERROR.invokeExact(ptr(), err);
+			MemorySegment errPtr = err.get(ValueLayout.ADDRESS, 0);
+			if (MemorySegment.NULL.equals(errPtr)) {
+				return Optional.empty();
+			}
+			String msg = errPtr.reinterpret(Long.MAX_VALUE).getString(0);
+			RocksDB.free(errPtr);
+			return Optional.of(msg);
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("error failed", t);
 		}
 	}
 

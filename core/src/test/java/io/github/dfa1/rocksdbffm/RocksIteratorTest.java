@@ -263,4 +263,47 @@ class RocksIteratorTest {
 			}
 		}
 	}
+
+	// -----------------------------------------------------------------------
+	// status()
+	// -----------------------------------------------------------------------
+
+	@Test
+	void error_returnsEmptyWhenNoError(@TempDir Path dir) {
+		// Given
+		try (var db = RocksDB.open(dir)) {
+			db.put("k".getBytes(), "v".getBytes());
+
+			try (RocksIterator it = db.newIterator()) {
+				it.seekToFirst();
+
+				// When
+				var result = it.error();
+
+				// Then
+				assertThat(result).isEmpty();
+			}
+		}
+	}
+
+	@Test
+	void error_returnsEmptyAfterFullIteration(@TempDir Path dir) {
+		// Given
+		try (var db = RocksDB.open(dir)) {
+			db.put("a".getBytes(), "1".getBytes());
+			db.put("b".getBytes(), "2".getBytes());
+
+			try (RocksIterator it = db.newIterator()) {
+				for (it.seekToFirst(); it.isValid(); it.next()) {
+					// consume all entries
+				}
+
+				// When
+				var result = it.error();
+
+				// Then
+				assertThat(result).isEmpty();
+			}
+		}
+	}
 }

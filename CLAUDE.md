@@ -19,6 +19,7 @@ This project is heavily AI-driven. As an agent, your goal is to:
   cross-compilation without a separate sysroot.
 - **Build System:** Maven Wrapper (`./mvnw`). Run `./mvnw generate-resources -Pnative-build` once to build the native lib; `./mvnw test`
   thereafter. Use `./mvnw` (not `mvn`) to ensure the correct Maven version is used.
+  **NEVER run `mvn install` or `./mvnw install`** — it pollutes `~/.m2` with local artifacts. Use `compile`, `test`, or `package` instead.
 - **Testing:** JUnit 5, AssertJ.
 - **Benchmarking:** JMH (Java Microbenchmark Harness).
 

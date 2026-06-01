@@ -40,7 +40,7 @@ jobs:
             native/osx-aarch64/src/main/resources/native
             native/linux-x86_64/src/main/resources/native
             native/linux-aarch64/src/main/resources/native
-          key: rocksdb-${{ hashFiles('rocksdb/.git/HEAD') }}-${{ matrix.os }}-${{ runner.arch }}
+          key: rocksdb-${{ hashFiles('rocksdb/CMakeLists.txt') }}-${{ matrix.os }}-${{ runner.arch }}
 
       - name: Build and test
         run: mvn --batch-mode verify

@@ -14,7 +14,7 @@ public enum LogLevel {
 	ERROR(3),
 	/// Fatal errors; the DB will likely be unusable after this.
 	FATAL(4),
-	/// Header lines emitted at startup that summarise configuration.
+	/// Header lines emitted at startup that summarize configuration.
 	HEADER(5);
 
 	final int value;

@@ -299,7 +299,7 @@ public final class ReadWriteDB extends NativeObject {
 
 	/// Blocks until all current compactions finish, subject to the given [WaitForCompactOptions].
 	///
-	/// @param options  options controlling wait behaviour (e.g. abort-on-pause)
+	/// @param options  options controlling wait behavior (e.g. abort-on-pause)
 	/// @throws RocksDBException on I/O error or if [WaitForCompactOptions#isAbortOnPause()] is
 	///                          `true` and background work is paused
 	public void waitForCompact(WaitForCompactOptions options) {
@@ -334,7 +334,7 @@ public final class ReadWriteDB extends NativeObject {
 
 	/// Flushes all memtable data to SST files. Blocks when [FlushOptions#isWait()] is `true`.
 	///
-	/// @param flushOptions options controlling flush behaviour
+	/// @param flushOptions options controlling flush behavior
 	public void flush(FlushOptions flushOptions) {
 		RocksDB.flush(ptr(), flushOptions);
 	}
@@ -765,7 +765,7 @@ public final class ReadWriteDB extends NativeObject {
 	/// Flushes the memtable for `cf` to SST files.
 	///
 	/// @param cf          target column family
-	/// @param flushOptions options controlling flush behaviour
+	/// @param flushOptions options controlling flush behavior
 	public void flush(ColumnFamilyHandle cf, FlushOptions flushOptions) {
 		RocksDB.flushCf(ptr(), flushOptions, cf);
 	}

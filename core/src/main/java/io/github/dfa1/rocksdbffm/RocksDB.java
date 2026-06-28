@@ -410,7 +410,7 @@ public final class RocksDB {
 	// -----------------------------------------------------------------------
 
 	/// Opens a read-write database at `path`.
-	/// Use [Options#setCreateIfMissing(boolean)] to control behaviour when
+	/// Use [Options#setCreateIfMissing(boolean)] to control behavior when
 	/// the path does not exist.
 	///
 	/// @param options the database options

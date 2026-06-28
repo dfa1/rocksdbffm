@@ -169,7 +169,7 @@ public final class TransactionDB extends NativeObject {
 	/// Flushes all memtable data to SST files on disk.
 	/// Blocks until the flush completes when [FlushOptions#isWait()] is `true`.
 	///
-	/// @param flushOptions options controlling flush behaviour
+	/// @param flushOptions options controlling flush behavior
 	public void flush(FlushOptions flushOptions) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = RocksDB.errHolder(arena);
@@ -686,7 +686,7 @@ public final class TransactionDB extends NativeObject {
 	/// Flushes the memtable for `cf` to SST files.
 	///
 	/// @param cf           target column family
-	/// @param flushOptions options controlling flush behaviour
+	/// @param flushOptions options controlling flush behavior
 	public void flush(ColumnFamilyHandle cf, FlushOptions flushOptions) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = RocksDB.errHolder(arena);

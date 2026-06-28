@@ -305,7 +305,7 @@ public final class BackupEngine extends NativeObject {
 	/// before restoring.
 	///
 	/// @param dbDir destination directory for the restored database
-	/// @param restoreOptions options controlling the restore behaviour
+	/// @param restoreOptions options controlling the restore behavior
 	public void restoreDbFromLatestBackup(Path dbDir, RestoreOptions restoreOptions) {
 		restoreDbFromLatestBackup(dbDir, dbDir, restoreOptions);
 	}
@@ -314,7 +314,7 @@ public final class BackupEngine extends NativeObject {
 	///
 	/// @param dbDir destination directory for the restored database
 	/// @param walDir destination directory for WAL files
-	/// @param restoreOptions options controlling the restore behaviour
+	/// @param restoreOptions options controlling the restore behavior
 	public void restoreDbFromLatestBackup(Path dbDir, Path walDir, RestoreOptions restoreOptions) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = RocksDB.errHolder(arena);
@@ -331,7 +331,7 @@ public final class BackupEngine extends NativeObject {
 	///
 	/// @param backupId the identifier of the backup to restore
 	/// @param dbDir destination directory for the restored database
-	/// @param restoreOptions options controlling the restore behaviour
+	/// @param restoreOptions options controlling the restore behavior
 	public void restoreDbFromBackup(BackupId backupId, Path dbDir, RestoreOptions restoreOptions) {
 		restoreDbFromBackup(backupId, dbDir, dbDir, restoreOptions);
 	}
@@ -341,7 +341,7 @@ public final class BackupEngine extends NativeObject {
 	/// @param backupId the identifier of the backup to restore
 	/// @param dbDir destination directory for the restored database
 	/// @param walDir destination directory for WAL files
-	/// @param restoreOptions options controlling the restore behaviour
+	/// @param restoreOptions options controlling the restore behavior
 	public void restoreDbFromBackup(BackupId backupId, Path dbDir, Path walDir, RestoreOptions restoreOptions) {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment err = RocksDB.errHolder(arena);

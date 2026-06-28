@@ -6,7 +6,7 @@ import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 import java.time.Duration;
 
-/// Options controlling the behaviour of [ReadWriteDB#waitForCompact].
+/// Options controlling the behavior of [ReadWriteDB#waitForCompact].
 ///
 /// ```
 /// try (WaitForCompactOptions opts = WaitForCompactOptions.create()

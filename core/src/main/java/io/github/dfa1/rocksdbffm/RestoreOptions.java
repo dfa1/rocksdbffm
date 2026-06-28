@@ -7,7 +7,7 @@ import java.lang.invoke.MethodHandle;
 
 /// FFM wrapper for `rocksdb_restore_options_t`.
 ///
-/// Controls behaviour when restoring a backup via [BackupEngine].
+/// Controls behavior when restoring a backup via [BackupEngine].
 ///
 /// ```
 /// try (var restoreOpts = RestoreOptions.create().setKeepLogFiles(false);

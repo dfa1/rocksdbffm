@@ -485,7 +485,7 @@ public final class TtlDB extends NativeObject {
 	/// Flushes the memtable for `cf` to SST files.
 	///
 	/// @param cf           column family to flush
-	/// @param flushOptions flush options controlling wait behaviour
+	/// @param flushOptions flush options controlling wait behavior
 	public void flush(ColumnFamilyHandle cf, FlushOptions flushOptions) {
 		RocksDB.flushCf(ptr(), flushOptions, cf);
 	}
@@ -567,7 +567,7 @@ public final class TtlDB extends NativeObject {
 
 	/// Flushes all memtable data to SST files. Blocks when [FlushOptions#isWait()] is `true`.
 	///
-	/// @param flushOptions flush options controlling wait behaviour
+	/// @param flushOptions flush options controlling wait behavior
 	public void flush(FlushOptions flushOptions) {
 		RocksDB.flush(ptr(), flushOptions);
 	}
@@ -671,7 +671,7 @@ public final class TtlDB extends NativeObject {
 	/// Ingests SST files produced by [SstFileWriter] into the database.
 	///
 	/// @param files   list of SST file paths to ingest
-	/// @param options ingest options controlling behaviour on conflicts
+	/// @param options ingest options controlling behavior on conflicts
 	public void ingestExternalFile(List<Path> files, IngestExternalFileOptions options) {
 		if (files.isEmpty()) {
 			return;
@@ -691,7 +691,7 @@ public final class TtlDB extends NativeObject {
 	/// Ingests a single SST file with explicit [IngestExternalFileOptions].
 	///
 	/// @param file    SST file path to ingest
-	/// @param options ingest options controlling behaviour on conflicts
+	/// @param options ingest options controlling behavior on conflicts
 	public void ingestExternalFile(Path file, IngestExternalFileOptions options) {
 		ingestExternalFile(List.of(file), options);
 	}

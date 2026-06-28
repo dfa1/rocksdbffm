@@ -191,7 +191,7 @@ public final class BlobDB extends NativeObject {
 
 	/// Flushes all memtable data to SST/blob files. Blocks when [FlushOptions#isWait()] is `true`.
 	///
-	/// @param flushOptions options controlling flush behaviour (e.g. wait)
+	/// @param flushOptions options controlling flush behavior (e.g. wait)
 	public void flush(FlushOptions flushOptions) {
 		RocksDB.flush(ptr(), flushOptions);
 	}
@@ -231,7 +231,7 @@ public final class BlobDB extends NativeObject {
 	/// Ingests SST files produced by [SstFileWriter] into the database.
 	///
 	/// @param files paths to SST files to ingest
-	/// @param options options controlling the ingest behaviour
+	/// @param options options controlling the ingest behavior
 	public void ingestExternalFile(List<Path> files, IngestExternalFileOptions options) {
 		if (files.isEmpty()) {
 			return;

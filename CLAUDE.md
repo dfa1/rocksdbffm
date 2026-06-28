@@ -173,6 +173,7 @@ For the full feature status and roadmap see `README.md`.
 
 ## Code
 
+- American English everywhere (javadoc, comments, identifiers): recognize/optimize/finalize/serialize/normalize/behavior/color — never -ise/-isation/-our. Matches the JDK (Object.finalize, Serializable).
 - code is indented with tabs (enforced by checkstyle)
 - always keep the MethodHandles private static final
 - every `MH_` field must have a `/// \`<c prototype>\`` comment on the line immediately above it, copied verbatim from `rocksdb/include/rocksdb/c.h` (strip the `extern ROCKSDB_LIBRARY_API` prefix); no duplicate comment in the `static` block

@@ -19,6 +19,7 @@ import java.util.Map;
 ///   - byte[]       — FFM vs JNI
 ///   - ByteBuffer   — FFM vs JNI
 ///   - MemorySegment — FFM only (no JNI equivalent)
+///   - Instant deserialize: byte[] get vs zero-copy get(key, Mapper) — FFM only (no JNI equivalent)
 public class BenchmarkRunner {
 
 	// Display order drives LABELS iteration — ROW_ORDER is unused (LABELS is LinkedHashMap)
@@ -30,6 +31,8 @@ public class BenchmarkRunner {
 		LABELS.put("readsBytes", "Read  — byte[]");
 		LABELS.put("readsDirectByteBuffer", "Read  — DirectByteBuffer");
 		LABELS.put("readsMemorySegment", "Read  — MemorySegment (FFM)");
+		LABELS.put("readsInstantViaByteArray", "Read Instant — byte[] + deserialize");
+		LABELS.put("readsInstantViaPinned", "Read Instant — get(key, Mapper) (FFM)");
 		LABELS.put("writesBytes", "Write — byte[]");
 		LABELS.put("writesDirectByteBuffer", "Write — DirectByteBuffer");
 		LABELS.put("writesMemorySegment", "Write — MemorySegment (FFM)");

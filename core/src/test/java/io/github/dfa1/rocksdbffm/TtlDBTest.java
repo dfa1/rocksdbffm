@@ -3,6 +3,8 @@ package io.github.dfa1.rocksdbffm;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.lang.foreign.Arena;
+import java.lang.foreign.ValueLayout;
 import java.nio.file.Path;
 import java.time.Duration;
 
@@ -118,6 +120,42 @@ class TtlDBTest {
 
 			// Then
 			assertThat(db.get("persistent".getBytes())).isEqualTo("yes".getBytes());
+		}
+	}
+
+	// -----------------------------------------------------------------------
+	// get — scoped zero-copy (Mapper)
+	// -----------------------------------------------------------------------
+
+	@Test
+	void get_zeroCopy_returnsValue(@TempDir Path dir) {
+		// Given
+		try (var db = RocksDB.openWithTtl(dir, Duration.ofSeconds(60));
+		     Arena arena = Arena.ofConfined()) {
+			db.put("k".getBytes(), "v".getBytes());
+			var key = arena.allocateFrom("k").asSlice(0, 1);
+
+			// When
+			var result = db.get(key, value -> value.toArray(ValueLayout.JAVA_BYTE));
+
+			// Then
+			assertThat(result).isPresent();
+			assertThat(result.get()).isEqualTo("v".getBytes());
+		}
+	}
+
+	@Test
+	void get_zeroCopy_returnsEmpty_whenKeyAbsent(@TempDir Path dir) {
+		// Given
+		try (var db = RocksDB.openWithTtl(dir, Duration.ofSeconds(60));
+		     Arena arena = Arena.ofConfined()) {
+			var key = arena.allocateFrom("missing").asSlice(0, 7);
+
+			// When
+			var result = db.get(key, value -> value.toArray(ValueLayout.JAVA_BYTE));
+
+			// Then
+			assertThat(result).isEmpty();
 		}
 	}
 }

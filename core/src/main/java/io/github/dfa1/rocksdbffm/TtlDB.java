@@ -135,6 +135,23 @@ public final class TtlDB extends NativeObject {
 		return RocksDB.getIntoSegment(ptr(), readOpts.ptr(), key, key.byteSize(), value);
 	}
 
+	/// Scoped zero-copy get: reads `key` via a `rocksdb_pinnable_handle_t` and passes a
+	/// read-only view of the value directly to `fn`, with no intermediate copy.
+	///
+	/// The view passed to `fn` is bound to an arena that is closed the moment `fn`
+	/// returns, so it must not be retained beyond the call — doing so throws
+	/// `IllegalStateException` (used after this call returns) or `WrongThreadException`
+	/// (used from another thread) rather than reading freed memory.
+	///
+	/// @param <R> the type produced by `fn`
+	/// @param key native segment containing the key
+	/// @param fn  callback invoked with a zero-copy view of the pinned value
+	/// @throws NullPointerException if `fn` returns `null`
+	/// @return the result of `fn`, wrapped in [Optional], or [Optional#empty()] if `key` is absent
+	public <R> Optional<R> get(MemorySegment key, Mapper<R> fn) {
+		return RocksDB.withPinned(ptr(), readOpts.ptr(), key, fn);
+	}
+
 	// -----------------------------------------------------------------------
 	// Delete
 	// -----------------------------------------------------------------------
@@ -338,6 +355,19 @@ public final class TtlDB extends NativeObject {
 	/// @return actual value length in bytes
 	public long get(ColumnFamilyHandle cf, MemorySegment key, MemorySegment value) {
 		return RocksDB.getCfIntoSegment(ptr(), readOpts.ptr(), cf, key, key.byteSize(), value);
+	}
+
+	/// Scoped zero-copy get from `cf`. See [#get(MemorySegment, Mapper)] for
+	/// the lifetime contract on the view passed to `fn`.
+	///
+	/// @param <R> the type produced by `fn`
+	/// @param cf  target column family
+	/// @param key native segment containing the key
+	/// @param fn  callback invoked with a zero-copy view of the pinned value
+	/// @throws NullPointerException if `fn` returns `null`
+	/// @return the result of `fn`, wrapped in [Optional], or [Optional#empty()] if `key` is absent
+	public <R> Optional<R> get(ColumnFamilyHandle cf, MemorySegment key, Mapper<R> fn) {
+		return RocksDB.withPinnedCf(ptr(), readOpts.ptr(), cf, key, fn);
 	}
 
 	// -----------------------------------------------------------------------

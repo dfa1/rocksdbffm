@@ -50,10 +50,6 @@ public final class Transaction extends NativeObject {
 	private static final MethodHandle MH_GET_PINNED;
 	/// `char* rocksdb_transaction_get_for_update(rocksdb_transaction_t* txn, const rocksdb_readoptions_t* options, const char* key, size_t klen, size_t* vlen, unsigned char exclusive, char** errptr);`
 	private static final MethodHandle MH_GET_FOR_UPDATE;
-	/// `const char* rocksdb_pinnableslice_value(const rocksdb_pinnableslice_t* t, size_t* vlen);`
-	private static final MethodHandle MH_PINNABLESLICE_VALUE;
-	/// `void rocksdb_pinnableslice_destroy(rocksdb_pinnableslice_t* v);`
-	private static final MethodHandle MH_PINNABLESLICE_DESTROY;
 
 	static {
 		MH_COMMIT = NativeLibrary.lookup("rocksdb_transaction_commit",
@@ -96,13 +92,6 @@ public final class Transaction extends NativeObject {
 						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
 						ValueLayout.ADDRESS, ValueLayout.JAVA_BYTE,
 						ValueLayout.ADDRESS));
-
-		MH_PINNABLESLICE_VALUE = NativeLibrary.lookup("rocksdb_pinnableslice_value",
-				FunctionDescriptor.of(ValueLayout.ADDRESS,
-						ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-
-		MH_PINNABLESLICE_DESTROY = NativeLibrary.lookup("rocksdb_pinnableslice_destroy",
-				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
 
 		MH_PUT_CF = NativeLibrary.lookup("rocksdb_transaction_put_cf",
@@ -201,16 +190,15 @@ public final class Transaction extends NativeObject {
 
 			RocksDB.checkError(err);
 
-			if (MemorySegment.NULL.equals(pin)) {
-				return null;
+			try (PinnableSlice slice = PinnableSlice.wrapOrNull(pin)) {
+				if (slice == null) {
+					return null;
+				}
+				MemorySegment valLenSeg = arena.allocate(ValueLayout.JAVA_LONG);
+				MemorySegment valPtr = slice.value(valLenSeg);
+				long valLen = valLenSeg.get(ValueLayout.JAVA_LONG, 0);
+				return valPtr.reinterpret(valLen).toArray(ValueLayout.JAVA_BYTE);
 			}
-
-			MemorySegment valLenSeg = arena.allocate(ValueLayout.JAVA_LONG);
-			MemorySegment valPtr = (MemorySegment) MH_PINNABLESLICE_VALUE.invokeExact(pin, valLenSeg);
-			long valLen = valLenSeg.get(ValueLayout.JAVA_LONG, 0);
-			byte[] result = valPtr.reinterpret(valLen).toArray(ValueLayout.JAVA_BYTE);
-			MH_PINNABLESLICE_DESTROY.invokeExact(pin);
-			return result;
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("Native call failed", t);
 		}
@@ -239,7 +227,7 @@ public final class Transaction extends NativeObject {
 			} catch (Throwable t) {
 				throw RocksDBException.wrap("get_pinned failed", t);
 			}
-			return RocksDB.withPinnedCore(arena, err, pin, MH_PINNABLESLICE_VALUE, MH_PINNABLESLICE_DESTROY, fn);
+			return RocksDB.withPinnableSlice(arena, err, pin, fn);
 		}
 	}
 
@@ -328,15 +316,15 @@ public final class Transaction extends NativeObject {
 					ptr(), readOptions.ptr(), cf.ptr(),
 					RocksDB.toNative(arena, key), (long) key.length, err);
 			RocksDB.checkError(err);
-			if (MemorySegment.NULL.equals(pin)) {
-				return null;
+			try (PinnableSlice slice = PinnableSlice.wrapOrNull(pin)) {
+				if (slice == null) {
+					return null;
+				}
+				MemorySegment valLenSeg = arena.allocate(ValueLayout.JAVA_LONG);
+				MemorySegment valPtr = slice.value(valLenSeg);
+				long valLen = valLenSeg.get(ValueLayout.JAVA_LONG, 0);
+				return valPtr.reinterpret(valLen).toArray(ValueLayout.JAVA_BYTE);
 			}
-			MemorySegment valLenSeg = arena.allocate(ValueLayout.JAVA_LONG);
-			MemorySegment valPtr = (MemorySegment) MH_PINNABLESLICE_VALUE.invokeExact(pin, valLenSeg);
-			long valLen = valLenSeg.get(ValueLayout.JAVA_LONG, 0);
-			byte[] result = valPtr.reinterpret(valLen).toArray(ValueLayout.JAVA_BYTE);
-			MH_PINNABLESLICE_DESTROY.invokeExact(pin);
-			return result;
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("Native call failed", t);
 		}
@@ -364,7 +352,7 @@ public final class Transaction extends NativeObject {
 			} catch (Throwable t) {
 				throw RocksDBException.wrap("get_pinned failed", t);
 			}
-			return RocksDB.withPinnedCore(arena, err, pin, MH_PINNABLESLICE_VALUE, MH_PINNABLESLICE_DESTROY, fn);
+			return RocksDB.withPinnableSlice(arena, err, pin, fn);
 		}
 	}
 

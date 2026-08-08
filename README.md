@@ -164,7 +164,10 @@ Here the constraint is enforced at compile time — `ReadOnlyDB` simply has no `
 ### Exceptions for all errors
 
 Every operation that can fail throws `RocksDBException` (an unchecked exception). `rocksdbjni` historically returned
-`null`, `-1`, or relied on status objects that callers could silently ignore. Here a failure is always loud.
+`null`, `-1`, or relied on status objects that callers could silently ignore.
+
+The one place this is not yet true is the copy-into read overloads, which inherit rocksdbjni's length-or-`-1` encoding
+and its silent truncation — see [Pinned reads](#pinned-reads-absence-is-a-type-not-a-sentinel) below.
 
 ### Domain primitives instead of raw scalars
 
@@ -174,9 +177,40 @@ Raw numeric types carry no unit information and cannot be validated at construct
 |:---------------------|:-------------------------|:----------------------|
 | Cache / buffer sizes | `long` (bytes, silently) | `MemorySize.ofMB(64)` |
 | Snapshot position    | `long`                   | `SequenceNumber`      |
+| Read outcome         | `int` (length, or `-1`)  | `PinnedResult`        |
 
-Both types are immutable, `Comparable`, and reject invalid values at construction — an illegal value cannot be created
-and therefore cannot be passed anywhere.
+Both scalar types are immutable, `Comparable`, and reject invalid values at construction — an illegal value cannot be
+created and therefore cannot be passed anywhere.
+
+### Pinned reads: absence is a type, not a sentinel
+
+`getPinned` borrows the value straight from the block cache and reports absence as a case of its return type:
+
+```java
+try (PinnedResult result = db.getPinned(key)) {
+    switch (result) {
+        case PinnedResult.Found found -> consume(found.value());  // MemorySegment
+        case PinnedResult.NotFound ignored -> handleMiss();
+    }
+}
+```
+
+Three properties fall out of the shape:
+
+- **The length is intrinsic.** `found.value()` is a `MemorySegment` whose `byteSize()` *is* the value length. There is
+  no caller-supplied capacity, so a value that does not fit is not a representable state.
+- **Absence cannot be misread.** `NotFound` carries no length, so it cannot be confused with a present-but-empty value —
+  a distinction the `MemorySegment` copy-into overload cannot express, since it reports `0` for both.
+- **Expiry is checked.** The borrowed segment is scoped to the result; touching it after the try-with-resources throws
+  `IllegalStateException` rather than reading freed memory.
+
+The cost is that a `Found` keeps its block-cache entry pinned until closed, which is why the result is `AutoCloseable`
+and belongs in a try-with-resources rather than a field.
+
+> **Known gap.** The older copy-into overloads — `get(ByteBuffer, ByteBuffer)` and `get(MemorySegment, MemorySegment)` —
+> still copy as much as fits and return the *full* length, so a destination that is too small is silently truncated. The
+> caller must compare the return value against their own capacity to notice. `getPinned` is the fix; retiring those
+> overloads is tracked in [#47](https://github.com/dfa1/rocksdbffm/issues/47).
 
 ### `Path` for filesystem operations
 
@@ -232,6 +266,7 @@ This project is currently experimental. The table below tracks parity with `rock
 |:---------------------------|:------:|:-------------------------------------------------------------------------------------------------------------------------------------------------|
 | DB Open/Create             |   ✅    | Options, CreateIfMissing, ReadOnly                                                                                                               |
 | Put/Get/Delete             |   ✅    | byte[], ByteBuffer, MemorySegment; zero-copy via PinnableSlice                                                                                   |
+| Pinned reads               |   ✅    | `getPinned` → `PinnedResult` (`Found` / `NotFound`); borrowed `MemorySegment`, no sentinel, no truncation                                        |
 | WriteBatch                 |   ✅    | Atomic multi-op writes                                                                                                                           |
 | Transactions (pessimistic) |   ✅    | TransactionDB, savepoints, get-for-update                                                                                                        |
 | Checkpoints                |   ✅    | Point-in-time on-disk snapshot                                                                                                                   |

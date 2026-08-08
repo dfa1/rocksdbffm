@@ -49,6 +49,8 @@ public final class TransactionDB extends NativeObject {
 	private static final MethodHandle MH_DELETE;
 	/// `char* rocksdb_transactiondb_get(rocksdb_transactiondb_t* txn_db, const rocksdb_readoptions_t* options, const char* key, size_t klen, size_t* vlen, char** errptr);`
 	private static final MethodHandle MH_GET;
+	/// `rocksdb_pinnableslice_t* rocksdb_transactiondb_get_pinned(rocksdb_transactiondb_t* txn_db, const rocksdb_readoptions_t* options, const char* key, size_t klen, char** errptr);`
+	private static final MethodHandle MH_GET_PINNED;
 
 	// Column-family variants
 	/// `void rocksdb_transactiondb_put_cf(rocksdb_transactiondb_t* txn_db, const rocksdb_writeoptions_t* options, rocksdb_column_family_handle_t* column_family, const char* key, size_t keylen, const char* val, size_t vallen, char** errptr);`
@@ -61,10 +63,6 @@ public final class TransactionDB extends NativeObject {
 	private static final MethodHandle MH_CREATE_ITERATOR_CF;
 	/// `void rocksdb_transactiondb_flush_cf(rocksdb_transactiondb_t* txn_db, const rocksdb_flushoptions_t* options, rocksdb_column_family_handle_t* column_family, char** errptr);`
 	private static final MethodHandle MH_FLUSH_CF;
-	/// `const char* rocksdb_pinnableslice_value(const rocksdb_pinnableslice_t* t, size_t* vlen);`
-	private static final MethodHandle MH_PINNABLESLICE_VALUE;
-	/// `void rocksdb_pinnableslice_destroy(rocksdb_pinnableslice_t* v);`
-	private static final MethodHandle MH_PINNABLESLICE_DESTROY;
 
 
 	static {
@@ -95,6 +93,12 @@ public final class TransactionDB extends NativeObject {
 						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
+		MH_GET_PINNED = NativeLibrary.lookup("rocksdb_transactiondb_get_pinned",
+				FunctionDescriptor.of(ValueLayout.ADDRESS,
+						ValueLayout.ADDRESS, ValueLayout.ADDRESS,
+						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
+						ValueLayout.ADDRESS));
+
 		MH_PUT_CF = NativeLibrary.lookup("rocksdb_transactiondb_put_cf",
 				FunctionDescriptor.ofVoid(
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS,
@@ -121,13 +125,6 @@ public final class TransactionDB extends NativeObject {
 		MH_FLUSH_CF = NativeLibrary.lookup("rocksdb_transactiondb_flush_cf",
 				FunctionDescriptor.ofVoid(
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-
-		MH_PINNABLESLICE_VALUE = NativeLibrary.lookup("rocksdb_pinnableslice_value",
-				FunctionDescriptor.of(ValueLayout.ADDRESS,
-						ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-
-		MH_PINNABLESLICE_DESTROY = NativeLibrary.lookup("rocksdb_pinnableslice_destroy",
-				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
 
 		MH_CREATE_SNAPSHOT = NativeLibrary.lookup("rocksdb_transactiondb_create_snapshot",
@@ -403,6 +400,73 @@ public final class TransactionDB extends NativeObject {
 		}
 	}
 
+	/// Pinned read of `key` — borrows the value from the block cache instead of copying it.
+	///
+	/// Unlike [#get(byte[])], which copies out of a `malloc`ed buffer, this reads committed
+	/// data straight from the cache. Absence is a case of the returned type rather than a
+	/// sentinel, and a found result keeps its block-cache entry pinned until closed:
+	///
+	/// ```java
+	/// try (PinnedResult result = db.getPinned(key)) {
+	///     switch (result) {
+	///         case PinnedResult.Found found -> consume(found.value());
+	///         case PinnedResult.NotFound ignored -> handleMiss();
+	///     }
+	/// }
+	/// ```
+	///
+	/// @param key the key to look up
+	/// @return [PinnedResult.Found] borrowing the value, or [PinnedResult.NotFound] if absent
+	public PinnedResult getPinned(byte[] key) {
+		return getPinned(readOpts, key);
+	}
+
+	/// Pinned read of `key` with explicit [ReadOptions], e.g. for snapshot-pinned reads.
+	///
+	/// @param readOptions read options (e.g. snapshot)
+	/// @param key         the key to look up
+	/// @return [PinnedResult.Found] borrowing the value, or [PinnedResult.NotFound] if absent
+	public PinnedResult getPinned(ReadOptions readOptions, byte[] key) {
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = RocksDB.errHolder(arena);
+			MemorySegment k = RocksDB.toNative(arena, key);
+			MemorySegment pin = (MemorySegment) MH_GET_PINNED.invokeExact(
+					ptr(), readOptions.ptr(), k, (long) key.length, err);
+			RocksDB.checkError(err);
+			return RocksDB.pinnedResult(pin);
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("getPinned failed", t);
+		}
+	}
+
+	/// Pinned read of a key held in a direct [java.nio.ByteBuffer].
+	///
+	/// @param key direct [java.nio.ByteBuffer] containing the key
+	/// @return [PinnedResult.Found] borrowing the value, or [PinnedResult.NotFound] if absent
+	public PinnedResult getPinned(java.nio.ByteBuffer key) {
+		return getPinned(MemorySegment.ofBuffer(key), (long) key.remaining());
+	}
+
+	/// Pinned read of a key held in a native segment — nothing is copied on either side.
+	///
+	/// @param key native segment containing the key
+	/// @return [PinnedResult.Found] borrowing the value, or [PinnedResult.NotFound] if absent
+	public PinnedResult getPinned(MemorySegment key) {
+		return getPinned(key, key.byteSize());
+	}
+
+	private PinnedResult getPinned(MemorySegment key, long keyLen) {
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = RocksDB.errHolder(arena);
+			MemorySegment pin = (MemorySegment) MH_GET_PINNED.invokeExact(
+					ptr(), readOpts.ptr(), key, keyLen, err);
+			RocksDB.checkError(err);
+			return RocksDB.pinnedResult(pin);
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("getPinned failed", t);
+		}
+	}
+
 	// -----------------------------------------------------------------------
 	// DB Properties
 	// -----------------------------------------------------------------------
@@ -587,14 +651,71 @@ public final class TransactionDB extends NativeObject {
 			if (MemorySegment.NULL.equals(pin)) {
 				return null;
 			}
-			MemorySegment valLenSeg = arena.allocate(ValueLayout.JAVA_LONG);
-			MemorySegment valPtr = (MemorySegment) MH_PINNABLESLICE_VALUE.invokeExact(pin, valLenSeg);
-			long valLen = valLenSeg.get(ValueLayout.JAVA_LONG, 0);
-			byte[] result = valPtr.reinterpret(valLen).toArray(ValueLayout.JAVA_BYTE);
-			MH_PINNABLESLICE_DESTROY.invokeExact(pin);
-			return result;
+			try {
+				return PinnableSlice.valueOf(pin, arena).toArray(ValueLayout.JAVA_BYTE);
+			} finally {
+				PinnableSlice.destroy(pin);
+			}
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("get failed", t);
+		}
+	}
+
+	/// Pinned read of `key` from `cf` — borrows the value from the block cache.
+	///
+	/// @param cf  target column family
+	/// @param key the key to look up
+	/// @return [PinnedResult.Found] borrowing the value, or [PinnedResult.NotFound] if absent
+	public PinnedResult getPinned(ColumnFamilyHandle cf, byte[] key) {
+		return getPinned(cf, readOpts, key);
+	}
+
+	/// Pinned read of `key` from `cf` with explicit [ReadOptions].
+	///
+	/// @param cf          target column family
+	/// @param readOptions read options (e.g. snapshot)
+	/// @param key         the key to look up
+	/// @return [PinnedResult.Found] borrowing the value, or [PinnedResult.NotFound] if absent
+	public PinnedResult getPinned(ColumnFamilyHandle cf, ReadOptions readOptions, byte[] key) {
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = RocksDB.errHolder(arena);
+			MemorySegment pin = (MemorySegment) MH_GET_PINNED_CF.invokeExact(
+					ptr(), readOptions.ptr(), cf.ptr(),
+					RocksDB.toNative(arena, key), (long) key.length, err);
+			RocksDB.checkError(err);
+			return RocksDB.pinnedResult(pin);
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("getPinned failed", t);
+		}
+	}
+
+	/// Pinned read from `cf` of a key held in a direct [java.nio.ByteBuffer].
+	///
+	/// @param cf  target column family
+	/// @param key direct [java.nio.ByteBuffer] containing the key
+	/// @return [PinnedResult.Found] borrowing the value, or [PinnedResult.NotFound] if absent
+	public PinnedResult getPinned(ColumnFamilyHandle cf, java.nio.ByteBuffer key) {
+		return getPinned(cf, MemorySegment.ofBuffer(key), (long) key.remaining());
+	}
+
+	/// Pinned read from `cf` of a key held in a native segment — nothing is copied.
+	///
+	/// @param cf  target column family
+	/// @param key native segment containing the key
+	/// @return [PinnedResult.Found] borrowing the value, or [PinnedResult.NotFound] if absent
+	public PinnedResult getPinned(ColumnFamilyHandle cf, MemorySegment key) {
+		return getPinned(cf, key, key.byteSize());
+	}
+
+	private PinnedResult getPinned(ColumnFamilyHandle cf, MemorySegment key, long keyLen) {
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = RocksDB.errHolder(arena);
+			MemorySegment pin = (MemorySegment) MH_GET_PINNED_CF.invokeExact(
+					ptr(), readOpts.ptr(), cf.ptr(), key, keyLen, err);
+			RocksDB.checkError(err);
+			return RocksDB.pinnedResult(pin);
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("getPinned failed", t);
 		}
 	}
 

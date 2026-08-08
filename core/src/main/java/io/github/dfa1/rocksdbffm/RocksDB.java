@@ -58,10 +58,6 @@ public final class RocksDB {
 	private static final MethodHandle MH_CLOSE;
 	/// `rocksdb_pinnableslice_t* rocksdb_get_pinned(rocksdb_t* db, const rocksdb_readoptions_t* options, const char* key, size_t keylen, char** errptr);`
 	private static final MethodHandle MH_GET_PINNED;
-	/// `const char* rocksdb_pinnableslice_value(const rocksdb_pinnableslice_t* t, size_t* vlen);`
-	private static final MethodHandle MH_PINNABLESLICE_VALUE;
-	/// `void rocksdb_pinnableslice_destroy(rocksdb_pinnableslice_t* v);`
-	private static final MethodHandle MH_PINNABLESLICE_DESTROY;
 	/// `void rocksdb_put(rocksdb_t* db, const rocksdb_writeoptions_t* options, const char* key, size_t keylen, const char* val, size_t vallen, char** errptr);`
 	private static final MethodHandle MH_PUT;
 	/// `void rocksdb_delete(rocksdb_t* db, const rocksdb_writeoptions_t* options, const char* key, size_t keylen, char** errptr);`
@@ -193,13 +189,6 @@ public final class RocksDB {
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
 						ValueLayout.ADDRESS));
-
-		MH_PINNABLESLICE_VALUE = NativeLibrary.lookup("rocksdb_pinnableslice_value",
-				FunctionDescriptor.of(ValueLayout.ADDRESS,
-						ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-
-		MH_PINNABLESLICE_DESTROY = NativeLibrary.lookup("rocksdb_pinnableslice_destroy",
-				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
 		MH_PUT = NativeLibrary.lookup("rocksdb_put",
 				FunctionDescriptor.ofVoid(
@@ -623,6 +612,59 @@ public final class RocksDB {
 	// Package-private shared helpers — rocksdb_t* operations, mapped once
 	// -----------------------------------------------------------------------
 
+	/// Pinned get — borrows the value from the block cache instead of copying it.
+	/// The caller owns the returned result and must close it.
+	static PinnedResult getPinned(MemorySegment db, MemorySegment readOpts, MemorySegment key, long keyLen) {
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = errHolder(arena);
+			MemorySegment pin = (MemorySegment) MH_GET_PINNED.invokeExact(db, readOpts, key, keyLen, err);
+			checkError(err);
+			return pinnedResult(pin);
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("getPinned failed", t);
+		}
+	}
+
+	/// Pinned get that opens no arena: the caller supplies the error holder and owns the
+	/// returned raw `rocksdb_pinnableslice_t*`, which it must pass to
+	/// [PinnableSlice#destroy(MemorySegment)].
+	///
+	/// Experiment hook for the reuse question on #47 — it is what a caller-owned,
+	/// reused slice would compile down to, and exists to measure whether that is worth
+	/// an API. Returns [MemorySegment#NULL] when the key is absent.
+	static MemorySegment getPinnedRaw(MemorySegment db, MemorySegment readOpts,
+	                                  MemorySegment key, long keyLen, MemorySegment err) {
+		try {
+			MemorySegment pin = (MemorySegment) MH_GET_PINNED.invokeExact(db, readOpts, key, keyLen, err);
+			checkError(err);
+			return pin;
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("getPinned failed", t);
+		}
+	}
+
+	/// Pinned get for a `byte[]` key — copies the key into native memory first.
+	static PinnedResult getPinnedBytes(MemorySegment db, MemorySegment readOpts, byte[] key) {
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = errHolder(arena);
+			MemorySegment k = toNative(arena, key);
+			MemorySegment pin = (MemorySegment) MH_GET_PINNED.invokeExact(db, readOpts, k, (long) key.length, err);
+			checkError(err);
+			return pinnedResult(pin);
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("getPinned failed", t);
+		}
+	}
+
+	/// Maps the `rocksdb_get_pinned` return onto [PinnedResult]: `nullptr` means the key
+	/// is absent (`rocksdb/db/c.cc`), any other pointer owns a pinned block-cache entry.
+	static PinnedResult pinnedResult(MemorySegment pin) {
+		if (MemorySegment.NULL.equals(pin)) {
+			return PinnedResult.NotFound.INSTANCE;
+		}
+		return new PinnedResult.Found(PinnableSlice.of(pin));
+	}
+
 	/// byte[] get via PinnableSlice — zero-copy from block cache. Returns `null` if not found.
 	static byte[] getBytes(MemorySegment db, MemorySegment readOpts, byte[] key) {
 		try (Arena arena = Arena.ofConfined()) {
@@ -633,12 +675,11 @@ public final class RocksDB {
 			if (MemorySegment.NULL.equals(pin)) {
 				return null;
 			}
-			MemorySegment valLenSeg = arena.allocate(ValueLayout.JAVA_LONG);
-			MemorySegment valPtr = (MemorySegment) MH_PINNABLESLICE_VALUE.invokeExact(pin, valLenSeg);
-			long valLen = valLenSeg.get(ValueLayout.JAVA_LONG, 0);
-			byte[] result = valPtr.reinterpret(valLen).toArray(ValueLayout.JAVA_BYTE);
-			MH_PINNABLESLICE_DESTROY.invokeExact(pin);
-			return result;
+			try {
+				return PinnableSlice.valueOf(pin, arena).toArray(ValueLayout.JAVA_BYTE);
+			} finally {
+				PinnableSlice.destroy(pin);
+			}
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("get failed", t);
 		}
@@ -654,14 +695,11 @@ public final class RocksDB {
 			if (MemorySegment.NULL.equals(pin)) {
 				return -1;
 			}
-			MemorySegment valLenSeg = arena.allocate(ValueLayout.JAVA_LONG);
-			MemorySegment valPtr = (MemorySegment) MH_PINNABLESLICE_VALUE.invokeExact(pin, valLenSeg);
-			long valLen = valLenSeg.get(ValueLayout.JAVA_LONG, 0);
-			int toCopy = (int) Math.min(valLen, value.remaining());
-			MemorySegment.ofBuffer(value).copyFrom(valPtr.reinterpret(toCopy));
-			value.position(value.position() + toCopy);
-			MH_PINNABLESLICE_DESTROY.invokeExact(pin);
-			return (int) valLen;
+			try {
+				return copyInto(PinnableSlice.valueOf(pin, arena), value);
+			} finally {
+				PinnableSlice.destroy(pin);
+			}
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("get failed", t);
 		}
@@ -674,16 +712,39 @@ public final class RocksDB {
 			MemorySegment err = errHolder(arena);
 			MemorySegment pin = (MemorySegment) MH_GET_PINNED.invokeExact(db, readOpts, key, keyLen, err);
 			checkError(err);
-			MemorySegment valLenSeg = arena.allocate(ValueLayout.JAVA_LONG);
-			MemorySegment valPtr = (MemorySegment) MH_PINNABLESLICE_VALUE.invokeExact(pin, valLenSeg);
-			long valLen = valLenSeg.get(ValueLayout.JAVA_LONG, 0);
-			long toCopy = Math.min(valLen, value.byteSize());
-			value.copyFrom(valPtr.reinterpret(toCopy));
-			MH_PINNABLESLICE_DESTROY.invokeExact(pin);
-			return valLen;
+			if (MemorySegment.NULL.equals(pin)) {
+				return 0L;
+			}
+			try {
+				return copyInto(PinnableSlice.valueOf(pin, arena), value);
+			} finally {
+				PinnableSlice.destroy(pin);
+			}
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("get failed", t);
 		}
+	}
+
+	/// Copies as much of `pinned` as fits into `value`, advancing its position, and
+	/// returns the value's true length — which may exceed what was copied.
+	///
+	/// Uses the offset form of [MemorySegment#copy(MemorySegment, long, MemorySegment, long, long)]
+	/// rather than `asSlice` + `copyFrom`: it needs no intermediate slice object, and
+	/// this sits on the hottest path in the library.
+	private static int copyInto(MemorySegment pinned, ByteBuffer value) {
+		long valLen = pinned.byteSize();
+		int toCopy = (int) Math.min(valLen, value.remaining());
+		MemorySegment.copy(pinned, 0, MemorySegment.ofBuffer(value), 0, toCopy);
+		value.position(value.position() + toCopy);
+		return (int) valLen;
+	}
+
+	/// Copies as much of `pinned` as fits into `value` and returns the value's true
+	/// length — which may exceed what was copied.
+	private static long copyInto(MemorySegment pinned, MemorySegment value) {
+		long valLen = pinned.byteSize();
+		MemorySegment.copy(pinned, 0, value, 0, Math.min(valLen, value.byteSize()));
+		return valLen;
 	}
 
 	/// byte[] put — slow path, allocates native memory.
@@ -1413,6 +1474,35 @@ public final class RocksDB {
 		}
 	}
 
+	/// Pinned get with explicit column family — borrows the value from the block cache.
+	/// The caller owns the returned result and must close it.
+	static PinnedResult getCfPinned(MemorySegment db, MemorySegment readOpts, ColumnFamilyHandle cf,
+	                                MemorySegment key, long keyLen) {
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = errHolder(arena);
+			MemorySegment pin = (MemorySegment) MH_GET_PINNED_CF.invokeExact(
+					db, readOpts, cf.ptr(), key, keyLen, err);
+			checkError(err);
+			return pinnedResult(pin);
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("getPinned failed", t);
+		}
+	}
+
+	/// Pinned get with explicit column family for a `byte[]` key.
+	static PinnedResult getCfPinnedBytes(MemorySegment db, MemorySegment readOpts, ColumnFamilyHandle cf,
+	                                     byte[] key) {
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = errHolder(arena);
+			MemorySegment pin = (MemorySegment) MH_GET_PINNED_CF.invokeExact(
+					db, readOpts, cf.ptr(), toNative(arena, key), (long) key.length, err);
+			checkError(err);
+			return pinnedResult(pin);
+		} catch (Throwable t) {
+			throw RocksDBException.wrap("getPinned failed", t);
+		}
+	}
+
 	/// byte[] get with explicit column family via PinnableSlice. Returns `null` if not found.
 	static byte[] getCfBytes(MemorySegment db, MemorySegment readOpts, ColumnFamilyHandle cf,
 	                         byte[] key) {
@@ -1424,12 +1514,11 @@ public final class RocksDB {
 			if (MemorySegment.NULL.equals(pin)) {
 				return null;
 			}
-			MemorySegment valLenSeg = arena.allocate(ValueLayout.JAVA_LONG);
-			MemorySegment valPtr = (MemorySegment) MH_PINNABLESLICE_VALUE.invokeExact(pin, valLenSeg);
-			long valLen = valLenSeg.get(ValueLayout.JAVA_LONG, 0);
-			byte[] result = valPtr.reinterpret(valLen).toArray(ValueLayout.JAVA_BYTE);
-			MH_PINNABLESLICE_DESTROY.invokeExact(pin);
-			return result;
+			try {
+				return PinnableSlice.valueOf(pin, arena).toArray(ValueLayout.JAVA_BYTE);
+			} finally {
+				PinnableSlice.destroy(pin);
+			}
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("get failed", t);
 		}
@@ -1447,14 +1536,11 @@ public final class RocksDB {
 			if (MemorySegment.NULL.equals(pin)) {
 				return -1;
 			}
-			MemorySegment valLenSeg = arena.allocate(ValueLayout.JAVA_LONG);
-			MemorySegment valPtr = (MemorySegment) MH_PINNABLESLICE_VALUE.invokeExact(pin, valLenSeg);
-			long valLen = valLenSeg.get(ValueLayout.JAVA_LONG, 0);
-			int toCopy = (int) Math.min(valLen, value.remaining());
-			MemorySegment.ofBuffer(value).copyFrom(valPtr.reinterpret(toCopy));
-			value.position(value.position() + toCopy);
-			MH_PINNABLESLICE_DESTROY.invokeExact(pin);
-			return (int) valLen;
+			try {
+				return copyInto(PinnableSlice.valueOf(pin, arena), value);
+			} finally {
+				PinnableSlice.destroy(pin);
+			}
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("get failed", t);
 		}
@@ -1469,13 +1555,14 @@ public final class RocksDB {
 			MemorySegment pin = (MemorySegment) MH_GET_PINNED_CF.invokeExact(
 					db, readOpts, cf.ptr(), key, keyLen, err);
 			checkError(err);
-			MemorySegment valLenSeg = arena.allocate(ValueLayout.JAVA_LONG);
-			MemorySegment valPtr = (MemorySegment) MH_PINNABLESLICE_VALUE.invokeExact(pin, valLenSeg);
-			long valLen = valLenSeg.get(ValueLayout.JAVA_LONG, 0);
-			long toCopy = Math.min(valLen, value.byteSize());
-			value.copyFrom(valPtr.reinterpret(toCopy));
-			MH_PINNABLESLICE_DESTROY.invokeExact(pin);
-			return valLen;
+			if (MemorySegment.NULL.equals(pin)) {
+				return 0L;
+			}
+			try {
+				return copyInto(PinnableSlice.valueOf(pin, arena), value);
+			} finally {
+				PinnableSlice.destroy(pin);
+			}
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("get failed", t);
 		}

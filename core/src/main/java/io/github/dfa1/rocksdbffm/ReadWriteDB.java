@@ -121,6 +121,60 @@ public final class ReadWriteDB extends NativeObject {
 		return RocksDB.getIntoSegment(ptr(), readOpts.ptr(), key, key.byteSize(), value);
 	}
 
+	/// Pinned read of `key` — borrows the value from the block cache instead of copying it.
+	///
+	/// Absence is a case of the returned type rather than a sentinel, so it can be neither
+	/// mistaken for a length nor confused with a present-but-empty value. A found result
+	/// keeps its block-cache entry pinned until closed, so use try-with-resources:
+	///
+	/// ```java
+	/// try (PinnedResult result = db.getPinned(key)) {
+	///     switch (result) {
+	///         case PinnedResult.Found found -> consume(found.value());
+	///         case PinnedResult.NotFound ignored -> handleMiss();
+	///     }
+	/// }
+	/// ```
+	///
+	/// @param key the key to look up
+	/// @return [PinnedResult.Found] borrowing the value, or [PinnedResult.NotFound] if absent
+	public PinnedResult getPinned(byte[] key) {
+		return RocksDB.getPinnedBytes(ptr(), readOpts.ptr(), key);
+	}
+
+	/// Pinned read of `key` with explicit [ReadOptions], e.g. for snapshot-pinned reads.
+	///
+	/// @param readOptions read options (e.g. snapshot)
+	/// @param key         the key to look up
+	/// @return [PinnedResult.Found] borrowing the value, or [PinnedResult.NotFound] if absent
+	public PinnedResult getPinned(ReadOptions readOptions, byte[] key) {
+		return RocksDB.getPinnedBytes(ptr(), readOptions.ptr(), key);
+	}
+
+	/// Pinned read of a key held in a direct [ByteBuffer].
+	///
+	/// @param key direct [ByteBuffer] containing the key
+	/// @return [PinnedResult.Found] borrowing the value, or [PinnedResult.NotFound] if absent
+	public PinnedResult getPinned(ByteBuffer key) {
+		return RocksDB.getPinned(ptr(), readOpts.ptr(), MemorySegment.ofBuffer(key), key.remaining());
+	}
+
+	/// Pinned read of a key held in a native segment — nothing is copied on either side.
+	///
+	/// @param key native segment containing the key
+	/// @return [PinnedResult.Found] borrowing the value, or [PinnedResult.NotFound] if absent
+	public PinnedResult getPinned(MemorySegment key) {
+		return RocksDB.getPinned(ptr(), readOpts.ptr(), key, key.byteSize());
+	}
+
+	/// Pinned read that allocates nothing: the caller supplies the error holder and owns
+	/// the returned raw slice pointer, which it must destroy.
+	///
+	/// Package-private experiment hook for #47 — see [RocksDB#getPinnedRaw].
+	MemorySegment getPinnedRaw(MemorySegment key, MemorySegment err) {
+		return RocksDB.getPinnedRaw(ptr(), readOpts.ptr(), key, key.byteSize(), err);
+	}
+
 	// -----------------------------------------------------------------------
 	// Delete
 	// -----------------------------------------------------------------------
@@ -615,6 +669,56 @@ public final class ReadWriteDB extends NativeObject {
 	/// @return actual value length in bytes
 	public long get(ColumnFamilyHandle cf, MemorySegment key, MemorySegment value) {
 		return RocksDB.getCfIntoSegment(ptr(), readOpts.ptr(), cf, key, key.byteSize(), value);
+	}
+
+	/// Pinned read of `key` — borrows the value from the block cache instead of copying it.
+	///
+	/// Absence is a case of the returned type rather than a sentinel, so it can be neither
+	/// mistaken for a length nor confused with a present-but-empty value. A found result
+	/// keeps its block-cache entry pinned until closed, so use try-with-resources:
+	///
+	/// ```java
+	/// try (PinnedResult result = db.getPinned(key)) {
+	///     switch (result) {
+	///         case PinnedResult.Found found -> consume(found.value());
+	///         case PinnedResult.NotFound ignored -> handleMiss();
+	///     }
+	/// }
+	/// ```
+	///
+	/// @param cf  target column family
+	/// @param key the key to look up
+	/// @return [PinnedResult.Found] borrowing the value, or [PinnedResult.NotFound] if absent
+	public PinnedResult getPinned(ColumnFamilyHandle cf, byte[] key) {
+		return RocksDB.getCfPinnedBytes(ptr(), readOpts.ptr(), cf, key);
+	}
+
+	/// Pinned read of `key` from `cf` with explicit [ReadOptions].
+	///
+	/// @param cf          target column family
+	/// @param readOptions read options (e.g. snapshot)
+	/// @param key         the key to look up
+	/// @return [PinnedResult.Found] borrowing the value, or [PinnedResult.NotFound] if absent
+	public PinnedResult getPinned(ColumnFamilyHandle cf, ReadOptions readOptions, byte[] key) {
+		return RocksDB.getCfPinnedBytes(ptr(), readOptions.ptr(), cf, key);
+	}
+
+	/// Pinned read from `cf` of a key held in a direct [ByteBuffer].
+	///
+	/// @param cf  target column family
+	/// @param key direct [ByteBuffer] containing the key
+	/// @return [PinnedResult.Found] borrowing the value, or [PinnedResult.NotFound] if absent
+	public PinnedResult getPinned(ColumnFamilyHandle cf, ByteBuffer key) {
+		return RocksDB.getCfPinned(ptr(), readOpts.ptr(), cf, MemorySegment.ofBuffer(key), key.remaining());
+	}
+
+	/// Pinned read from `cf` of a key held in a native segment — nothing is copied.
+	///
+	/// @param cf  target column family
+	/// @param key native segment containing the key
+	/// @return [PinnedResult.Found] borrowing the value, or [PinnedResult.NotFound] if absent
+	public PinnedResult getPinned(ColumnFamilyHandle cf, MemorySegment key) {
+		return RocksDB.getCfPinned(ptr(), readOpts.ptr(), cf, key, key.byteSize());
 	}
 
 	// -----------------------------------------------------------------------

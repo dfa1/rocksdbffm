@@ -61,6 +61,11 @@ For every feature, provide three tiers of access:
 2. **`ByteBuffer` Version:** For compatibility with existing NIO-based clients.
 3. **`byte[]` Version:** Quick access for convenience (explicitly documented as slower).
 
+**On the read path, the tiers describe the *key* only.** The value comes back as a `PinnedResult` from `getPinned` —
+a borrowed `MemorySegment` whose `byteSize()` is the length — not through a caller-supplied destination buffer. The
+older `get(ByteBuffer, ByteBuffer)` / `get(MemorySegment, MemorySegment)` copy-into overloads silently truncate when
+the destination is too small and are on the way out (see issue #47); do not add new ones or extend them to new types.
+
 ## ⚡ FFM Performance & Patterns
 
 ### 1. Centralized Error Handling
@@ -147,6 +152,7 @@ For the full feature status and roadmap see `README.md`.
 | Feature                 | Java source files                                                                                                         |
 |:------------------------|:--------------------------------------------------------------------------------------------------------------------------|
 | DB Open/Close/Put/Get/Delete | `RocksDB.java`                                                                                                       |
+| Pinned reads            | `PinnedResult.java` (sealed: `Found` / `NotFound`), `PinnableSlice.java`; `getPinned` on every DB type + `Transaction`, all key tiers, CF variants |
 | Options                 | `Options.java`, `ReadOptions.java`, `WriteOptions.java`                                                                   |
 | WriteBatch              | `WriteBatch.java`                                                                                                         |
 | Transactions            | `Transaction.java`, `TransactionDB.java`, `TransactionDBOptions.java`, `TransactionOptions.java`                          |

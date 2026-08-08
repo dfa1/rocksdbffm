@@ -276,6 +276,56 @@ class SecondaryDBTest {
 	}
 
 	// -----------------------------------------------------------------------
+	// get — scoped zero-copy (Mapper)
+	// -----------------------------------------------------------------------
+
+	@Test
+	void get_zeroCopy_returnsValue(@TempDir Path primaryDir, @TempDir Path secondaryDir) {
+		// Given
+		try (var opts = Options.newOptions().setCreateIfMissing(true);
+		     var primary = RocksDB.open(opts, primaryDir);
+		     var fo = FlushOptions.newFlushOptions()) {
+			primary.put("k".getBytes(), "v".getBytes());
+			primary.flush(fo);
+		}
+
+		try (var opts = Options.newOptions();
+		     var secondary = RocksDB.openSecondary(opts, primaryDir, secondaryDir);
+		     Arena arena = Arena.ofConfined()) {
+			secondary.tryCatchUpWithPrimary();
+			var key = arena.allocateFrom("k").asSlice(0, 1);
+
+			// When
+			var result = secondary.get(key, value -> value.toArray(ValueLayout.JAVA_BYTE));
+
+			// Then
+			assertThat(result).isPresent();
+			assertThat(result.get()).isEqualTo("v".getBytes());
+		}
+	}
+
+	@Test
+	void get_zeroCopy_returnsEmpty_whenKeyAbsent(@TempDir Path primaryDir, @TempDir Path secondaryDir) {
+		// Given
+		try (var opts = Options.newOptions().setCreateIfMissing(true);
+		     var primary = RocksDB.open(opts, primaryDir)) {
+			primary.put("seed".getBytes(), "val".getBytes());
+		}
+
+		try (var opts = Options.newOptions();
+		     var secondary = RocksDB.openSecondary(opts, primaryDir, secondaryDir);
+		     Arena arena = Arena.ofConfined()) {
+			var key = arena.allocateFrom("missing").asSlice(0, 7);
+
+			// When
+			var result = secondary.get(key, value -> value.toArray(ValueLayout.JAVA_BYTE));
+
+			// Then
+			assertThat(result).isEmpty();
+		}
+	}
+
+	// -----------------------------------------------------------------------
 	// DB Properties
 	// -----------------------------------------------------------------------
 

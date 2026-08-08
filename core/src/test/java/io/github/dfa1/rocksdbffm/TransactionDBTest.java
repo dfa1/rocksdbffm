@@ -97,6 +97,82 @@ class TransactionDBTest {
 		}
 	}
 
+	// -----------------------------------------------------------------------
+	// get — scoped zero-copy (Mapper)
+	// -----------------------------------------------------------------------
+
+	@Test
+	void transactionDb_get_zeroCopy_returnsValue(@TempDir Path dir) {
+		// Given
+		try (var db = openDb(dir);
+		     Arena arena = Arena.ofConfined()) {
+			db.put("k".getBytes(), "v".getBytes());
+			var key = arena.allocateFrom("k").asSlice(0, 1);
+
+			// When
+			var result = db.get(key, value -> value.toArray(ValueLayout.JAVA_BYTE));
+
+			// Then
+			assertThat(result).isPresent();
+			assertThat(result.get()).isEqualTo("v".getBytes());
+		}
+	}
+
+	@Test
+	void transactionDb_get_zeroCopy_returnsEmpty_whenKeyAbsent(@TempDir Path dir) {
+		// Given
+		try (var db = openDb(dir);
+		     Arena arena = Arena.ofConfined()) {
+			var key = arena.allocateFrom("missing").asSlice(0, 7);
+
+			// When
+			var result = db.get(key, value -> value.toArray(ValueLayout.JAVA_BYTE));
+
+			// Then
+			assertThat(result).isEmpty();
+		}
+	}
+
+	@Test
+	void transaction_get_zeroCopy_readsUncommittedWritesWithinSameTransaction(@TempDir Path dir) {
+		// Given
+		try (var db = openDb(dir);
+		     var wo = WriteOptions.newWriteOptions();
+		     var ro = ReadOptions.newReadOptions();
+		     var txn = db.beginTransaction(wo);
+		     Arena arena = Arena.ofConfined()) {
+			txn.put("k".getBytes(), "v".getBytes());
+			var key = arena.allocateFrom("k").asSlice(0, 1);
+
+			// When
+			var result = txn.get(ro, key, value -> value.toArray(ValueLayout.JAVA_BYTE));
+
+			// Then
+			assertThat(result).isPresent();
+			assertThat(result.get()).isEqualTo("v".getBytes());
+			txn.commit();
+		}
+	}
+
+	@Test
+	void transaction_get_zeroCopy_returnsEmpty_whenKeyAbsent(@TempDir Path dir) {
+		// Given
+		try (var db = openDb(dir);
+		     var wo = WriteOptions.newWriteOptions();
+		     var ro = ReadOptions.newReadOptions();
+		     var txn = db.beginTransaction(wo);
+		     Arena arena = Arena.ofConfined()) {
+			var key = arena.allocateFrom("missing").asSlice(0, 7);
+
+			// When
+			var result = txn.get(ro, key, value -> value.toArray(ValueLayout.JAVA_BYTE));
+
+			// Then
+			assertThat(result).isEmpty();
+			txn.rollback();
+		}
+	}
+
 	@Test
 	void getForUpdate_locksAndReturnsValue(@TempDir Path dir) {
 		// Given

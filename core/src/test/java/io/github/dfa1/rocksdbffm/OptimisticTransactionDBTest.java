@@ -387,6 +387,63 @@ class OptimisticTransactionDBTest {
 	}
 
 	// -----------------------------------------------------------------------
+	// get — scoped zero-copy (Mapper)
+	// -----------------------------------------------------------------------
+
+	@Test
+	void get_zeroCopy_returnsValue(@TempDir Path dir) {
+		// Given
+		try (var opts = Options.newOptions().setCreateIfMissing(true);
+		     var db = RocksDB.openOptimistic(opts, dir);
+		     Arena arena = Arena.ofConfined()) {
+			db.put("k".getBytes(), "v".getBytes());
+			var key = arena.allocateFrom("k").asSlice(0, 1);
+
+			// When
+			var result = db.get(key, value -> value.toArray(ValueLayout.JAVA_BYTE));
+
+			// Then
+			assertThat(result).isPresent();
+			assertThat(result.get()).isEqualTo("v".getBytes());
+		}
+	}
+
+	@Test
+	void get_zeroCopy_returnsEmpty_whenKeyAbsent(@TempDir Path dir) {
+		// Given
+		try (var opts = Options.newOptions().setCreateIfMissing(true);
+		     var db = RocksDB.openOptimistic(opts, dir);
+		     Arena arena = Arena.ofConfined()) {
+			var key = arena.allocateFrom("missing").asSlice(0, 7);
+
+			// When
+			var result = db.get(key, value -> value.toArray(ValueLayout.JAVA_BYTE));
+
+			// Then
+			assertThat(result).isEmpty();
+		}
+	}
+
+	@Test
+	void get_zeroCopy_fromColumnFamily(@TempDir Path dir) {
+		// Given
+		try (var opts = Options.newOptions().setCreateIfMissing(true);
+		     var db = RocksDB.openOptimistic(opts, dir);
+		     var cf = db.createColumnFamily(ColumnFamilyDescriptor.of("cf1"));
+		     Arena arena = Arena.ofConfined()) {
+			db.put(cf, "k".getBytes(), "v".getBytes());
+			var key = arena.allocateFrom("k").asSlice(0, 1);
+
+			// When
+			var result = db.get(cf, key, value -> value.toArray(ValueLayout.JAVA_BYTE));
+
+			// Then
+			assertThat(result).isPresent();
+			assertThat(result.get()).isEqualTo("v".getBytes());
+		}
+	}
+
+	// -----------------------------------------------------------------------
 	// DB Properties
 	// -----------------------------------------------------------------------
 

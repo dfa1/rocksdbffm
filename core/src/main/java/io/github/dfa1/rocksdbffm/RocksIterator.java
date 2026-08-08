@@ -6,6 +6,7 @@ import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 import java.nio.ByteBuffer;
+import java.util.Objects;
 import java.util.Optional;
 
 /// FFM wrapper for `rocksdb_iterator_t`.
@@ -319,6 +320,64 @@ public final class RocksIterator extends NativeObject {
 			return data.reinterpret(lenSegment.get(ValueLayout.JAVA_LONG, 0));
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("value failed", t);
+		}
+	}
+
+	/// Scoped zero-copy read of the current key. `fn` receives a read-only view valid
+	/// only for the duration of this call.
+	///
+	/// Unlike [#keySegment()], the view here is bound to an arena that closes the moment
+	/// `fn` returns. [#next()], [#prev()], [#seek(byte[])], and friends reuse the
+	/// iterator's internal buffer in place rather than allocating a new one, so a plain
+	/// [#keySegment()] view that escapes past the next positioning call does not fail —
+	/// it silently starts reporting a different key's bytes. Scoping the view to this
+	/// call turns that into a loud failure instead: `IllegalStateException` if used after
+	/// this call returns, `WrongThreadException` if handed to another thread.
+	///
+	/// Only call when [#isValid()] is true.
+	///
+	/// @param <R> the type produced by `fn`
+	/// @param fn  callback invoked with a zero-copy view of the current key
+	/// @throws NullPointerException if `fn` returns `null`
+	/// @return the result of `fn`
+	public <R> R key(Mapper<R> fn) {
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment data;
+			try {
+				data = (MemorySegment) MH_KEY.invokeExact(ptr(), lenSegment);
+			} catch (Throwable t) {
+				throw RocksDBException.wrap("key failed", t);
+			}
+			long len = lenSegment.get(ValueLayout.JAVA_LONG, 0);
+			MemorySegment view = data.reinterpret(len, arena, null).asReadOnly();
+			R result = fn.map(view);
+			Objects.requireNonNull(result, "Mapper.map(MemorySegment) must not return null");
+			return result;
+		}
+	}
+
+	/// Scoped zero-copy read of the current value. See [#key(Mapper)] for the
+	/// lifetime contract on the view passed to `fn`.
+	///
+	/// Only call when [#isValid()] is true.
+	///
+	/// @param <R> the type produced by `fn`
+	/// @param fn  callback invoked with a zero-copy view of the current value
+	/// @throws NullPointerException if `fn` returns `null`
+	/// @return the result of `fn`
+	public <R> R value(Mapper<R> fn) {
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment data;
+			try {
+				data = (MemorySegment) MH_VALUE.invokeExact(ptr(), lenSegment);
+			} catch (Throwable t) {
+				throw RocksDBException.wrap("value failed", t);
+			}
+			long len = lenSegment.get(ValueLayout.JAVA_LONG, 0);
+			MemorySegment view = data.reinterpret(len, arena, null).asReadOnly();
+			R result = fn.map(view);
+			Objects.requireNonNull(result, "Mapper.map(MemorySegment) must not return null");
+			return result;
 		}
 	}
 

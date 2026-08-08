@@ -3,12 +3,15 @@ package io.github.dfa1.rocksdbffm;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.lang.foreign.MemorySegment;
+import java.lang.foreign.ValueLayout;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class RocksIteratorTest {
 
@@ -245,9 +248,9 @@ class RocksIteratorTest {
 				var valSeg = it.valueSegment();
 
 				// Then
-				assertThat(keySeg.toArray(java.lang.foreign.ValueLayout.JAVA_BYTE))
+				assertThat(keySeg.toArray(ValueLayout.JAVA_BYTE))
 						.isEqualTo("k".getBytes());
-				assertThat(valSeg.toArray(java.lang.foreign.ValueLayout.JAVA_BYTE))
+				assertThat(valSeg.toArray(ValueLayout.JAVA_BYTE))
 						.isEqualTo("v".getBytes());
 			}
 		}
@@ -335,6 +338,109 @@ class RocksIteratorTest {
 
 				// Then
 				assertThat(result).isEmpty();
+			}
+		}
+	}
+
+	// -----------------------------------------------------------------------
+	// key/value — scoped zero-copy (Mapper)
+	// -----------------------------------------------------------------------
+
+	@Test
+	void key_value_zeroCopy_returnsCurrentPosition(@TempDir Path dir) {
+		// Given
+		try (var db = RocksDB.open(dir)) {
+			db.put("k".getBytes(), "v".getBytes());
+
+			try (RocksIterator it = db.newIterator()) {
+				it.seekToFirst();
+				assertThat(it.isValid()).isTrue();
+
+				// When
+				var key = it.key(seg -> seg.toArray(ValueLayout.JAVA_BYTE));
+				var value = it.value(seg -> seg.toArray(ValueLayout.JAVA_BYTE));
+
+				// Then
+				assertThat(key).isEqualTo("k".getBytes());
+				assertThat(value).isEqualTo("v".getBytes());
+			}
+		}
+	}
+
+	@Test
+	void key_zeroCopy_segmentUsedAfterReturn_throwsIllegalStateException(@TempDir Path dir) {
+		// Given
+		try (var db = RocksDB.open(dir)) {
+			db.put("k".getBytes(), "v".getBytes());
+
+			try (RocksIterator it = db.newIterator()) {
+				it.seekToFirst();
+				assertThat(it.isValid()).isTrue();
+				MemorySegment[] escaped = new MemorySegment[1];
+
+				// When — smuggle the view out via a captured array, then use it after return
+				it.key(value -> escaped[0] = value);
+
+				// Then
+				assertThatThrownBy(() -> escaped[0].get(ValueLayout.JAVA_BYTE, 0))
+						.isInstanceOf(IllegalStateException.class);
+			}
+		}
+	}
+
+	@Test
+	void key_zeroCopy_staysCorrectAcrossNavigation_insteadOfSilentlyGoingStale(@TempDir Path dir) {
+		// Given — the exact bug the scoped API prevents: a raw keySegment() read before
+		// next() would silently start reporting the new position's bytes with no error.
+		try (var db = RocksDB.open(dir)) {
+			db.put("a".getBytes(), "1".getBytes());
+			db.put("b".getBytes(), "2".getBytes());
+
+			try (RocksIterator it = db.newIterator()) {
+				it.seekToFirst();
+
+				// When
+				var firstKey = it.key(value -> value.toArray(ValueLayout.JAVA_BYTE));
+				it.next();
+				var secondKey = it.key(value -> value.toArray(ValueLayout.JAVA_BYTE));
+
+				// Then
+				assertThat(firstKey).isEqualTo("a".getBytes());
+				assertThat(secondKey).isEqualTo("b".getBytes());
+			}
+		}
+	}
+
+	@Test
+	void key_zeroCopy_mapperReturnsNull_throwsNullPointerException(@TempDir Path dir) {
+		// Given
+		try (var db = RocksDB.open(dir)) {
+			db.put("k".getBytes(), "v".getBytes());
+
+			try (RocksIterator it = db.newIterator()) {
+				it.seekToFirst();
+				assertThat(it.isValid()).isTrue();
+
+				// When / Then
+				assertThatThrownBy(() -> it.key(value -> null))
+						.isInstanceOf(NullPointerException.class);
+			}
+		}
+	}
+
+	@Test
+	void value_zeroCopy_mapperReturnsNull_throwsNullPointerException(@TempDir Path dir) {
+		// Given
+		try (var db = RocksDB.open(dir)) {
+			db.put("k".getBytes(), "v".getBytes());
+
+			try (RocksIterator it = db.newIterator()) {
+				it.seekToFirst();
+				assertThat(it.isValid()).isTrue();
+
+				// When / Then
+				assertThatThrownBy(() -> it.value(value -> null))
+						.isInstanceOf(NullPointerException.class);
 			}
 		}
 	}

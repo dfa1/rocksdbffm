@@ -49,6 +49,8 @@ public final class TransactionDB extends NativeObject {
 	private static final MethodHandle MH_DELETE;
 	/// `char* rocksdb_transactiondb_get(rocksdb_transactiondb_t* txn_db, const rocksdb_readoptions_t* options, const char* key, size_t klen, size_t* vlen, char** errptr);`
 	private static final MethodHandle MH_GET;
+	/// `rocksdb_pinnableslice_t* rocksdb_transactiondb_get_pinned(rocksdb_transactiondb_t* txn_db, const rocksdb_readoptions_t* options, const char* key, size_t klen, char** errptr);`
+	private static final MethodHandle MH_GET_PINNED;
 
 	// Column-family variants
 	/// `void rocksdb_transactiondb_put_cf(rocksdb_transactiondb_t* txn_db, const rocksdb_writeoptions_t* options, rocksdb_column_family_handle_t* column_family, const char* key, size_t keylen, const char* val, size_t vallen, char** errptr);`
@@ -94,6 +96,12 @@ public final class TransactionDB extends NativeObject {
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS,
 						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
 						ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+		MH_GET_PINNED = NativeLibrary.lookup("rocksdb_transactiondb_get_pinned",
+				FunctionDescriptor.of(ValueLayout.ADDRESS,
+						ValueLayout.ADDRESS, ValueLayout.ADDRESS,
+						ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
+						ValueLayout.ADDRESS));
 
 		MH_PUT_CF = NativeLibrary.lookup("rocksdb_transactiondb_put_cf",
 				FunctionDescriptor.ofVoid(
@@ -409,6 +417,32 @@ public final class TransactionDB extends NativeObject {
 		}
 	}
 
+	/// Scoped zero-copy get: reads `key` via `rocksdb_transactiondb_get_pinned` and passes
+	/// a read-only view of the value directly to `fn`, with no intermediate copy.
+	///
+	/// The view passed to `fn` is bound to an arena that is closed the moment `fn`
+	/// returns, so it must not be retained beyond the call — doing so throws
+	/// `IllegalStateException` (used after this call returns) or `WrongThreadException`
+	/// (used from another thread) rather than reading freed memory.
+	///
+	/// @param <R> the type produced by `fn`
+	/// @param key native segment containing the key
+	/// @param fn  callback invoked with a zero-copy view of the pinned value
+	/// @throws NullPointerException if `fn` returns `null`
+	/// @return the result of `fn`, wrapped in [Optional], or [Optional#empty()] if `key` is absent
+	public <R> Optional<R> get(MemorySegment key, Mapper<R> fn) {
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = RocksDB.errHolder(arena);
+			MemorySegment pin;
+			try {
+				pin = (MemorySegment) MH_GET_PINNED.invokeExact(ptr(), readOpts.ptr(), key, key.byteSize(), err);
+			} catch (Throwable t) {
+				throw RocksDBException.wrap("get_pinned failed", t);
+			}
+			return RocksDB.withPinnedCore(arena, err, pin, MH_PINNABLESLICE_VALUE, MH_PINNABLESLICE_DESTROY, fn);
+		}
+	}
+
 	// -----------------------------------------------------------------------
 	// DB Properties
 	// -----------------------------------------------------------------------
@@ -601,6 +635,28 @@ public final class TransactionDB extends NativeObject {
 			return result;
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("get failed", t);
+		}
+	}
+
+	/// Scoped zero-copy get from `cf`. See [#get(MemorySegment, Mapper)] for
+	/// the lifetime contract on the view passed to `fn`.
+	///
+	/// @param <R> the type produced by `fn`
+	/// @param cf  target column family
+	/// @param key native segment containing the key
+	/// @param fn  callback invoked with a zero-copy view of the pinned value
+	/// @throws NullPointerException if `fn` returns `null`
+	/// @return the result of `fn`, wrapped in [Optional], or [Optional#empty()] if `key` is absent
+	public <R> Optional<R> get(ColumnFamilyHandle cf, MemorySegment key, Mapper<R> fn) {
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = RocksDB.errHolder(arena);
+			MemorySegment pin;
+			try {
+				pin = (MemorySegment) MH_GET_PINNED_CF.invokeExact(ptr(), readOpts.ptr(), cf.ptr(), key, key.byteSize(), err);
+			} catch (Throwable t) {
+				throw RocksDBException.wrap("get_pinned failed", t);
+			}
+			return RocksDB.withPinnedCore(arena, err, pin, MH_PINNABLESLICE_VALUE, MH_PINNABLESLICE_DESTROY, fn);
 		}
 	}
 

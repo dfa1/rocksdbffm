@@ -5,6 +5,7 @@ import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
+import java.util.Optional;
 
 /// FFM wrapper for `rocksdb_transaction_t`.
 ///
@@ -215,6 +216,33 @@ public final class Transaction extends NativeObject {
 		}
 	}
 
+	/// Scoped zero-copy get: reads `key` via `rocksdb_transaction_get_pinned` and passes
+	/// a read-only view of the value directly to `fn`, with no intermediate copy.
+	///
+	/// The view passed to `fn` is bound to an arena that is closed the moment `fn`
+	/// returns, so it must not be retained beyond the call — doing so throws
+	/// `IllegalStateException` (used after this call returns) or `WrongThreadException`
+	/// (used from another thread) rather than reading freed memory.
+	///
+	/// @param <R>         the type produced by `fn`
+	/// @param readOptions read options for this read
+	/// @param key         native segment containing the key
+	/// @param fn          callback invoked with a zero-copy view of the pinned value
+	/// @throws NullPointerException if `fn` returns `null`
+	/// @return the result of `fn`, wrapped in [Optional], or [Optional#empty()] if `key` is absent
+	public <R> Optional<R> get(ReadOptions readOptions, MemorySegment key, Mapper<R> fn) {
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = RocksDB.errHolder(arena);
+			MemorySegment pin;
+			try {
+				pin = (MemorySegment) MH_GET_PINNED.invokeExact(ptr(), readOptions.ptr(), key, key.byteSize(), err);
+			} catch (Throwable t) {
+				throw RocksDBException.wrap("get_pinned failed", t);
+			}
+			return RocksDB.withPinnedCore(arena, err, pin, MH_PINNABLESLICE_VALUE, MH_PINNABLESLICE_DESTROY, fn);
+		}
+	}
+
 	/// Reads the value for `key` and acquires a pessimistic lock on it for
 	/// the duration of this transaction. Returns `null` if not found.
 	///
@@ -311,6 +339,32 @@ public final class Transaction extends NativeObject {
 			return result;
 		} catch (Throwable t) {
 			throw RocksDBException.wrap("Native call failed", t);
+		}
+	}
+
+	/// Scoped zero-copy get from `cf`. See
+	/// [#get(ReadOptions, MemorySegment, Mapper)] for the lifetime contract on
+	/// the view passed to `fn`.
+	///
+	/// @param <R>         the type produced by `fn`
+	/// @param cf          column family to read from
+	/// @param readOptions read options for this read
+	/// @param key         native segment containing the key
+	/// @param fn          callback invoked with a zero-copy view of the pinned value
+	/// @throws NullPointerException if `fn` returns `null`
+	/// @return the result of `fn`, wrapped in [Optional], or [Optional#empty()] if `key` is absent
+	public <R> Optional<R> get(ColumnFamilyHandle cf, ReadOptions readOptions, MemorySegment key,
+	                            Mapper<R> fn) {
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment err = RocksDB.errHolder(arena);
+			MemorySegment pin;
+			try {
+				pin = (MemorySegment) MH_GET_PINNED_CF.invokeExact(
+						ptr(), readOptions.ptr(), cf.ptr(), key, key.byteSize(), err);
+			} catch (Throwable t) {
+				throw RocksDBException.wrap("get_pinned failed", t);
+			}
+			return RocksDB.withPinnedCore(arena, err, pin, MH_PINNABLESLICE_VALUE, MH_PINNABLESLICE_DESTROY, fn);
 		}
 	}
 

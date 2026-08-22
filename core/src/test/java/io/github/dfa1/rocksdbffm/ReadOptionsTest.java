@@ -5,6 +5,8 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -232,7 +234,7 @@ class ReadOptionsTest {
 			db.put("c".getBytes(), "3".getBytes());
 
 			try (var readOptions = ReadOptions.newReadOptions()) {
-				MemorySegment bound = arena.allocateFrom("b", java.nio.charset.StandardCharsets.US_ASCII);
+				MemorySegment bound = arena.allocateFrom("b", StandardCharsets.US_ASCII);
 				readOptions.setIterateLowerBound(bound.asSlice(0, 1));
 
 				// When
@@ -251,6 +253,88 @@ class ReadOptionsTest {
 	}
 
 	@Test
+	void setIterateUpperBound_memorySegment_restrictsIteration(@TempDir Path dir) {
+		// Given
+		try (var db = RocksDB.openReadWrite(dir);
+		     var arena = Arena.ofConfined()) {
+			db.put("a".getBytes(), "1".getBytes());
+			db.put("b".getBytes(), "2".getBytes());
+			db.put("c".getBytes(), "3".getBytes());
+
+			try (var readOptions = ReadOptions.newReadOptions()) {
+				MemorySegment bound = arena.allocateFrom("b", StandardCharsets.US_ASCII);
+				readOptions.setIterateUpperBound(bound.asSlice(0, 1));
+
+				// When
+				List<String> keys = new ArrayList<>();
+				try (RocksIterator it = db.newIterator(readOptions)) {
+					for (it.seekToFirst(); it.isValid(); it.next()) {
+						keys.add(new String(it.key()));
+					}
+					it.checkError();
+				}
+
+				// Then
+				assertThat(keys).containsExactly("a");
+			}
+		}
+	}
+
+	@Test
+	void setIterateLowerBound_byteBuffer_restrictsIteration(@TempDir Path dir) {
+		// Given
+		try (var db = RocksDB.openReadWrite(dir)) {
+			db.put("a".getBytes(), "1".getBytes());
+			db.put("b".getBytes(), "2".getBytes());
+			db.put("c".getBytes(), "3".getBytes());
+
+			try (var readOptions = ReadOptions.newReadOptions()) {
+				ByteBuffer bound = ByteBuffer.allocateDirect(1).put((byte) 'b').flip();
+				readOptions.setIterateLowerBound(bound);
+
+				// When
+				List<String> keys = new ArrayList<>();
+				try (RocksIterator it = db.newIterator(readOptions)) {
+					for (it.seekToFirst(); it.isValid(); it.next()) {
+						keys.add(new String(it.key()));
+					}
+					it.checkError();
+				}
+
+				// Then
+				assertThat(keys).containsExactly("b", "c");
+			}
+		}
+	}
+
+	@Test
+	void setIterateUpperBound_byteBuffer_restrictsIteration(@TempDir Path dir) {
+		// Given
+		try (var db = RocksDB.openReadWrite(dir)) {
+			db.put("a".getBytes(), "1".getBytes());
+			db.put("b".getBytes(), "2".getBytes());
+			db.put("c".getBytes(), "3".getBytes());
+
+			try (var readOptions = ReadOptions.newReadOptions()) {
+				ByteBuffer bound = ByteBuffer.allocateDirect(1).put((byte) 'b').flip();
+				readOptions.setIterateUpperBound(bound);
+
+				// When
+				List<String> keys = new ArrayList<>();
+				try (RocksIterator it = db.newIterator(readOptions)) {
+					for (it.seekToFirst(); it.isValid(); it.next()) {
+						keys.add(new String(it.key()));
+					}
+					it.checkError();
+				}
+
+				// Then
+				assertThat(keys).containsExactly("a");
+			}
+		}
+	}
+
+	@Test
 	void setIterateLowerBound_null_clearsBound(@TempDir Path dir) {
 		// Given
 		try (var db = RocksDB.openReadWrite(dir)) {
@@ -260,6 +344,32 @@ class ReadOptionsTest {
 			try (var readOptions = ReadOptions.newReadOptions()) {
 				readOptions.setIterateLowerBound("b".getBytes());
 				readOptions.setIterateLowerBound((byte[]) null);
+
+				// When
+				List<String> keys = new ArrayList<>();
+				try (RocksIterator it = db.newIterator(readOptions)) {
+					for (it.seekToFirst(); it.isValid(); it.next()) {
+						keys.add(new String(it.key()));
+					}
+					it.checkError();
+				}
+
+				// Then
+				assertThat(keys).containsExactly("a", "b");
+			}
+		}
+	}
+
+	@Test
+	void setIterateUpperBound_null_clearsBound(@TempDir Path dir) {
+		// Given
+		try (var db = RocksDB.openReadWrite(dir)) {
+			db.put("a".getBytes(), "1".getBytes());
+			db.put("b".getBytes(), "2".getBytes());
+
+			try (var readOptions = ReadOptions.newReadOptions()) {
+				readOptions.setIterateUpperBound("b".getBytes());
+				readOptions.setIterateUpperBound((byte[]) null);
 
 				// When
 				List<String> keys = new ArrayList<>();

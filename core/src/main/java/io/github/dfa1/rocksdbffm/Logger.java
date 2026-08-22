@@ -119,6 +119,7 @@ public final class Logger extends NativeObject {
 	/// @param callback receives each log message
 	/// @return a new [Logger] that dispatches to `callback`; caller must close it
 	public static Logger newCallbackLogger(LogLevel minLevel, LogCallback callback) {
+		BackgroundUpcallThreads.installShutdownDrain();
 		// Pass the registry id as the priv pointer value (address, not dereferenced).
 		MemorySegment privPtr = REGISTRY.register(callback);
 		try {
@@ -141,6 +142,7 @@ public final class Logger extends NativeObject {
 
 	/// Called from the single global upcall stub. Must not throw.
 	private static void dispatch(MemorySegment priv, int lev, MemorySegment msg, long len) {
+		BackgroundUpcallThreads.track();
 		try {
 			LogCallback cb = REGISTRY.get(priv);
 			if (cb == null) {

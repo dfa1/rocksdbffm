@@ -11,6 +11,7 @@ Nothing here is needed to use the library — for that see the [tutorial](tutori
 - [Lifecycle and ownership](#lifecycle-and-ownership)
 - [Only valid operations](#only-valid-operations)
 - [Errors are always loud](#errors-are-always-loud)
+- [Background thread callbacks](#background-thread-callbacks)
 - [Domain types instead of raw scalars](#domain-types-instead-of-raw-scalars)
 - [Three access tiers](#three-access-tiers)
 - [Static factories, no public constructors](#static-factories-no-public-constructors)
@@ -189,6 +190,50 @@ That replaced an earlier `int` return carrying the value length, or `-1` for not
 encoding let a too-small destination silently truncate while still reporting the full length, and a
 value larger than `Integer.MAX_VALUE` collided with the `-1` sentinel.
 
+## Background thread callbacks
+
+Most of this library calls into RocksDB. Three features let RocksDB call back into Java:
+`EventNotifier` (via `Options.addEventListener`), the callback `Logger`, and
+`MergeOperator.custom`. Those callbacks do not run on the thread that registered them — they run
+on whichever RocksDB background thread is doing the flush, the compaction, or the logging.
+
+Three consequences the API cannot hide, and one it can.
+
+**Callbacks must be thread-safe.** Several background threads can be in your callback at once.
+Nothing is serialized on your behalf.
+
+**A callback must not throw.** An exception escaping an upcall stub does not propagate to a
+caller — the `Linker` javadoc is explicit that the JVM terminates abruptly. Every dispatch in this
+library therefore wraps the call in `try`/`catch (Throwable)` and logs through `System.Logger`
+rather than letting anything cross the native frame. That is also why an escaping `AssertionError`
+is caught rather than allowed to abort the JVM, which matters under Surefire where assertions are
+enabled by default.
+
+**The `*Info` arguments are borrowed.** `FlushJobInfo`, `CompactionJobInfo` and the rest are
+zero-copy views over memory RocksDB owns for the duration of the call. Retaining one past the
+method that received it reads freed memory. Copy out the fields you need.
+
+**Process exit is handled for you.** This is the one the library can absorb, and it is worth
+knowing about because the failure mode is spectacular. The first time RocksDB invokes one of these
+callbacks on a background thread, HotSpot attaches that thread to the JVM so it can run Java code;
+it stays attached for the life of the thread, which for a pooled worker means the life of the
+process. RocksDB's default `Env` separately registers a static destructor that `pthread_join`s
+those same threads when libc `exit()` runs. Put the two together and `System.exit()` deadlocks,
+every time: the exiting VM thread waits inside `exit()` for a thread that is itself blocked
+detaching from a VM that has already declared itself exited.
+
+`BackgroundUpcallThreads` breaks the cycle with a shutdown hook — installed only when a callback
+is actually registered — that shrinks the default `Env`'s thread pools to zero and waits for the
+attached threads to terminate while the VM is still fully alive, so their detach completes
+normally and the static destructor finds nothing left to join. The cost is that background flushes
+and compactions stop for any database still open at shutdown; queued work was not going to survive
+the exit regardless.
+
+Note that the attach behavior is a HotSpot implementation detail, not a specified one — neither
+`java.lang.foreign.Linker` nor the dev.java upcall tutorial mentions threads at all. If a future
+JDK stops attaching, the hook becomes a no-op rather than a bug, and `EventNotifierExitTest`
+(which forks a JVM and asserts it exits) is what would catch the change either way.
+
 ## Domain types instead of raw scalars
 
 Raw numbers carry no unit and cannot be validated where they are created.
@@ -335,7 +380,7 @@ through `bash` explicitly, which works uniformly on macOS, Linux, and Windows (v
 Two different kinds of gap, and the distinction decides who can fix them:
 
 - **Type A** — the C API exposes it, this library has no Java wrapper yet. Actionable here and now
-  (MultiGet, CompactionFilter, EventListener, custom comparators, …).
+  (MultiGet, CompactionFilter, custom comparators, …).
 - **Type B** — the C API does not expose it at all. Needs an upstream PR to `facebook/rocksdb`
   (`c.h` + `c.cc` + `c_test.c`) before any Java work is possible (persistent cache, wide columns,
   SST file reader, …).

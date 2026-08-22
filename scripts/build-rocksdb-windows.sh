@@ -109,68 +109,41 @@ if [ "$IS_WINDOWS_HOST" = true ]; then
     # generator bundles objects into an intermediate CMakeFiles/.../objects.a
     # via `ar qc ... @objects1.rsp`, then links the shared lib with
     # `-Wl,--whole-archive objects.a`. There's no CMAKE_AR_ARG1 equivalent to
-    # point straight at zig(.exe) the way CC/CXX do, and a .bat wrapper hits
-    # the same cmd.exe quoting problem CC/CXX had (confirmed in CI — the
-    # ar.bat invocation failed with "The system cannot find the path
-    # specified"). So compile a tiny native .exe stub instead: `_execvp`
-    # (from the C runtime, not a hand-rolled batch script) constructs the
-    # Windows command line using the same well-tested quoting logic every
-    # native compiler/linker already relies on.
+    # point straight at zig(.exe) the way CC/CXX do, so a wrapper is
+    # unavoidable.
     #
-    # TODO(cleanup): compiling a C stub from a shell script is more machinery
-    # than this really deserves. Revisit if CMake ever grows a CMAKE_AR_ARG1
-    # (or equivalent) for archivers, or if zig starts shipping standalone
-    # llvm-ar/llvm-ranlib binaries alongside zig(.exe) that could be pointed
-    # at directly with no wrapper at all.
-    # $ZIG_EXE is in Git Bash's MSYS path form (e.g. /c/hostedtoolcache/...).
-    # Bash auto-translates that to a native Windows path when it's passed as
-    # a *command-line argument* to a native executable (which is why
-    # CMAKE_C_COMPILER="$ZIG_EXE" above works fine) — but here it gets
-    # embedded as a plain string literal inside a generated C *source file*,
-    # which isn't argv, so that translation never happens. Confirmed in CI:
-    # the compiled wrapper's own _spawnv failed with ENOENT on the raw MSYS
-    # path baked into the binary. cygpath -m converts to the Windows-native
-    # "mixed" form (drive letter, forward slashes) — safe to drop straight
-    # into a C string with no backslash-escaping needed.
+    # A plain .bat wrapper was tried here once before (see #39) and failed
+    # in CI with "The system cannot find the path specified", assumed at the
+    # time to be the same cmd.exe multi-quoted-segment bug CC/CXX hit —
+    # never actually confirmed. That prior attempt embedded $ZIG_EXE
+    # untranslated: Git Bash's MSYS path form (e.g. /c/hostedtoolcache/...)
+    # only auto-translates to native Windows form when passed as a
+    # *command-line argument* to a native executable, not when written into
+    # a generated file's text — so the .bat's target path may simply have
+    # been wrong, no cmd.exe quoting bug required. cygpath -m fixes that
+    # (drive-letter, forward-slash "mixed" form, safe with no
+    # backslash-escaping); retrying the plain .bat wrapper with that fix
+    # applied, since a compiled C stub is more machinery than this deserves
+    # if the real fix is this simple.
     ZIG_EXE_WIN="$(cygpath -m "$ZIG_EXE")"
     WRAPPER_DIR="$(mktemp -d)"
     trap 'rm -rf "$WRAPPER_DIR"' EXIT
-    AR_WRAPPER="$WRAPPER_DIR/ar.exe"
-    RANLIB_WRAPPER="$WRAPPER_DIR/ranlib.exe"
-    for pair in "ar:$AR_WRAPPER" "ranlib:$RANLIB_WRAPPER"; do
-        subcommand="${pair%%:*}"
-        out="${pair#*:}"
-        src="$WRAPPER_DIR/${subcommand}_wrapper.c"
-        # Use _spawnv (not _execv): CI showed the ar invocation failing
-        # completely silently — no output at all, not even a zig error —
-        # which is consistent with the process-replace call itself never
-        # succeeding, and _execv gives no way to see why since it doesn't
-        # return on success and this code printed nothing on failure
-        # either. _spawnv (wait for the child, keep running) lets the
-        # wrapper report exactly what went wrong instead of a bare exit
-        # code with zero diagnostic output.
-        cat > "$src" <<EOF
-#include <process.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <errno.h>
-#include <string.h>
-int main(int argc, char** argv) {
-    char** newargv = (char**)malloc(sizeof(char*) * (size_t)(argc + 2));
-    newargv[0] = "$ZIG_EXE_WIN";
-    newargv[1] = "$subcommand";
-    for (int i = 1; i < argc; i++) newargv[i + 1] = argv[i];
-    newargv[argc + 1] = NULL;
-    intptr_t status = _spawnv(_P_WAIT, "$ZIG_EXE_WIN", (const char* const*)newargv);
-    if (status == -1) {
-        fprintf(stderr, "$subcommand wrapper: _spawnv failed for $ZIG_EXE_WIN: %s (errno=%d)\n", strerror(errno), errno);
-        return 1;
-    }
-    return (int)status;
-}
+    AR_WRAPPER="$WRAPPER_DIR/ar.bat"
+    RANLIB_WRAPPER="$WRAPPER_DIR/ranlib.bat"
+    # Diagnostic echo to stderr on every invocation: if this still fails,
+    # the CI log shows exactly what path/args cmd.exe was handed, instead of
+    # a bare "cannot find the path specified" with nothing to diagnose from
+    # (the gap that cost the most time last time around).
+    cat > "$AR_WRAPPER" <<EOF
+@echo off
+echo [ar.bat] "$ZIG_EXE_WIN" ar %* 1>&2
+"$ZIG_EXE_WIN" ar %*
 EOF
-        "$ZIG_EXE" cc -o "$out" "$src"
-    done
+    cat > "$RANLIB_WRAPPER" <<EOF
+@echo off
+echo [ranlib.bat] "$ZIG_EXE_WIN" ranlib %* 1>&2
+"$ZIG_EXE_WIN" ranlib %*
+EOF
 else
     WRAPPER_DIR="$(mktemp -d)"
     trap 'rm -rf "$WRAPPER_DIR"' EXIT

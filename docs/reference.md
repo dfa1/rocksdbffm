@@ -305,6 +305,8 @@ Reopening requires listing every existing column family, `default` included — 
 | Histogram data| `StatisticsHistogramData.newStatisticsHistogramData()`; `getMedian`, `getP95`, `getP99`, `getAverage`, `getStdDev`, `getMin`, `getMax`, `getCount`, `getSum` |
 | Perf context  | `PerfContext.setPerfLevel(PerfLevel)`, `newPerfContext()` (resets), `currentPerfContext()` (does not reset), `metric(PerfMetric)` (78 metrics), `report(boolean excludeZeroCounters)`, `reset()` — thread-local |
 | Logging       | `Options.setInfoLog(Logger)`, `setInfoLogLevel(LogLevel)`                                  |
+| Event listeners| `Options.addEventListener(EventNotifier)` (callable repeatedly to register several); `EventNotifier` has 8 no-op default methods — `onFlushBegin`, `onFlushCompleted`, `onCompactionBegin`, `onCompactionCompleted`, `onExternalFileIngested`, `onBackgroundError`, `onStallConditionsChanged`, `onMemTableSealed`. Callbacks run on RocksDB background threads; the `*Info` arguments are zero-copy views valid only for the duration of the call — see [explanation.md#background-thread-callbacks](explanation.md#background-thread-callbacks) |
+| Event payloads | `FlushJobInfo`, `CompactionJobInfo`, `ExternalFileIngestionInfo`, `MemTableInfo`, `WriteStallInfo` |
 
 ## Domain types
 
@@ -336,6 +338,10 @@ Reopening requires listing every existing column family, `default` included — 
 | `IOPriority`                        | `LOW`, `MID`, `HIGH`, `USER`, `TOTAL`                                                          |
 | `IOActivity`                        | `FLUSH`, `COMPACTION`, `DB_OPEN`, `GET`, `MULTI_GET`, `DB_ITERATOR`, `VERIFY_DB_CHECKSUM`, `VERIFY_FILE_CHECKSUMS`, `GET_ENTITY`, `MULTI_GET_ENTITY`, `GET_FILE_CHECKSUMS_FROM_CURRENT_MANIFEST`, `UNKNOWN` |
 | `BlockBasedTableOptions.IndexType`  | Block-based index layout selection                                                             |
+| `FlushReason`                       | Why a flush ran: `MANUAL_FLUSH`, `WRITE_BUFFER_FULL`, `WAL_FULL`, `AUTO_COMPACTION`, `ERROR_RECOVERY`, … (16 constants) |
+| `CompactionReason`                  | Why a compaction ran: `MANUAL_COMPACTION`, `LEVEL_L0_FILES_NUM`, `TTL`, `BOTTOMMOST_FILES`, `PERIODIC_COMPACTION`, … (21 constants) |
+| `BackgroundErrorReason`             | `FLUSH`, `COMPACTION`, `WRITE_CALLBACK`, `MEMTABLE`, `MANIFEST_WRITE`, `FLUSH_NO_WAL`, `MANIFEST_WRITE_NO_WAL`, `ASYNC_FILE_OPEN` |
+| `WriteStallCondition`               | `NORMAL`, `DELAYED`, `STOPPED`                                                                 |
 | `Property`, `TickerType`, `HistogramType`, `PerfMetric` | Large enumerations; see the Javadoc for the full lists                     |
 
 `SNAPPY`, `ZLIB`, `BZLIB2`, and `XPRESS` aren't linked into the bundled `librocksdb` yet —
@@ -383,6 +389,7 @@ Parity tracking against `rocksdbjni`. ✅ implemented · 🚧 partial · ❌ not
 | Blob DB                    |   ✅    | Blob options, blob properties, `PrepopulateBlobCache`                                       |
 | Logger                     |   ✅    | Stderr and callback loggers                                                                 |
 | Perf context               |   ✅    | `PerfContext`, `PerfLevel`, `PerfMetric`                                                    |
+| Event listeners            |   ✅    | `EventNotifier` via `Options.addEventListener`; 8 of the C API's 10 callbacks (the two subcompaction ones are deliberately not exposed) |
 | Background jobs            |   🚧    | `cancelAllBackgroundWork`, manual-compaction toggles, `waitForCompact`; Options-level tuning (FIFO/Universal) pending |
 | MultiGet                   |   ❌    | `rocksdb_multi_get()` exists in the C API; no Java wrapper yet                              |
 | Merge                      |   ✅    | `merge()` write op on all 7 write-capable types (byte[]/ByteBuffer/MemorySegment, CF variants), see [#8](https://github.com/dfa1/rocksdbffm/issues/8); requires a `MergeOperator` configured via `Options.setMergeOperator`, else calls fail with `RocksDBException` |

@@ -30,6 +30,7 @@ Every snippet omits imports; all types live in `io.github.dfa1.rocksdbffm`.
 - [Inspect properties and statistics](#inspect-properties-and-statistics)
 - [Profile a single operation](#profile-a-single-operation)
 - [Route RocksDB logs into your logger](#route-rocksdb-logs-into-your-logger)
+- [Observe flushes and compactions](#observe-flushes-and-compactions)
 - [Compact manually](#compact-manually)
 - [Load a custom native library](#load-a-custom-native-library)
 - [Build the native library from source](#build-the-native-library-from-source)
@@ -621,6 +622,52 @@ try (var logger = Logger.newCallbackLogger(LogLevel.INFO,
 
 The callback runs on RocksDB's own threads and **must not throw**. `Logger.newStderrLogger(level,
 prefix)` is the zero-setup alternative.
+
+## Observe flushes and compactions
+
+Implement only the `EventNotifier` methods you care about — all eight have no-op defaults.
+
+```java
+EventNotifier notifier = new EventNotifier() {
+	@Override
+	public void onFlushCompleted(FlushJobInfo info) {
+		metrics.flushCompleted(info.columnFamilyName(), info.flushReason());
+	}
+
+	@Override
+	public void onCompactionCompleted(CompactionJobInfo info) {
+		metrics.compactionCompleted(info.outputLevel(), info.compactionReason());
+	}
+
+	@Override
+	public void onStallConditionsChanged(WriteStallInfo info) {
+		metrics.writeStall(info.previous(), info.current());
+	}
+};
+
+try (var options = Options.newOptions()
+		.setCreateIfMissing(true)
+		.addEventListener(notifier);
+     var db = RocksDB.openReadWrite(options, dbPath)) {
+	// ...
+}
+```
+
+Three rules, all consequences of these callbacks running on RocksDB's background threads rather
+than yours:
+
+- **Be thread-safe.** Several background threads can be inside your notifier at once.
+- **Do not throw.** An escaping exception is caught and logged, never propagated into native code.
+- **Do not retain the `*Info` argument.** It is a zero-copy view over memory RocksDB owns only for
+  the duration of the call. Copy out the fields you need, as above.
+
+`addEventListener` may be called repeatedly to register several independent notifiers.
+
+Registering a notifier also installs a JVM shutdown hook that stops RocksDB's background threads
+before the process exits; without it `System.exit()` would deadlock. You do not need to do
+anything, but see
+[explanation.md#background-thread-callbacks](explanation.md#background-thread-callbacks) if you
+run your own shutdown sequencing.
 
 ## Compact manually
 

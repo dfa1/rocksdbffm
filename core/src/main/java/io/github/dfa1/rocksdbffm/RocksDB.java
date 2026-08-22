@@ -1947,6 +1947,18 @@ public final class RocksDB {
 		return ptr.reinterpret(len).toArray(ValueLayout.JAVA_BYTE);
 	}
 
+	/// Decodes a borrowed, non-owned `const char*` + separate `size_t*` out-param pair as a
+	/// UTF-8 [String], without freeing `ptr`. Same ownership contract as
+	/// [#toByteArray(MemorySegment, long)]; use it for read-only accessors that hand back a view
+	/// into a native `std::string` (e.g. event-listener job-info column family names and paths).
+	///
+	/// @param ptr native pointer to a borrowed buffer
+	/// @param len number of bytes to decode
+	/// @return the decoded string
+	public static String toJavaString(MemorySegment ptr, long len) {
+		return new String(toByteArray(ptr, len), StandardCharsets.UTF_8);
+	}
+
 	/// Converts a malloc'd, NUL-terminated `char*` returned by the RocksDB C API into a
 	/// Java [String], then frees it.
 	///

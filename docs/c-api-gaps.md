@@ -18,7 +18,6 @@ rocksdbffm wraps `rocksdb/c.h` — the official RocksDB C API — not C++ direct
 | MultiGet | `rocksdb_multi_get()` | High | Bulk key lookup; important for throughput |
 | CompactFiles | `rocksdb_compact_files()`, `rocksdb_compaction_options_t` + setters (incl. `output_temperature_override`) | Low | A second, unrelated options opaque type from `CompactOptions`'s `rocksdb_compactoptions_t` (used by `compactRange`) — needs its own wrapper class, not an extension of `CompactOptions.java` |
 | CompactionFilter | `rocksdb_compactionfilter_create()`, `rocksdb_compactionfilterfactory_create()` | High | Callback-based; enables custom retention/deletion policies during compaction |
-| EventListener | `rocksdb_eventlistener_create()` (~12 callbacks) | High | Flush, compaction, file creation/deletion events; needed for monitoring |
 | Custom Comparator | `rocksdb_comparator_create()`, `rocksdb_comparator_with_ts_create()` | High | Custom key ordering; note: key shortening not exposed in C API |
 | JemallocNodumpAllocator | `rocksdb_jemalloc_nodump_allocator_create()` | Medium | Jemalloc allocator for caches; avoids coredump leaking sensitive data |
 | CuckooTable options | `rocksdb_cuckoo_table_options_t` + setters | Medium | Hash-based SST format; efficient for fixed-size keys |

@@ -813,6 +813,18 @@ public final class Options extends NativeObject {
 		return this;
 	}
 
+	/// Attaches an [EventNotifier] that receives RocksDB's internal lifecycle events (flushes,
+	/// compactions, external file ingestion, background errors, write stalls, memtable seals).
+	///
+	/// May be called more than once; every attached notifier is dispatched to independently.
+	///
+	/// @param notifier the callback to attach
+	/// @return `this` for chaining
+	public Options addEventListener(EventNotifier notifier) {
+		EventNotifierBridge.attach(ptr(), notifier);
+		return this;
+	}
+
 	// -----------------------------------------------------------------------
 	// Temperature options
 	// -----------------------------------------------------------------------

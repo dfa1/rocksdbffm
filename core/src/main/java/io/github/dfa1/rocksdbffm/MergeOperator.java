@@ -211,6 +211,7 @@ public sealed interface MergeOperator {
 		}
 
 		static Custom create(String name, FullMergeFn fn) {
+			BackgroundUpcallThreads.installShutdownDrain();
 			MemorySegment nameSeg = Arena.global().allocateFrom(name);
 			MemorySegment statePtr = REGISTRY.register(new State(fn, nameSeg));
 			try {
@@ -282,6 +283,7 @@ public sealed interface MergeOperator {
 		private static MemorySegment fullMergeDispatch(MemorySegment state, MemorySegment key, long keyLen,
 				MemorySegment existingValue, long existingValueLen, MemorySegment operandsList,
 				MemorySegment operandsLen, int numOperands, MemorySegment success, MemorySegment newValueLen) {
+			BackgroundUpcallThreads.track();
 			MemorySegment successPtr = success.reinterpret(ValueLayout.JAVA_BYTE.byteSize());
 			MemorySegment newValueLenPtr = newValueLen.reinterpret(ValueLayout.JAVA_LONG.byteSize());
 			try (Arena arena = Arena.ofConfined()) {
@@ -308,6 +310,7 @@ public sealed interface MergeOperator {
 		private static MemorySegment partialMergeDispatch(MemorySegment state, MemorySegment key, long keyLen,
 				MemorySegment operandsList, MemorySegment operandsLen, int numOperands,
 				MemorySegment success, MemorySegment newValueLen) {
+			BackgroundUpcallThreads.track();
 			MemorySegment successPtr = success.reinterpret(ValueLayout.JAVA_BYTE.byteSize());
 			MemorySegment newValueLenPtr = newValueLen.reinterpret(ValueLayout.JAVA_LONG.byteSize());
 			try {

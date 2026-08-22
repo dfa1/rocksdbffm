@@ -114,34 +114,26 @@ if [ "$IS_WINDOWS_HOST" = true ]; then
     #
     # A plain .bat wrapper was tried here once before (see #39) and failed
     # in CI with "The system cannot find the path specified", assumed at the
-    # time to be the same cmd.exe multi-quoted-segment bug CC/CXX hit —
-    # never actually confirmed. That prior attempt embedded $ZIG_EXE
-    # untranslated: Git Bash's MSYS path form (e.g. /c/hostedtoolcache/...)
-    # only auto-translates to native Windows form when passed as a
-    # *command-line argument* to a native executable, not when written into
-    # a generated file's text — so the .bat's target path may simply have
-    # been wrong, no cmd.exe quoting bug required. cygpath -m fixes that
-    # (drive-letter, forward-slash "mixed" form, safe with no
-    # backslash-escaping); retrying the plain .bat wrapper with that fix
-    # applied, since a compiled C stub is more machinery than this deserves
-    # if the real fix is this simple.
+    # time to be the same cmd.exe multi-quoted-segment bug CC/CXX hit. That
+    # prior attempt embedded $ZIG_EXE untranslated, though: Git Bash's MSYS
+    # path form (e.g. /c/hostedtoolcache/...) only auto-translates to native
+    # Windows form when passed as a *command-line argument* to a native
+    # executable, not when written into a generated file's text — the
+    # cmd.exe theory was never confirmed, and cygpath -m below (drive-letter,
+    # forward-slash "mixed" form, safe with no backslash-escaping) was the
+    # actual fix. Confirmed in CI for both windows-x86_64 and
+    # windows-aarch64 -- a compiled C stub was never necessary.
     ZIG_EXE_WIN="$(cygpath -m "$ZIG_EXE")"
     WRAPPER_DIR="$(mktemp -d)"
     trap 'rm -rf "$WRAPPER_DIR"' EXIT
     AR_WRAPPER="$WRAPPER_DIR/ar.bat"
     RANLIB_WRAPPER="$WRAPPER_DIR/ranlib.bat"
-    # Diagnostic echo to stderr on every invocation: if this still fails,
-    # the CI log shows exactly what path/args cmd.exe was handed, instead of
-    # a bare "cannot find the path specified" with nothing to diagnose from
-    # (the gap that cost the most time last time around).
     cat > "$AR_WRAPPER" <<EOF
 @echo off
-echo [ar.bat] "$ZIG_EXE_WIN" ar %* 1>&2
 "$ZIG_EXE_WIN" ar %*
 EOF
     cat > "$RANLIB_WRAPPER" <<EOF
 @echo off
-echo [ranlib.bat] "$ZIG_EXE_WIN" ranlib %* 1>&2
 "$ZIG_EXE_WIN" ranlib %*
 EOF
 else
